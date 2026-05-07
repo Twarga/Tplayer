@@ -1,30 +1,28 @@
 import { useState } from 'react'
-import { Home, Library, Music, Disc, Users, ListMusic, Folder, Compass, Settings, ChevronDown, Plus } from 'lucide-react'
+import { Home, Library, Music, Disc, Users, ListMusic, Folder, Compass, Settings, ChevronDown, Plus, ListOrdered } from 'lucide-react'
 import { usePlaylistStore } from '@/stores/playlistStore'
+import { cn } from '@/lib/utils'
 
 interface NavItemProps {
   icon: React.ReactNode
   label: string
   active?: boolean
   onClick?: () => void
-  count?: number
 }
 
-function NavItem({ icon, label, active, onClick, count }: NavItemProps) {
+function NavItem({ icon, label, active, onClick }: NavItemProps) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-3 w-full h-9 px-3 rounded-md text-sm font-medium transition-all duration-200 ${
+      className={cn(
+        "flex items-center gap-3 w-full h-9 px-3 rounded-md text-sm font-medium transition-all duration-200",
         active
           ? 'bg-surface-3 text-primary'
           : 'text-secondary hover:bg-surface-2 hover:text-primary'
-      }`}
+      )}
     >
       <span className="w-5 h-5 flex items-center justify-center">{icon}</span>
       <span className="flex-1 text-left truncate">{label}</span>
-      {count !== undefined && (
-        <span className="text-xs text-tertiary">{count}</span>
-      )}
     </button>
   )
 }
@@ -35,22 +33,24 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeView, onViewChange }: SidebarProps) {
-  const { playlists, loadPlaylists, createPlaylist } = usePlaylistStore()
+  const { playlists } = usePlaylistStore()
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [newPlaylistName, setNewPlaylistName] = useState('')
+  const { createPlaylist, loadPlaylists } = usePlaylistStore()
 
   const handleCreatePlaylist = async () => {
     if (newPlaylistName.trim()) {
       await createPlaylist(newPlaylistName.trim())
       setNewPlaylistName('')
       setShowCreateDialog(false)
+      await loadPlaylists()
     }
   }
 
   return (
-    <aside className="w-[200px] min-w-[200px] h-full bg-sidebar-bg border-r border-border-subtle flex flex-col">
+    <aside className="w-[200px] min-w-[200px] h-full bg-sidebar-bg border-r border-border-subtle flex flex-col select-none">
       {/* Logo */}
-      <div className="px-4 pb-5 pt-4 flex items-center gap-2">
+      <div className="px-4 pb-4 pt-4 flex items-center gap-2 shrink-0">
         <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-background font-bold text-sm">
           T
         </div>
@@ -59,29 +59,30 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1 px-2 flex-1 overflow-y-auto">
+      <nav className="flex flex-col gap-0.5 px-2 flex-1 overflow-y-auto">
         <NavItem icon={<Home size={20} />} label="Home" active={activeView === 'home'} onClick={() => onViewChange('home')} />
         <NavItem icon={<Library size={20} />} label="Library" active={activeView === 'library'} onClick={() => onViewChange('library')} />
 
-        <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-tertiary pt-4 px-3 pb-2">Your Music</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-tertiary pt-4 px-3 pb-1.5">Your Music</p>
 
         <NavItem icon={<Music size={20} />} label="Songs" onClick={() => onViewChange('library')} />
         <NavItem icon={<Disc size={20} />} label="Albums" onClick={() => onViewChange('library')} />
         <NavItem icon={<Users size={20} />} label="Artists" onClick={() => onViewChange('library')} />
-        <NavItem icon={<ListMusic size={20} />} label="Playlists" onClick={() => onViewChange('playlists')} />
+        <NavItem icon={<ListMusic size={20} />} label="Playlists" active={activeView === 'playlists'} onClick={() => onViewChange('playlists')} />
         <NavItem icon={<Folder size={20} />} label="Folders" onClick={() => onViewChange('settings')} />
 
-        <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-tertiary pt-4 px-3 pb-2">Import & Discover</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-tertiary pt-4 px-3 pb-1.5">Import & Discover</p>
 
         <NavItem
           icon={<span className="text-red-500"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></span>}
           label="YouTube Import"
+          active={activeView === 'youtube'}
           onClick={() => onViewChange('youtube')}
         />
         <NavItem icon={<Compass size={20} />} label="Discover" onClick={() => onViewChange('home')} />
 
         {/* Playlists Section */}
-        <div className="flex items-center justify-between px-3 pt-4 pb-2">
+        <div className="flex items-center justify-between px-3 pt-4 pb-1.5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-tertiary">Playlists</p>
           <button
             onClick={() => setShowCreateDialog(true)}
@@ -95,7 +96,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
         {playlists.map((playlist) => (
           <NavItem
             key={playlist.id}
-            icon={<ListMusic size={20} />}
+            icon={<ListMusic size={18} />}
             label={playlist.name}
             active={activeView === 'playlist-' + playlist.id}
             onClick={() => onViewChange('playlist-' + playlist.id)}
@@ -104,14 +105,15 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
       </nav>
 
       {/* Bottom Actions */}
-      <div className="px-2 pb-4 flex flex-col gap-1">
-        <NavItem icon={<Settings size={20} />} label="Settings" onClick={() => onViewChange('settings')} />
+      <div className="px-2 pb-4 pt-2 flex flex-col gap-0.5 shrink-0 border-t border-border-subtle mt-2">
+        <NavItem icon={<ListOrdered size={20} />} label="Queue" onClick={() => onViewChange('queue')} />
+        <NavItem icon={<Settings size={20} />} label="Settings" active={activeView === 'settings'} onClick={() => onViewChange('settings')} />
       </div>
 
       {/* Create Playlist Dialog */}
       {showCreateDialog && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-surface-1 border border-border-default rounded-xl p-6 w-80 shadow-modal">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowCreateDialog(false)}>
+          <div className="bg-surface-1 border border-border-default rounded-xl p-6 w-80 shadow-modal" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-primary mb-4">Create Playlist</h3>
             <input
               type="text"

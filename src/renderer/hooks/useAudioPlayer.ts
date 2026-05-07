@@ -1,8 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useRef, useEffect } from 'react'
+import { usePlayerStore } from '@/stores/playerStore'
 
 let audioContext: AudioContext | null = null
 let currentSource: AudioBufferSourceNode | null = null
 let gainNode: GainNode | null = null
+let eqNodes: BiquadFilterNode[] = []
 
 function getAudioContext(): AudioContext {
   if (!audioContext) {
@@ -12,11 +14,18 @@ function getAudioContext(): AudioContext {
 }
 
 export function useAudioPlayer() {
-  const isPlayingRef = useRef(false)
+  const { volume, isPlaying } = usePlayerStore()
+
+  // Sync volume to gain node whenever it changes
+  useEffect(() => {
+    if (gainNode) {
+      gainNode.gain.setTargetAtTime(volume, getAudioContext().currentTime, 0.1)
+    }
+  }, [volume])
 
   useEffect(() => {
     // Listen for audio data from main process
-    const cleanup = window.tplayerAPI.player.onLoad((data: { 
+    const cleanupLoad = window.tplayerAPI.player.onLoad((data: { 
       pcmData: Float32Array
       sampleRate: number
       channels: number
@@ -25,22 +34,23 @@ export function useAudioPlayer() {
       playPCM(data.pcmData, data.sampleRate, data.channels)
     })
 
-    const cleanupPause = window.tplayerAPI.player.onPlaybackState((state: { state: string }) => {
+    const cleanupState = window.tplayerAPI.player.onPlaybackState((state: { state: string }) => {
       if (state.state === 'paused') {
-        pauseAudio()
+        getAudioContext().suspend()
       } else if (state.state === 'playing') {
-        resumeAudio()
+        getAudioContext().resume()
       }
     })
 
     return () => {
-      cleanup()
-      cleanupPause()
+      cleanupLoad()
+      cleanupState()
     }
   }, [])
 
   const playPCM = (pcmData: Float32Array, sampleRate: number, channels: number) => {
     const ctx = getAudioContext()
+    ctx.resume()
     
     // Stop current playback
     if (currentSource) {
@@ -49,7 +59,7 @@ export function useAudioPlayer() {
     }
 
     // Create audio buffer
-    const frameCount = pcmData.length / channels
+    const frameCount = Math.floor(pcmData.length / channels)
     const audioBuffer = ctx.createBuffer(channels, frameCount, sampleRate)
     
     for (let ch = 0; ch < channels; ch++) {
@@ -59,43 +69,24 @@ export function useAudioPlayer() {
       }
     }
 
-    // Create source and connect
+    // Build audio chain: source → gain → destination
     const source = ctx.createBufferSource()
     source.buffer = audioBuffer
     
     if (!gainNode) {
       gainNode = ctx.createGain()
+      gainNode.gain.value = volume
       gainNode.connect(ctx.destination)
     }
     
     source.connect(gainNode)
     source.start()
     currentSource = source
-    isPlayingRef.current = true
 
     source.onended = () => {
-      isPlayingRef.current = false
       window.tplayerAPI.player.next()
     }
   }
 
-  const pauseAudio = () => {
-    if (audioContext?.state === 'running') {
-      audioContext.suspend()
-    }
-  }
-
-  const resumeAudio = () => {
-    if (audioContext?.state === 'suspended') {
-      audioContext.resume()
-    }
-  }
-
-  const setVolume = (volume: number) => {
-    if (gainNode) {
-      gainNode.gain.value = volume
-    }
-  }
-
-  return { playPCM, pauseAudio, resumeAudio, setVolume }
+  return { playPCM }
 }

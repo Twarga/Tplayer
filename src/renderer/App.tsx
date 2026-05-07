@@ -8,51 +8,51 @@ import { HomeView } from '@/components/home/HomeView'
 import { LibraryView } from '@/components/library/LibraryView'
 import { PlaylistListView } from '@/components/playlist/PlaylistListView'
 import { YouTubeView } from '@/components/youtube/YouTubeView'
-import { EqualizerView } from '@/components/equalizer/EqualizerView'
 import { SettingsView } from '@/components/settings/SettingsView'
+import { QueueView } from '@/components/queue/QueueView'
 import { usePlayerStore } from '@/stores/playerStore'
 import { useLibraryStore } from '@/stores/libraryStore'
 import { usePlaylistStore } from '@/stores/playlistStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useEqStore } from '@/stores/eqStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboard'
 import { useAudioPlayer } from '@/hooks/useAudioPlayer'
 import { ToastProvider } from '@/stores/toastStore'
 
 function AppShell() {
   const [activeView, setActiveView] = useState('home')
-  const [npPanelCollapsed, setNpPanelCollapsed] = useState(false)
+  const [npPanelOpen, setNpPanelOpen] = useState(true)
 
   const { init: initPlayer, play } = usePlayerStore()
   const { init: initLibrary, loadTracks } = useLibraryStore()
   const { loadPlaylists } = usePlaylistStore()
   const { load: loadSettings } = useSettingsStore()
   const { init: initEq } = useEqStore()
+  const { loadQueue } = useQueueStore()
 
   useAudioPlayer()
   useKeyboardShortcuts()
 
   useEffect(() => {
-    // Initialize all stores
     initPlayer()
     initLibrary()
     initEq()
     loadSettings().then(() => {
       loadTracks()
       loadPlaylists()
+      loadQueue()
     })
   }, [])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-
       if (e.ctrlKey && e.key === '\\') {
         e.preventDefault()
-        setNpPanelCollapsed((v) => !v)
+        setNpPanelOpen((v) => !v)
       }
     }
-
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [])
@@ -67,8 +67,8 @@ function AppShell() {
         return <PlaylistListView />
       case 'youtube':
         return <YouTubeView />
-      case 'equalizer':
-        return <EqualizerView />
+      case 'queue':
+        return <QueueView />
       case 'settings':
         return <SettingsView />
       default:
@@ -81,21 +81,17 @@ function AppShell() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar activeView={activeView} onViewChange={setActiveView} />
 
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <TopBar />
-
-          <main className="flex-1 overflow-hidden">
+          <main className="flex-1 overflow-hidden relative">
             {renderView()}
           </main>
         </div>
 
-        <NowPlayingPanel collapsed={npPanelCollapsed} />
+        <NowPlayingPanel collapsed={!npPanelOpen} onToggle={() => setNpPanelOpen(false)} />
       </div>
 
-      <MiniPlayerBar
-        onQueueToggle={() => setActiveView('queue')}
-        onMiniPlayerToggle={() => {}}
-      />
+      <MiniPlayerBar />
     </div>
   )
 }

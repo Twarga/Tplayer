@@ -1,14 +1,14 @@
-import React, { useState } from 'react'
-import { Heart, SkipBack, SkipForward, Shuffle, Repeat, Repeat1 } from 'lucide-react'
+import { useState } from 'react'
+import { Heart, SkipBack, SkipForward, Shuffle, Repeat, Repeat1, Play, Pause, X } from 'lucide-react'
 import { usePlayerStore } from '@/stores/playerStore'
-import { Slider } from '@/components/ui/slider'
-import { formatDuration } from '@/lib/utils'
+import { cn, formatDuration } from '@/lib/utils'
 
 interface NowPlayingPanelProps {
-  collapsed?: boolean
+  collapsed: boolean
+  onToggle: () => void
 }
 
-export function NowPlayingPanel({ collapsed = false }: NowPlayingPanelProps) {
+export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
   const [activeTab, setActiveTab] = useState<'playing' | 'lyrics'>('playing')
   const {
     currentTrack,
@@ -20,134 +20,167 @@ export function NowPlayingPanel({ collapsed = false }: NowPlayingPanelProps) {
     togglePlay,
     next,
     prev,
+    toggleShuffle,
+    toggleRepeat,
     seek,
   } = usePlayerStore()
 
-  if (collapsed) return null
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
-    <aside className="w-[320px] min-w-[280px] h-full bg-surface-1 border-l border-border-subtle p-6 flex flex-col">
-      <div className="flex gap-6 border-b border-border-subtle pb-3 mb-5">
-        {(['playing', 'lyrics'] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`text-sm font-medium pb-3 relative capitalize ${
-              activeTab === tab ? 'text-primary' : 'text-tertiary hover:text-secondary'
-            }`}
-          >
-            {tab === 'playing' ? 'Now Playing' : tab}
-            {activeTab === tab && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-t" />
-            )}
-          </button>
-        ))}
-      </div>
-
-      <div className="w-full aspect-square rounded-lg overflow-hidden shadow-xl mb-5 bg-surface-2">
-        {currentTrack ? (
-          <div className="w-full h-full bg-gradient-to-br from-surface-3 to-surface-2 flex items-center justify-center text-tertiary">
-            <span className="text-4xl font-bold">{currentTrack.title[0]}</span>
+    <>
+      {/* Desktop Panel */}
+      <aside
+        className={cn(
+          "h-full bg-surface-1 border-l border-border-subtle flex flex-col shrink-0 transition-all duration-300 ease-out overflow-hidden",
+          collapsed ? "w-0 opacity-0" : "w-[320px] opacity-100"
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+          <div className="flex gap-6">
+            <button
+              onClick={() => setActiveTab('playing')}
+              className={cn(
+                "text-sm font-medium pb-2 border-b-2 transition-colors",
+                activeTab === 'playing'
+                  ? "text-primary border-accent"
+                  : "text-tertiary border-transparent hover:text-secondary"
+              )}
+            >
+              Now Playing
+            </button>
+            <button
+              onClick={() => setActiveTab('lyrics')}
+              className={cn(
+                "text-sm font-medium pb-2 border-b-2 transition-colors",
+                activeTab === 'lyrics'
+                  ? "text-primary border-accent"
+                  : "text-tertiary border-transparent hover:text-secondary"
+              )}
+            >
+              Lyrics
+            </button>
           </div>
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-surface-3 to-surface-2 flex items-center justify-center text-tertiary">
-            No track
+          <button
+            onClick={onToggle}
+            className="text-tertiary hover:text-primary transition-colors p-1"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {activeTab === 'playing' && (
+          <div className="flex-1 overflow-y-auto px-5 pb-5 flex flex-col">
+            {/* Album Art */}
+            <div className="w-full aspect-square rounded-xl overflow-hidden shadow-2xl mb-5 bg-surface-2 flex items-center justify-center">
+              {currentTrack ? (
+                <div className="w-full h-full bg-gradient-to-br from-accent/20 to-surface-2 flex items-center justify-center text-accent text-6xl font-bold">
+                  {currentTrack.title?.[0] || '♪'}
+                </div>
+              ) : (
+                <span className="text-tertiary text-4xl">♪</span>
+              )}
+            </div>
+
+            {/* Track Info */}
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex-1 min-w-0 mr-3">
+                <h3 className="text-base font-semibold text-primary truncate">
+                  {currentTrack?.title || 'Not Playing'}
+                </h3>
+                <p className="text-sm text-secondary truncate">
+                  {currentTrack?.artist || 'Select a track'}
+                </p>
+              </div>
+              <button className="text-tertiary hover:text-accent transition-colors p-1">
+                <Heart size={20} />
+              </button>
+            </div>
+
+            {/* Progress */}
+            <div className="mb-2">
+              <div
+                className="w-full h-1 bg-progress-bg rounded-full cursor-pointer group relative"
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  const ratio = (e.clientX - rect.left) / rect.width
+                  seek(ratio * duration)
+                }}
+              >
+                <div
+                  className="h-full bg-accent rounded-full relative"
+                  style={{ width: `${progress}%` }}
+                >
+                  <span className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-accent rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-progress-thumb" />
+                </div>
+              </div>
+              <div className="flex justify-between text-[11px] text-tertiary mt-1">
+                <span>{formatDuration(currentTime)}</span>
+                <span>{formatDuration(duration)}</span>
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center justify-center gap-5 my-4">
+              <button
+                onClick={toggleShuffle}
+                className={cn("transition-colors", isShuffled ? "text-accent" : "text-tertiary hover:text-primary")}
+              >
+                <Shuffle size={18} />
+              </button>
+
+              <button onClick={prev} className="text-primary hover:text-accent transition-colors">
+                <SkipBack size={24} />
+              </button>
+
+              <button
+                onClick={togglePlay}
+                className="w-14 h-14 rounded-full bg-accent text-background flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-accent-glow"
+              >
+                {isPlaying ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" className="ml-1" />}
+              </button>
+
+              <button onClick={next} className="text-primary hover:text-accent transition-colors">
+                <SkipForward size={24} />
+              </button>
+
+              <button
+                onClick={toggleRepeat}
+                className={cn("transition-colors", repeatMode !== 'off' ? "text-accent" : "text-tertiary hover:text-primary")}
+              >
+                {repeatMode === 'one' ? <Repeat1 size={18} /> : <Repeat size={18} />}
+              </button>
+            </div>
+
+            {/* Quality Badges */}
+            {currentTrack && (
+              <div className="flex gap-2 flex-wrap justify-center mb-6">
+                <span className="px-2.5 py-1 text-[11px] font-semibold uppercase bg-surface-2 border border-border-default rounded-sm text-secondary">
+                  MP3
+                </span>
+                <span className="px-2.5 py-1 text-[11px] font-semibold uppercase bg-surface-2 border border-border-default rounded-sm text-secondary">
+                  320kbps
+                </span>
+              </div>
+            )}
           </div>
         )}
-      </div>
 
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1 min-w-0">
-          <h3 className="text-base font-semibold text-primary truncate">
-            {currentTrack?.title || 'No track'}
-          </h3>
-          <p className="text-sm text-secondary truncate">
-            {currentTrack?.artist || 'Unknown artist'}
-          </p>
-        </div>
-        <button className="w-8 h-8 flex items-center justify-center text-tertiary hover:text-accent transition-colors">
-          <Heart size={18} />
-        </button>
-      </div>
-
-      <div className="mb-4">
-        <div className="w-full h-1 bg-progress-bg rounded-full cursor-pointer group"
-          onClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect()
-            const ratio = (e.clientX - rect.left) / rect.width
-            seek(ratio * duration)
-          }}
-        >
-          <div
-            className="h-full bg-accent rounded-full relative transition-all"
-            style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
-          >
-            <span className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-accent rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_8px_rgba(232,168,124,0.5)]" />
+        {activeTab === 'lyrics' && (
+          <div className="flex-1 flex items-center justify-center text-tertiary text-sm">
+            Lyrics not available
           </div>
-        </div>
-        <div className="flex justify-between text-[11px] text-tertiary mt-1">
-          <span>{formatDuration(currentTime)}</span>
-          <span>{formatDuration(duration)}</span>
-        </div>
-      </div>
+        )}
+      </aside>
 
-      <div className="flex items-center justify-center gap-4 my-4">
-        <button
-          onClick={() => {}}
-          className={`w-5 h-5 ${isShuffled ? 'text-accent' : 'text-tertiary'} hover:text-primary transition-colors`}
-        >
-          <Shuffle size={18} />
-        </button>
-
-        <button onClick={prev} className="w-6 h-6 text-primary hover:scale-110 transition-transform">
-          <SkipBack size={22} />
-        </button>
-
-        <button
-          onClick={togglePlay}
-          className="w-14 h-14 rounded-full bg-accent text-background flex items-center justify-center shadow-[0_4px_16px_rgba(232,168,124,0.3)] hover:scale-105 active:scale-95 transition-all"
-        >
-          {isPlaying ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="4" width="4" height="16" rx="1" />
-              <rect x="14" y="4" width="4" height="16" rx="1" />
-            </svg>
-          ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="5,3 19,12 5,21" />
-            </svg>
-          )}
-        </button>
-
-        <button onClick={next} className="w-6 h-6 text-primary hover:scale-110 transition-transform">
-          <SkipForward size={22} />
-        </button>
-
-        <button
-          onClick={() => {}}
-          className={`w-5 h-5 ${repeatMode !== 'off' ? 'text-accent' : 'text-tertiary'} hover:text-primary transition-colors`}
-        >
-          {repeatMode === 'one' ? <Repeat1 size={18} /> : <Repeat size={18} />}
-        </button>
-      </div>
-
-      <div className="flex gap-2 flex-wrap mb-6">
-        {['FLAC', '24-bit', '44.1 kHz', 'Lossless'].map((badge) => (
-          <span key={badge} className="px-2.5 py-1 text-[11px] font-semibold uppercase bg-surface-2 border border-border-default rounded-sm text-secondary">
-            {badge}
-          </span>
-        ))}
-      </div>
-
-      <div className="border-t border-border-subtle pt-4 flex-1 overflow-y-auto">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-semibold text-primary">Queue</span>
-          <button className="text-xs text-tertiary hover:text-primary transition-colors">Clear</button>
-        </div>
-        <div className="text-center text-tertiary text-sm py-8">
-          Queue is empty
-        </div>
-      </div>
-    </aside>
+      {/* Mobile overlay toggle */}
+      {!collapsed && (
+        <div
+          className="fixed inset-0 bg-black/20 z-10 lg:hidden"
+          onClick={onToggle}
+        />
+      )}
+    </>
   )
 }
