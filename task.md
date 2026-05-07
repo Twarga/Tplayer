@@ -97,9 +97,9 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 
 ## Phase 9: Integration & Wiring
 
-- [ ] **T46** — Wire app shell (`App.tsx` — three-column layout, stores init, event subscriptions)
-- [ ] **T47** — Implement keyboard shortcuts (`useKeyboard.ts` — Space, arrows, Ctrl combos)
-- [ ] **T48** — Add toast notifications (`toastStore.ts`, toast component — success/error/info)
+- [x] **T46** — Wire app shell (`App.tsx` — three-column layout, stores init, event subscriptions)
+- [x] **T47** — Implement keyboard shortcuts (`useKeyboard.ts` — Space, arrows, Ctrl combos)
+- [x] **T48** — Add toast notifications (`toastStore.ts`, toast component — success/error/info)
 - [ ] **T49** — Handle edge cases (no FFmpeg, no yt-dlp, empty library, corrupt files, DB errors)
 - [ ] **T50** — Add loading & empty states (skeletons, illustrations, CTAs for all views)
 
