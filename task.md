@@ -12,7 +12,7 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 
 ## Phase 1: Project Foundation
 
-- [ ] **T01** — Initialize npm project (`package.json`, scripts, metadata)
+- [x] **T01** — Initialize npm project (`package.json`, scripts, metadata)
 - [ ] **T02** — Install all dependencies (runtime, renderer, dev deps)
 - [ ] **T03** — Create TypeScript configs (`tsconfig.json`, `tsconfig.node.json`, `tsconfig.web.json`)
 - [ ] **T04** — Create Electron-Vite config (`electron.vite.config.ts` — main/preload/renderer)
