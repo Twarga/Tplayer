@@ -16,6 +16,7 @@ import { usePlaylistStore } from '@/stores/playlistStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useEqStore } from '@/stores/eqStore'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboard'
+import { useAudioPlayer } from '@/hooks/useAudioPlayer'
 import { ToastProvider } from '@/stores/toastStore'
 
 function AppShell() {
@@ -28,15 +29,18 @@ function AppShell() {
   const { load: loadSettings } = useSettingsStore()
   const { init: initEq } = useEqStore()
 
+  useAudioPlayer()
   useKeyboardShortcuts()
 
   useEffect(() => {
+    // Initialize all stores
     initPlayer()
     initLibrary()
     initEq()
-    loadSettings()
-    loadTracks()
-    loadPlaylists()
+    loadSettings().then(() => {
+      loadTracks()
+      loadPlaylists()
+    })
   }, [])
 
   useEffect(() => {
@@ -73,7 +77,7 @@ function AppShell() {
   }
 
   return (
-    <div className="h-screen w-screen bg-background text-foreground overflow-hidden flex flex-col">
+    <div className="h-screen w-screen bg-background text-primary overflow-hidden flex flex-col">
       <div className="flex flex-1 overflow-hidden">
         <Sidebar activeView={activeView} onViewChange={setActiveView} />
 

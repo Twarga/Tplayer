@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Search, BarChart3, Bell, ChevronDown, User } from 'lucide-react'
+import { useLibraryStore } from '@/stores/libraryStore'
 import { Input } from '@/components/ui/input'
 
 interface TopBarProps {
@@ -8,16 +9,31 @@ interface TopBarProps {
 
 export function TopBar({ onSearch }: TopBarProps) {
   const [searchValue, setSearchValue] = useState('')
+  const { search } = useLibraryStore()
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchValue(e.target.value)
-    onSearch?.(e.target.value)
+    const value = e.target.value
+    setSearchValue(value)
+    
+    // Debounce search
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      search(value)
+      onSearch?.(value)
+    }, 300)
   }
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
 
   return (
     <div className="h-16 px-6 flex items-center justify-between gap-4">
       <div className="relative flex-1 max-w-[500px]">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-tertiary" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-tertiary pointer-events-none" />
         <Input
           value={searchValue}
           onChange={handleSearch}

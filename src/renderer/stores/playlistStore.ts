@@ -5,13 +5,15 @@ interface Playlist {
   id: number
   name: string
   description: string
-  track_count?: number
+  created_at: string
+  updated_at: string
 }
 
 interface PlaylistStore {
   playlists: Playlist[]
   activePlaylistId: number | null
-  playlistTracks: Array<{ id: number; title: string; artist: string; album: string; duration: number }>
+  playlistTracks: Array<{ id: number; title: string; artist: string; album: string; duration: number; position: number }>
+  isLoading: boolean
   loadPlaylists: () => Promise<void>
   createPlaylist: (name: string, desc?: string) => Promise<void>
   deletePlaylist: (id: number) => Promise<void>
@@ -22,25 +24,35 @@ interface PlaylistStore {
   reorderTrack: (playlistId: number, from: number, to: number) => Promise<void>
 }
 
-export const usePlaylistStore = create<PlaylistStore>((set) => ({
+export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
   playlists: [],
   activePlaylistId: null,
   playlistTracks: [],
+  isLoading: false,
 
   loadPlaylists: async () => {
-    const playlists = await api.playlist.list()
-    set({ playlists })
+    set({ isLoading: true })
+    try {
+      const playlists = await api.playlist.list()
+      set({ playlists: playlists as Playlist[], isLoading: false })
+    } catch (err) {
+      console.error('[playlistStore] load failed:', err)
+      set({ isLoading: false })
+    }
   },
 
   createPlaylist: async (name, desc) => {
-    await api.playlist.create(name, desc)
-    const playlists = await api.playlist.list()
-    set({ playlists })
+    if (!name.trim()) return
+    await api.playlist.create(name.trim(), desc)
+    await get().loadPlaylists()
   },
 
   deletePlaylist: async (id) => {
     await api.playlist.delete(id)
-    set((s) => ({ playlists: s.playlists.filter((p) => p.id !== id) }))
+    set((s) => ({ 
+      playlists: s.playlists.filter((p) => p.id !== id),
+      activePlaylistId: s.activePlaylistId === id ? null : s.activePlaylistId 
+    }))
   },
 
   renamePlaylist: async (id, name) => {
@@ -52,15 +64,18 @@ export const usePlaylistStore = create<PlaylistStore>((set) => ({
 
   selectPlaylist: async (id) => {
     set({ activePlaylistId: id })
-    const tracks = await api.playlist.getTracks(id)
-    set({ playlistTracks: tracks })
+    try {
+      const tracks = await api.playlist.getTracks(id)
+      set({ playlistTracks: tracks as PlaylistStore['playlistTracks'] })
+    } catch (err) {
+      console.error('[playlistStore] select failed:', err)
+    }
   },
 
   addTracks: async (playlistId, trackIds) => {
     await api.playlist.addTracks(playlistId, trackIds)
-    if (playlistId === set.getState().activePlaylistId) {
-      const tracks = await api.playlist.getTracks(playlistId)
-      set({ playlistTracks: tracks })
+    if (playlistId === get().activePlaylistId) {
+      await get().selectPlaylist(playlistId)
     }
   },
 
@@ -73,5 +88,8 @@ export const usePlaylistStore = create<PlaylistStore>((set) => ({
 
   reorderTrack: async (playlistId, from, to) => {
     await api.playlist.reorder(playlistId, from, to)
+    if (playlistId === get().activePlaylistId) {
+      await get().selectPlaylist(playlistId)
+    }
   },
 }))
