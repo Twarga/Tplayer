@@ -1,4 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron'
+import { getDb, getSetting, setSetting, getAllSettings } from './database'
+import { scanFolders } from './library-scanner'
+import { playTrack, pause, resume, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleShuffle, cycleRepeat, addToQueue, addNext, removeFromQueue, clearQueue, reorderQueue, getQueue } from './audio-engine'
 
 let _mainWindow: BrowserWindow | null = null
 
@@ -24,217 +27,302 @@ export function registerAllHandlers(): void {
 }
 
 function registerLibraryHandlers(): void {
-  ipcMain.handle('library:scan', async () => {
-    return { added: 0, updated: 0, total: 0 }
+  ipcMain.handle('library:scan', async (_, folders: string[]) => {
+    return scanFolders(folders)
   })
 
-  ipcMain.handle('library:get-tracks', async () => {
-    return []
+  ipcMain.handle('library:get-tracks', async (_, opts?: { query?: string; sort?: string; dir?: string; limit?: number; offset?: number }) => {
+    const db = getDb()
+    let sql = 'SELECT * FROM tracks'
+    const params: (string | number)[] = []
+    
+    if (opts?.query) {
+      sql += ' WHERE title LIKE ? OR artist LIKE ? OR album LIKE ?'
+      const q = `%${opts.query}%`
+      params.push(q, q, q)
+    }
+    
+    if (opts?.sort) {
+      const dir = opts.dir === 'desc' ? 'DESC' : 'ASC'
+      const allowedSorts = ['title', 'artist', 'album', 'date_added', 'play_count', 'duration']
+      if (allowedSorts.includes(opts.sort)) {
+        sql += ` ORDER BY ${opts.sort} ${dir}`
+      }
+    } else {
+      sql += ' ORDER BY date_added DESC'
+    }
+    
+    if (opts?.limit) {
+      sql += ' LIMIT ?'
+      params.push(opts.limit)
+      if (opts.offset) {
+        sql += ' OFFSET ?'
+        params.push(opts.offset)
+      }
+    }
+    
+    return db.prepare(sql).all(...params)
   })
 
-  ipcMain.handle('library:get-track', async () => {
-    return null
+  ipcMain.handle('library:get-track', async (_, id: number) => {
+    return getDb().prepare('SELECT * FROM tracks WHERE id = ?').get(id)
   })
 
-  ipcMain.handle('library:toggle-favorite', async () => {
-    // no-op
+  ipcMain.handle('library:toggle-favorite', async (_, id: number) => {
+    getDb().prepare('UPDATE tracks SET is_favorite = CASE WHEN is_favorite = 1 THEN 0 ELSE 1 END WHERE id = ?').run(id)
   })
 
-  ipcMain.handle('library:get-covers', async () => {
-    return []
+  ipcMain.handle('library:get-covers', async (_, albums: string[]) => {
+    if (!albums.length) return []
+    const placeholders = albums.map(() => '?').join(',')
+    return getDb().prepare(`SELECT * FROM covers WHERE album IN (${placeholders})`).all(...albums)
   })
 }
 
 function registerPlayerHandlers(): void {
-  ipcMain.handle('player:play', async () => {
-    // no-op stub
+  ipcMain.handle('player:play', async (_, trackId: number) => {
+    await playTrack(trackId)
   })
 
   ipcMain.handle('player:pause', async () => {
-    // no-op stub
+    pause()
   })
 
   ipcMain.handle('player:resume', async () => {
-    // no-op stub
+    resume()
   })
 
   ipcMain.handle('player:toggle-play', async () => {
-    // no-op stub
+    togglePlay()
   })
 
   ipcMain.handle('player:next', async () => {
-    // no-op stub
+    nextTrack()
   })
 
   ipcMain.handle('player:prev', async () => {
-    // no-op stub
+    prevTrack()
   })
 
-  ipcMain.handle('player:seek', async () => {
-    // no-op stub
+  ipcMain.handle('player:seek', async (_, time: number) => {
+    seek(time)
   })
 
-  ipcMain.handle('player:set-volume', async () => {
-    // no-op stub
+  ipcMain.handle('player:set-volume', async (_, volume: number) => {
+    setVolume(volume)
+    setSetting('volume', volume.toString())
   })
 
   ipcMain.handle('player:toggle-shuffle', async () => {
-    // no-op stub
+    toggleShuffle()
   })
 
   ipcMain.handle('player:toggle-repeat', async () => {
-    // no-op stub
+    cycleRepeat()
   })
 }
 
 function registerPlaylistHandlers(): void {
   ipcMain.handle('playlist:list', async () => {
-    return []
+    return getDb().prepare('SELECT * FROM playlists ORDER BY updated_at DESC').all()
   })
 
   ipcMain.handle('playlist:create', async (_, name: string, desc?: string) => {
-    return { id: 0, name, description: desc ?? '', created_at: '', updated_at: '' }
+    const db = getDb()
+    const result = db.prepare('INSERT INTO playlists (name, description) VALUES (?, ?)').run(name, desc || '')
+    return db.prepare('SELECT * FROM playlists WHERE id = ?').get(result.lastInsertRowid)
   })
 
-  ipcMain.handle('playlist:delete', async () => {
-    // no-op stub
+  ipcMain.handle('playlist:delete', async (_, id: number) => {
+    getDb().prepare('DELETE FROM playlists WHERE id = ?').run(id)
   })
 
-  ipcMain.handle('playlist:rename', async () => {
-    // no-op stub
+  ipcMain.handle('playlist:rename', async (_, id: number, name: string) => {
+    getDb().prepare('UPDATE playlists SET name = ?, updated_at = datetime("now") WHERE id = ?').run(name, id)
   })
 
-  ipcMain.handle('playlist:get-tracks', async () => {
-    return []
+  ipcMain.handle('playlist:get-tracks', async (_, id: number) => {
+    return getDb().prepare(`
+      SELECT t.*, pt.position 
+      FROM tracks t 
+      JOIN playlist_tracks pt ON t.id = pt.track_id 
+      WHERE pt.playlist_id = ? 
+      ORDER BY pt.position
+    `).all(id)
   })
 
-  ipcMain.handle('playlist:add-tracks', async () => {
-    // no-op stub
+  ipcMain.handle('playlist:add-tracks', async (_, playlistId: number, trackIds: number[]) => {
+    const db = getDb()
+    const maxPos = db.prepare('SELECT MAX(position) as maxPos FROM playlist_tracks WHERE playlist_id = ?').get(playlistId) as { maxPos: number | null }
+    let pos = (maxPos?.maxPos ?? 0) + 1
+    const insert = db.prepare('INSERT OR IGNORE INTO playlist_tracks (playlist_id, track_id, position) VALUES (?, ?, ?)')
+    for (const trackId of trackIds) {
+      insert.run(playlistId, trackId, pos++)
+    }
+    db.prepare('UPDATE playlists SET updated_at = datetime("now") WHERE id = ?').run(playlistId)
   })
 
-  ipcMain.handle('playlist:remove-track', async () => {
-    // no-op stub
+  ipcMain.handle('playlist:remove-track', async (_, playlistId: number, trackId: number) => {
+    getDb().prepare('DELETE FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?').run(playlistId, trackId)
   })
 
-  ipcMain.handle('playlist:reorder', async () => {
-    // no-op stub
+  ipcMain.handle('playlist:reorder', async (_, playlistId: number, fromPos: number, toPos: number) => {
+    const db = getDb()
+    db.prepare('UPDATE playlist_tracks SET position = -1 WHERE playlist_id = ? AND position = ?').run(playlistId, fromPos)
+    if (fromPos < toPos) {
+      db.prepare('UPDATE playlist_tracks SET position = position - 1 WHERE playlist_id = ? AND position > ? AND position <= ?').run(playlistId, fromPos, toPos)
+    } else {
+      db.prepare('UPDATE playlist_tracks SET position = position + 1 WHERE playlist_id = ? AND position >= ? AND position < ?').run(playlistId, toPos, fromPos)
+    }
+    db.prepare('UPDATE playlist_tracks SET position = ? WHERE playlist_id = ? AND position = -1').run(toPos, playlistId)
   })
 }
 
 function registerQueueHandlers(): void {
-  ipcMain.handle('queue:add', async () => {
-    // no-op stub
+  ipcMain.handle('queue:add', async (_, trackId: number) => {
+    addToQueue(trackId)
   })
 
-  ipcMain.handle('queue:add-next', async () => {
-    // no-op stub
+  ipcMain.handle('queue:add-next', async (_, trackId: number) => {
+    addNext(trackId)
   })
 
-  ipcMain.handle('queue:remove', async () => {
-    // no-op stub
+  ipcMain.handle('queue:remove', async (_, index: number) => {
+    removeFromQueue(index)
   })
 
-  ipcMain.handle('queue:reorder', async () => {
-    // no-op stub
+  ipcMain.handle('queue:reorder', async (_, from: number, to: number) => {
+    reorderQueue(from, to)
   })
 
   ipcMain.handle('queue:clear', async () => {
-    // no-op stub
+    clearQueue()
   })
 
   ipcMain.handle('queue:get', async () => {
-    return []
+    return getQueue()
   })
 }
 
 function registerYouTubeHandlers(): void {
-  ipcMain.handle('youtube:search', async () => {
-    return []
+  ipcMain.handle('youtube:search', async (_, query: string) => {
+    const { searchYoutube } = await import('./yt-dlp')
+    return searchYoutube(query)
   })
 
-  ipcMain.handle('youtube:download', async () => {
-    // no-op stub
+  ipcMain.handle('youtube:download', async (_, url: string, videoId: string) => {
+    const { downloadAudio } = await import('./yt-dlp')
+    return downloadAudio(url, videoId)
   })
 
-  ipcMain.handle('youtube:cancel-download', async () => {
-    // no-op stub
+  ipcMain.handle('youtube:cancel-download', async (_, videoId: string) => {
+    const { cancelDownload } = await import('./yt-dlp')
+    return cancelDownload(videoId)
   })
 
   ipcMain.handle('youtube:get-history', async () => {
-    return []
+    return getDb().prepare('SELECT * FROM downloads ORDER BY created_at DESC LIMIT 20').all()
   })
 
   ipcMain.handle('youtube:clear-history', async () => {
-    // no-op stub
+    getDb().prepare('DELETE FROM downloads').run()
   })
 }
 
 function registerSettingsHandlers(): void {
-  ipcMain.handle('settings:get', async () => {
-    return null
+  ipcMain.handle('settings:get', async (_, key: string) => {
+    return getSetting(key)
   })
 
-  ipcMain.handle('settings:set', async () => {
-    // no-op stub
+  ipcMain.handle('settings:set', async (_, key: string, value: string) => {
+    setSetting(key, value)
   })
 
   ipcMain.handle('settings:get-all', async () => {
-    return {}
+    return getAllSettings()
   })
 
   ipcMain.handle('settings:get-folders', async () => {
-    return []
+    const raw = getSetting('music_folders')
+    if (!raw) return []
+    try { return JSON.parse(raw) } catch { return [] }
   })
 
-  ipcMain.handle('settings:add-folder', async () => {
-    // no-op stub
+  ipcMain.handle('settings:add-folder', async (_, folderPath: string) => {
+    const raw = getSetting('music_folders') || '[]'
+    const folders = JSON.parse(raw)
+    if (!folders.includes(folderPath)) {
+      folders.push(folderPath)
+      setSetting('music_folders', JSON.stringify(folders))
+    }
   })
 
-  ipcMain.handle('settings:remove-folder', async () => {
-    // no-op stub
+  ipcMain.handle('settings:remove-folder', async (_, folderPath: string) => {
+    const raw = getSetting('music_folders') || '[]'
+    const folders = JSON.parse(raw).filter((f: string) => f !== folderPath)
+    setSetting('music_folders', JSON.stringify(folders))
   })
 
   ipcMain.handle('settings:open-folder-dialog', async () => {
-    return null
+    const { dialog } = await import('electron')
+    const result = await dialog.showOpenDialog({ properties: ['openDirectory'] })
+    return result.filePaths[0] || null
   })
 }
 
 function registerEQHandlers(): void {
-  ipcMain.handle('eq:set-bands', async () => {
-    // no-op stub
+  ipcMain.handle('eq:set-bands', async (_, bands: number[]) => {
+    // TODO: apply to audio engine
   })
 
-  ipcMain.handle('eq:set-preset', async () => {
-    return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  ipcMain.handle('eq:set-preset', async (_, preset: string) => {
+    const presets: Record<string, number[]> = {
+      Flat: [0,0,0,0,0,0,0,0,0,0],
+      Rock: [5,4,3,1,-1,-1,0,2,3,4],
+      Pop: [-1,1,3,4,3,0,-1,-1,-1,-2],
+      Jazz: [3,2,1,2,-1,-1,0,1,2,3],
+      Classical: [4,3,2,1,-1,0,0,2,3,4],
+      HipHop: [5,4,1,-2,-1,1,2,0,1,2],
+      Electronic: [5,4,1,-1,-2,-1,0,1,3,4],
+      VocalBoost: [-2,-1,0,2,4,4,3,1,0,-1],
+      BassBoost: [6,5,4,2,0,-1,0,1,2,3],
+    }
+    return presets[preset] || presets.Flat
   })
 
-  ipcMain.handle('eq:enable', async () => {
-    // no-op stub
+  ipcMain.handle('eq:enable', async (_, enabled: boolean) => {
+    setSetting('eq_enabled', enabled.toString())
   })
 
   ipcMain.handle('eq:get-enabled', async () => {
-    return false
+    const val = getSetting('eq_enabled')
+    return val === 'true'
   })
 }
 
 function registerLastFMHandlers(): void {
-  ipcMain.handle('lastfm:auth', async () => {
+  ipcMain.handle('lastfm:auth', async (_, apiKey: string) => {
+    setSetting('lastfm_api_key', apiKey)
     return ''
   })
 
   ipcMain.handle('lastfm:is-authd', async () => {
-    return false
+    const key = getSetting('lastfm_api_key')
+    return !!key && key.length > 0
   })
 
   ipcMain.handle('lastfm:disconnect', async () => {
-    // no-op stub
+    setSetting('lastfm_api_key', '')
+    setSetting('lastfm_session_key', '')
   })
 
-  ipcMain.handle('lastfm:now-playing', async () => {
-    // no-op stub
+  ipcMain.handle('lastfm:now-playing', async (_, artist: string, track: string, album?: string) => {
+    const { updateNowPlaying } = await import('./lastfm')
+    return updateNowPlaying(artist, track, album)
   })
 
-  ipcMain.handle('lastfm:scrobble', async () => {
-    // no-op stub
+  ipcMain.handle('lastfm:scrobble', async (_, artist: string, track: string, album?: string, timestamp?: number) => {
+    const { scrobble } = await import('./lastfm')
+    return scrobble(artist, track, album, timestamp)
   })
 }

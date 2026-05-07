@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { api } from '@/lib/ipc'
 
 type Theme = 'dark' | 'light'
@@ -34,22 +34,48 @@ export function useTheme() {
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('dark')
   const [accent, setAccentState] = useState('amber')
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
+    // Ensure dark class is set on mount
+    document.documentElement.classList.add('dark')
+    
     api.settings.get('theme').then((val) => {
-      if (val === 'light' || val === 'dark') {
-        setThemeState(val)
-        document.documentElement.classList.toggle('dark', val === 'dark')
+      const t = val === 'light' ? 'light' : 'dark'
+      setThemeState(t)
+      if (t === 'dark') {
+        document.documentElement.classList.add('dark')
+        document.documentElement.classList.remove('light')
+      } else {
+        document.documentElement.classList.add('light')
+        document.documentElement.classList.remove('dark')
       }
+      setLoaded(true)
+    }).catch(() => {
+      // Default to dark on error
+      document.documentElement.classList.add('dark')
+      setLoaded(true)
     })
+    
     api.settings.get('accent_color').then((val) => {
-      if (val && ACCENT_COLORS[val]) setAccentState(val)
+      if (val && ACCENT_COLORS[val]) {
+        setAccentState(val)
+        document.documentElement.style.setProperty('--accent', ACCENT_COLORS[val])
+      }
+    }).catch(() => {
+      document.documentElement.style.setProperty('--accent', ACCENT_COLORS.amber)
     })
   }, [])
 
   const setTheme = async (t: Theme) => {
     setThemeState(t)
-    document.documentElement.classList.toggle('dark', t === 'dark')
+    if (t === 'dark') {
+      document.documentElement.classList.add('dark')
+      document.documentElement.classList.remove('light')
+    } else {
+      document.documentElement.classList.add('light')
+      document.documentElement.classList.remove('dark')
+    }
     await api.settings.set('theme', t)
   }
 
@@ -58,10 +84,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.style.setProperty('--accent', ACCENT_COLORS[a] || ACCENT_COLORS.amber)
     await api.settings.set('accent_color', a)
   }
-
-  useEffect(() => {
-    document.documentElement.style.setProperty('--accent', ACCENT_COLORS[accent] || ACCENT_COLORS.amber)
-  }, [accent])
 
   return (
     <ThemeContext.Provider value={{ theme, accent, setTheme, setAccent }}>
