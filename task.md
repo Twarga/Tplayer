@@ -30,7 +30,7 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 - [x] **T11** — Create database layer (`src/main/database.ts` — better-sqlite3, 6 tables, indexes, default settings)
 - [x] **T12** — Create library scanner (`src/main/library-scanner.ts` — folder scan, metadata extraction, cover art)
 - [x] **T13** — Create file watcher (`src/main/file-watcher.ts` — chokidar, live add/remove/update)
-- [ ] **T14** — Create audio decoder (`src/main/audio-decoder.ts` — FFmpeg → PCM f32le, LRU cache)
+- [x] **T14** — Create audio decoder (`src/main/audio-decoder.ts` — FFmpeg → PCM f32le, LRU cache)
 - [ ] **T15** — Create audio engine (`src/main/audio-engine.ts` — playback controller, queue, shuffle, repeat)
 - [ ] **T16** — Create yt-dlp integration (`src/main/yt-dlp.ts` — YouTube search, audio download, progress)
 - [ ] **T17** — Create Last.fm integration (`src/main/lastfm.ts` — auth, now playing, scrobble)
