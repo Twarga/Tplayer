@@ -30,7 +30,7 @@ export default defineConfig({
     plugins: [react()],
     root: 'src/renderer',
     build: {
-      outDir: '../../out/renderer',
+      outDir: path.resolve(__dirname, 'out/renderer'),
       rollupOptions: {
         input: {
           index: path.resolve(__dirname, 'src/renderer/index.html')
