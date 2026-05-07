@@ -1,6 +1,12 @@
 import { app, BrowserWindow, nativeTheme } from 'electron'
 import { fileURLToPath } from 'url'
 import path from 'path'
+import { initDatabase, closeDatabase } from './database'
+import { registerAllHandlers, setMainWindow } from './ipc-registry'
+import { startWatcher, stopWatcher } from './file-watcher'
+import { initAudioEngine } from './audio-engine'
+import { initMpris, shutdownMpris } from './mpris'
+import { getSetting } from './database'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -17,54 +23,43 @@ function getRendererUrl(): string {
   return `file://${path.join(__dirname, '../renderer/index.html')}`
 }
 
-function createWindow(): void {
-  mainWindow = new BrowserWindow({
+function createWindow(): BrowserWindow {
+  const win = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#0D0D0D',
+    show: false,
     webPreferences: {
       preload: getPreloadPath(),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false
-    }
+      sandbox: false,
+    },
   })
 
-  mainWindow.loadURL(getRendererUrl())
-
-  mainWindow.on('closed', () => {
-    mainWindow = null
+  win.once('ready-to-show', () => {
+    win.show()
+    console.log('[Tplayer] Window ready')
   })
 
-  mainWindow.on('resize', () => {
-    if (mainWindow) {
-      const [width] = mainWindow.getSize()
-      if (width < 1024 && mainWindow.isMaximized() === false) {
-        mainWindow.setAlwaysOnTop(true)
-      } else {
-        mainWindow.setAlwaysOnTop(false)
-      }
-    }
-  })
+  return win
 }
 
-async function initApp(): Promise<void> {
+app.whenReady().then(async () => {
   try {
-    mainWindow = new BrowserWindow({
-      width: 1400,
-      height: 900,
-      minWidth: 900,
-      minHeight: 600,
-      backgroundColor: '#0D0D0D',
-      webPreferences: {
-        preload: getPreloadPath(),
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: false
-      }
-    })
+    // Initialize database
+    initDatabase()
+    console.log('[Tplayer] Database initialized')
+
+    // Initialize IPC handlers
+    registerAllHandlers()
+    console.log('[Tplayer] IPC handlers registered')
+
+    // Create window
+    mainWindow = createWindow()
+    setMainWindow(mainWindow)
 
     mainWindow.loadURL(getRendererUrl())
 
@@ -72,35 +67,52 @@ async function initApp(): Promise<void> {
       mainWindow = null
     })
 
-    if (mainWindow) {
-      mainWindow.webContents.on('did-finish-load', () => {
-        console.log('[Tplayer] Window ready')
-      })
-    }
+    // Initialize audio engine with saved volume
+    const vol = parseFloat(getSetting('volume') || '0.8')
+    initAudioEngine(vol)
 
-  } catch (error) {
-    console.error('[Tplayer] Failed to initialize:', error)
+    // Start file watcher
+    startWatcher()
+
+    // Initialize MPRIS
+    initMpris()
+
+    // Handle resize for always-on-top
+    mainWindow.on('resize', () => {
+      if (mainWindow) {
+        const [width] = mainWindow.getSize()
+        if (width < 1024 && !mainWindow.isMaximized()) {
+          mainWindow.setAlwaysOnTop(true)
+        } else {
+          mainWindow.setAlwaysOnTop(false)
+        }
+      }
+    })
+
+  } catch (err) {
+    console.error('[Tplayer] Failed to initialize:', err)
   }
-}
-
-app.whenReady().then(() => {
-  initApp()
 })
 
 app.on('window-all-closed', () => {
+  stopWatcher()
+  shutdownMpris()
+  closeDatabase()
   app.quit()
 })
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
+  if (BrowserWindow.getAllWindows().length === 0 && mainWindow === null) {
+    mainWindow = createWindow()
+    setMainWindow(mainWindow)
+    mainWindow.loadURL(getRendererUrl())
   }
 })
 
 nativeTheme.on('updated', () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('theme:system-changed', {
-      shouldUseDarkColors: nativeTheme.shouldUseDarkColors
+      shouldUseDarkColors: nativeTheme.shouldUseDarkColors,
     })
   }
 })
