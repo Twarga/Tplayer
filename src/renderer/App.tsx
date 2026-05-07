@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { TopBar } from '@/components/layout/TopBar'
@@ -24,7 +24,7 @@ function AppShell() {
 
   const { init: initPlayer, play } = usePlayerStore()
   const { init: initLibrary, loadTracks } = useLibraryStore()
-  const { init: initPlaylist, loadPlaylists } = usePlaylistStore()
+  const { loadPlaylists } = usePlaylistStore()
   const { load: loadSettings } = useSettingsStore()
   const { init: initEq } = useEqStore()
 
@@ -33,7 +33,6 @@ function AppShell() {
   useEffect(() => {
     initPlayer()
     initLibrary()
-    initPlaylist()
     initEq()
     loadSettings()
     loadTracks()

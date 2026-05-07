@@ -114,7 +114,7 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 
 ## Phase 11: Production
 
-- [ ] **T53** — Add type checking & linting (ESLint, typecheck scripts, fix all errors)
+- [x] **T53** — Add type checking & linting (ESLint, typecheck scripts, fix all errors)
 - [ ] **T54** — Test production build (AppImage, all features, performance, memory)
 - [ ] **T55** — Create README & docs (features, install, build, shortcuts, screenshot)
 

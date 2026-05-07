@@ -1,5 +1,4 @@
 import ffmpeg from 'fluent-ffmpeg'
-import { PassThrough } from 'stream'
 
 export interface DecodedAudio {
   pcmData: Float32Array
@@ -9,7 +8,6 @@ export interface DecodedAudio {
 }
 
 const _cache = new Map<string, { data: Float32Array; mtime: number }>()
-const MAX_CACHED = 5
 
 export function clearDecodeCache(): void {
   _cache.clear()
@@ -19,15 +17,13 @@ export function decodeAudioFile(filePath: string): Promise<DecodedAudio> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = []
 
-    const stream = new PassThrough()
-
     const cmd = ffmpeg(filePath)
       .format('f32le')
       .audioChannels(2)
       .audioFrequency(44100)
       .noVideo()
 
-    cmd.on('error', (err: { message: string }) => {
+    cmd.on('error', (err: Error) => {
       reject(new Error(`FFmpeg error: ${err.message}`))
     })
 
@@ -38,37 +34,39 @@ export function decodeAudioFile(filePath: string): Promise<DecodedAudio> {
       }
 
       const buf = Buffer.concat(chunks)
-      const samples = buf.length / 4
-      const pcmData = new Float32Array(new Float32Array(buf.buffer).slice(0, samples * 2))
+      const sampleCount = Math.floor(buf.length / 4)
+      const pcmData = new Float32Array(sampleCount)
+
+      for (let i = 0; i < sampleCount; i++) {
+        pcmData[i] = buf.readFloatLE(i * 4)
+      }
 
       resolve({
         pcmData,
         sampleRate: 44100,
         channels: 2,
-        duration: samples / 44100 / 2,
+        duration: sampleCount / 44100 / 2,
       })
     })
 
     cmd.on('data', (chunk: Buffer) => chunks.push(chunk))
 
     cmd.run()
-
-    stream.on('data', (chunk: Buffer) => chunks.push(chunk))
   })
 }
 
 export async function getAudioDuration(filePath: string): Promise<number> {
   return new Promise((resolve, reject) => {
-    ffmpeg.ffprobe(filePath, (err, metadata) => {
+    ffmpeg.ffprobe(filePath, (err: Error | null, metadata: { format?: { duration?: number } }) => {
       if (err) reject(err)
-      else resolve(metadata.format.duration ?? 0)
+      else resolve(metadata.format?.duration ?? 0)
     })
   })
 }
 
 export function isFFmpegAvailable(): Promise<boolean> {
   return new Promise((resolve) => {
-    ffmpeg.getAvailableFormats((err) => {
+    ffmpeg.getAvailableFormats((err: Error | null) => {
       resolve(!err)
     })
   })

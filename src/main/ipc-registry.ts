@@ -24,29 +24,29 @@ export function registerAllHandlers(): void {
 }
 
 function registerLibraryHandlers(): void {
-  ipcMain.handle('library:scan', async (_, folders: string[]) => {
+  ipcMain.handle('library:scan', async () => {
     return { added: 0, updated: 0, total: 0 }
   })
 
-  ipcMain.handle('library:get-tracks', async (_, opts?: { query?: string; sort?: string; dir?: string; limit?: number; offset?: number }) => {
+  ipcMain.handle('library:get-tracks', async () => {
     return []
   })
 
-  ipcMain.handle('library:get-track', async (_, id: number) => {
+  ipcMain.handle('library:get-track', async () => {
     return null
   })
 
-  ipcMain.handle('library:toggle-favorite', async (_, id: number) => {
+  ipcMain.handle('library:toggle-favorite', async () => {
     // no-op
   })
 
-  ipcMain.handle('library:get-covers', async (_, albums: string[]) => {
+  ipcMain.handle('library:get-covers', async () => {
     return []
   })
 }
 
 function registerPlayerHandlers(): void {
-  ipcMain.handle('player:play', async (_, trackId: number) => {
+  ipcMain.handle('player:play', async () => {
     // no-op stub
   })
 
@@ -70,11 +70,11 @@ function registerPlayerHandlers(): void {
     // no-op stub
   })
 
-  ipcMain.handle('player:seek', async (_, time: number) => {
+  ipcMain.handle('player:seek', async () => {
     // no-op stub
   })
 
-  ipcMain.handle('player:set-volume', async (_, volume: number) => {
+  ipcMain.handle('player:set-volume', async () => {
     // no-op stub
   })
 
@@ -96,45 +96,45 @@ function registerPlaylistHandlers(): void {
     return { id: 0, name, description: desc ?? '', created_at: '', updated_at: '' }
   })
 
-  ipcMain.handle('playlist:delete', async (_, id: number) => {
+  ipcMain.handle('playlist:delete', async () => {
     // no-op stub
   })
 
-  ipcMain.handle('playlist:rename', async (_, id: number, name: string) => {
+  ipcMain.handle('playlist:rename', async () => {
     // no-op stub
   })
 
-  ipcMain.handle('playlist:get-tracks', async (_, id: number) => {
+  ipcMain.handle('playlist:get-tracks', async () => {
     return []
   })
 
-  ipcMain.handle('playlist:add-tracks', async (_, playlistId: number, trackIds: number[]) => {
+  ipcMain.handle('playlist:add-tracks', async () => {
     // no-op stub
   })
 
-  ipcMain.handle('playlist:remove-track', async (_, playlistId: number, trackId: number) => {
+  ipcMain.handle('playlist:remove-track', async () => {
     // no-op stub
   })
 
-  ipcMain.handle('playlist:reorder', async (_, playlistId: number, fromPos: number, toPos: number) => {
+  ipcMain.handle('playlist:reorder', async () => {
     // no-op stub
   })
 }
 
 function registerQueueHandlers(): void {
-  ipcMain.handle('queue:add', async (_, trackId: number) => {
+  ipcMain.handle('queue:add', async () => {
     // no-op stub
   })
 
-  ipcMain.handle('queue:add-next', async (_, trackId: number) => {
+  ipcMain.handle('queue:add-next', async () => {
     // no-op stub
   })
 
-  ipcMain.handle('queue:remove', async (_, index: number) => {
+  ipcMain.handle('queue:remove', async () => {
     // no-op stub
   })
 
-  ipcMain.handle('queue:reorder', async (_, from: number, to: number) => {
+  ipcMain.handle('queue:reorder', async () => {
     // no-op stub
   })
 
@@ -148,15 +148,15 @@ function registerQueueHandlers(): void {
 }
 
 function registerYouTubeHandlers(): void {
-  ipcMain.handle('youtube:search', async (_, query: string) => {
+  ipcMain.handle('youtube:search', async () => {
     return []
   })
 
-  ipcMain.handle('youtube:download', async (_, url: string, videoId: string) => {
+  ipcMain.handle('youtube:download', async () => {
     // no-op stub
   })
 
-  ipcMain.handle('youtube:cancel-download', async (_, videoId: string) => {
+  ipcMain.handle('youtube:cancel-download', async () => {
     // no-op stub
   })
 
@@ -170,11 +170,11 @@ function registerYouTubeHandlers(): void {
 }
 
 function registerSettingsHandlers(): void {
-  ipcMain.handle('settings:get', async (_, key: string) => {
+  ipcMain.handle('settings:get', async () => {
     return null
   })
 
-  ipcMain.handle('settings:set', async (_, key: string, value: string) => {
+  ipcMain.handle('settings:set', async () => {
     // no-op stub
   })
 
@@ -186,11 +186,11 @@ function registerSettingsHandlers(): void {
     return []
   })
 
-  ipcMain.handle('settings:add-folder', async (_, path: string) => {
+  ipcMain.handle('settings:add-folder', async () => {
     // no-op stub
   })
 
-  ipcMain.handle('settings:remove-folder', async (_, path: string) => {
+  ipcMain.handle('settings:remove-folder', async () => {
     // no-op stub
   })
 
@@ -200,15 +200,15 @@ function registerSettingsHandlers(): void {
 }
 
 function registerEQHandlers(): void {
-  ipcMain.handle('eq:set-bands', async (_, bands: number[]) => {
+  ipcMain.handle('eq:set-bands', async () => {
     // no-op stub
   })
 
-  ipcMain.handle('eq:set-preset', async (_, preset: string) => {
+  ipcMain.handle('eq:set-preset', async () => {
     return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   })
 
-  ipcMain.handle('eq:enable', async (_, enabled: boolean) => {
+  ipcMain.handle('eq:enable', async () => {
     // no-op stub
   })
 
@@ -218,7 +218,7 @@ function registerEQHandlers(): void {
 }
 
 function registerLastFMHandlers(): void {
-  ipcMain.handle('lastfm:auth', async (_, apiKey: string) => {
+  ipcMain.handle('lastfm:auth', async () => {
     return ''
   })
 
@@ -230,11 +230,11 @@ function registerLastFMHandlers(): void {
     // no-op stub
   })
 
-  ipcMain.handle('lastfm:now-playing', async (_, artist: string, track: string, album?: string) => {
+  ipcMain.handle('lastfm:now-playing', async () => {
     // no-op stub
   })
 
-  ipcMain.handle('lastfm:scrobble', async (_, artist: string, track: string, album?: string, timestamp?: number) => {
+  ipcMain.handle('lastfm:scrobble', async () => {
     // no-op stub
   })
 }

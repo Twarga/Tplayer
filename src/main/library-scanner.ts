@@ -1,11 +1,12 @@
 import fs from 'fs'
-import { fs as fsPromises } from 'fs'
 import path from 'path'
 import crypto from 'crypto'
 import { app } from 'electron'
 import { parseFile } from 'music-metadata'
 import { getDb } from './database'
 import { send } from './ipc-registry'
+
+const { stat: fsStat, readdir: fsReaddir } = fs.promises
 
 const SUPPORTED_EXTENSIONS = new Set([
   '.mp3', '.flac', '.ogg', '.opus', '.wav', '.aac', '.m4a', '.wma', '.aiff',
@@ -42,7 +43,7 @@ async function extractMetadata(filePath: string): Promise<TrackMeta> {
   try {
     const mm = await parseFile(filePath)
     const { common, format } = mm
-    const stats = await fs.stat(filePath)
+    const stats = await fsStat(filePath)
 
     const title =
       common.title ||
@@ -73,7 +74,8 @@ async function extractMetadata(filePath: string): Promise<TrackMeta> {
       color_palette: null,
     }
   } catch {
-    const stats = await fs.stat(filePath).catch(() => null)
+    let stats: fs.Stats | null = null
+    try { stats = fs.statSync(filePath) } catch { /* ignore */ }
     return {
       file_path: filePath,
       title: path.basename(filePath, path.extname(filePath)),
@@ -121,7 +123,7 @@ async function scanDir(dirPath: string): Promise<string[]> {
   let entries: string[]
 
   try {
-    entries = await fs.readdir(dirPath)
+    entries = await fsReaddir(dirPath)
   } catch {
     return []
   }
@@ -131,8 +133,8 @@ async function scanDir(dirPath: string): Promise<string[]> {
     const full = path.join(dirPath, entry)
 
     try {
-      const stat = await fs.stat(full)
-      if (stat.isDirectory()) {
+      const s = await fsStat(full)
+      if (s.isDirectory()) {
         const sub = await scanDir(full)
         audioFiles.push(...sub)
       } else if (SUPPORTED_EXTENSIONS.has(path.extname(full).toLowerCase())) {

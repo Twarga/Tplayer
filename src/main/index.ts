@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron'
+import { app, BrowserWindow, nativeTheme } from 'electron'
 import { fileURLToPath } from 'url'
 import path from 'path'
 
@@ -40,7 +40,7 @@ function createWindow(): void {
 
   mainWindow.on('resize', () => {
     if (mainWindow) {
-      const [width, height] = mainWindow.getSize()
+      const [width] = mainWindow.getSize()
       if (width < 1024 && mainWindow.isMaximized() === false) {
         mainWindow.setAlwaysOnTop(true)
       } else {
