@@ -55,13 +55,13 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 
 ## Phase 5: State Management (Zustand Stores)
 
-- [ ] **T24** — Create player store (`src/renderer/stores/playerStore.ts` — currentTrack, isPlaying, seek, volume, shuffle, repeat)
-- [ ] **T25** — Create library store (`src/renderer/stores/libraryStore.ts` — tracks, search, sort, view mode)
-- [ ] **T26** — Create playlist store (`src/renderer/stores/playlistStore.ts` — playlists, CRUD, reorder)
-- [ ] **T27** — Create queue store (`src/renderer/stores/queueStore.ts` — queue, history, add/remove/reorder)
-- [ ] **T28** — Create YouTube store (`src/renderer/stores/youtubeStore.ts` — search results, downloads, progress)
-- [ ] **T29** — Create EQ store (`src/renderer/stores/eqStore.ts` — 10-band EQ, presets, enable/disable)
-- [ ] **T30** — Create settings store (`src/renderer/stores/settingsStore.ts` — settings, music folders, persist)
+- [x] **T24** — Create player store (`src/renderer/stores/playerStore.ts` — currentTrack, isPlaying, seek, volume, shuffle, repeat)
+- [x] **T25** — Create library store (`src/renderer/stores/libraryStore.ts` — tracks, search, sort, view mode)
+- [x] **T26** — Create playlist store (`src/renderer/stores/playlistStore.ts` — playlists, CRUD, reorder)
+- [x] **T27** — Create queue store (`src/renderer/stores/queueStore.ts` — queue, history, add/remove/reorder)
+- [x] **T28** — Create YouTube store (`src/renderer/stores/youtubeStore.ts` — search results, downloads, progress)
+- [x] **T29** — Create EQ store (`src/renderer/stores/eqStore.ts` — 10-band EQ, presets, enable/disable)
+- [x] **T30** — Create settings store (`src/renderer/stores/settingsStore.ts` — settings, music folders, persist)
 
 ---
 
