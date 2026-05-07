@@ -34,7 +34,7 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 - [x] **T15** — Create audio engine (`src/main/audio-engine.ts` — playback controller, queue, shuffle, repeat)
 - [x] **T16** — Create yt-dlp integration (`src/main/yt-dlp.ts` — YouTube search, audio download, progress)
 - [x] **T17** — Create Last.fm integration (`src/main/lastfm.ts` — auth, now playing, scrobble)
-- [ ] **T18** — Create MPRIS integration (`src/main/mpris.ts` — Linux media keys, DBus, playerctl)
+- [x] **T18** — Create MPRIS integration (`src/main/mpris.ts` — Linux media keys, DBus, playerctl)
 
 ---
 
