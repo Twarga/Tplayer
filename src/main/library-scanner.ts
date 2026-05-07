@@ -1,0 +1,208 @@
+import fs from 'fs'
+import { fs as fsPromises } from 'fs'
+import path from 'path'
+import crypto from 'crypto'
+import { app } from 'electron'
+import { parseFile } from 'music-metadata'
+import { getDb } from './database'
+import { send } from './ipc-registry'
+
+const SUPPORTED_EXTENSIONS = new Set([
+  '.mp3', '.flac', '.ogg', '.opus', '.wav', '.aac', '.m4a', '.wma', '.aiff',
+])
+
+interface TrackMeta {
+  file_path: string
+  title: string
+  artist: string
+  album: string
+  album_artist: string | null
+  track_number: number | null
+  disc_number: number | null
+  year: number | null
+  genre: string | null
+  duration: number
+  bitrate: number | null
+  sample_rate: number | null
+  file_size: number
+  file_format: string
+  has_cover: number
+  cover_path: string | null
+  play_count: number
+  skip_count: number
+  is_favorite: number
+  rating: number
+  bpm: number | null
+  color_palette: string | null
+}
+
+let _scanCount = 0
+
+async function extractMetadata(filePath: string): Promise<TrackMeta> {
+  try {
+    const mm = await parseFile(filePath)
+    const { common, format } = mm
+    const stats = await fs.stat(filePath)
+
+    const title =
+      common.title ||
+      path.basename(filePath, path.extname(filePath))
+
+    return {
+      file_path: filePath,
+      title,
+      artist: common.artist || 'Unknown Artist',
+      album: common.album || 'Unknown Album',
+      album_artist: common.albumartist || null,
+      track_number: common.track?.no ?? null,
+      disc_number: common.disk?.no ?? null,
+      year: common.year ?? null,
+      genre: common.genre?.[0] ?? null,
+      duration: mm.format.duration ?? 0,
+      bitrate: format.bitrate ?? null,
+      sample_rate: format.sampleRate ?? null,
+      file_size: stats.size,
+      file_format: format.codec ?? path.extname(filePath).slice(1).toUpperCase(),
+      has_cover: 0,
+      cover_path: null,
+      play_count: 0,
+      skip_count: 0,
+      is_favorite: 0,
+      rating: 0,
+      bpm: common.bpm ?? null,
+      color_palette: null,
+    }
+  } catch {
+    const stats = await fs.stat(filePath).catch(() => null)
+    return {
+      file_path: filePath,
+      title: path.basename(filePath, path.extname(filePath)),
+      artist: 'Unknown Artist',
+      album: 'Unknown Album',
+      album_artist: null,
+      track_number: null,
+      disc_number: null,
+      year: null,
+      genre: null,
+      duration: 0,
+      bitrate: null,
+      sample_rate: null,
+      file_size: stats?.size ?? 0,
+      file_format: path.extname(filePath).slice(1).toUpperCase(),
+      has_cover: 0,
+      cover_path: null,
+      play_count: 0,
+      skip_count: 0,
+      is_favorite: 0,
+      rating: 0,
+      bpm: null,
+      color_palette: null,
+    }
+  }
+}
+
+function insertOrReplaceTrack(track: TrackMeta): void {
+  const db = getDb()
+  db.prepare(`
+    INSERT OR REPLACE INTO tracks (
+      file_path, title, artist, album, album_artist, track_number, disc_number,
+      year, genre, duration, bitrate, sample_rate, file_size, file_format,
+      has_cover, cover_path, play_count, skip_count, is_favorite, rating, bpm, color_palette
+    ) VALUES (
+      @file_path, @title, @artist, @album, @album_artist, @track_number, @disc_number,
+      @year, @genre, @duration, @bitrate, @sample_rate, @file_size, @file_format,
+      @has_cover, @cover_path, @play_count, @skip_count, @is_favorite, @rating, @bpm, @color_palette
+    )
+  `).run(track)
+}
+
+async function scanDir(dirPath: string): Promise<string[]> {
+  const audioFiles: string[] = []
+  let entries: string[]
+
+  try {
+    entries = await fs.readdir(dirPath)
+  } catch {
+    return []
+  }
+
+  for (const entry of entries) {
+    if (entry.startsWith('.')) continue
+    const full = path.join(dirPath, entry)
+
+    try {
+      const stat = await fs.stat(full)
+      if (stat.isDirectory()) {
+        const sub = await scanDir(full)
+        audioFiles.push(...sub)
+      } else if (SUPPORTED_EXTENSIONS.has(path.extname(full).toLowerCase())) {
+        audioFiles.push(full)
+      }
+    } catch {
+      // skip inaccessible
+    }
+  }
+
+  return audioFiles
+}
+
+export async function scanFolders(folders: string[]): Promise<{ added: number; updated: number; total: number }> {
+  _scanCount = 0
+  let added = 0
+  let updated = 0
+
+  for (const folder of folders) {
+    const files = await scanDir(folder)
+    const total = files.length
+
+    for (let i = 0; i < files.length; i++) {
+      const filePath = files[i]
+
+      if (_scanCount > 0 && _scanCount % 10 === 0) {
+        send('library:scan-progress', { current: i + 1, total, file: path.basename(filePath) })
+      }
+
+      const existing = getDb()
+        .prepare('SELECT id, file_path FROM tracks WHERE file_path = ?')
+        .get(filePath) as { id: number; file_path: string } | undefined
+
+      const track = await extractMetadata(filePath)
+      insertOrReplaceTrack(track)
+
+      if (existing) {
+        updated++
+      } else {
+        added++
+      }
+
+      _scanCount++
+    }
+  }
+
+  return { added, updated, total: _scanCount }
+}
+
+export function saveCover(album: string, artist: string, imageBuffer: Buffer, mimeType = 'image/jpeg'): string | null {
+  const hash = crypto.createHash('md5').update(`${album}|${artist}`).digest('hex')
+  const ext = mimeType === 'image/png' ? 'png' : 'jpg'
+  const coversDir = path.join(app.getPath('userData'), 'covers')
+  const coverPath = path.join(coversDir, `${hash}.${ext}`)
+
+  try {
+    fs.mkdirSync(coversDir, { recursive: true })
+    fs.writeFileSync(coverPath, imageBuffer)
+
+    getDb().prepare(`
+      INSERT OR REPLACE INTO covers (album, artist, image_blob, mime_type)
+      VALUES (?, ?, ?, ?)
+    `).run(album, artist, imageBuffer, mimeType)
+
+    return coverPath
+  } catch {
+    return null
+  }
+}
+
+export function removeTrack(filePath: string): void {
+  getDb().prepare('DELETE FROM tracks WHERE file_path = ?').run(filePath)
+}

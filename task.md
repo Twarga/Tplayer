@@ -28,7 +28,7 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 - [x] **T09** — Create Electron main entry (`src/main/index.ts` — window creation, app lifecycle)
 - [x] **T10** — Create IPC registry (`src/main/ipc-registry.ts` — handler registration, push events)
 - [x] **T11** — Create database layer (`src/main/database.ts` — better-sqlite3, 6 tables, indexes, default settings)
-- [ ] **T12** — Create library scanner (`src/main/library-scanner.ts` — folder scan, metadata extraction, cover art)
+- [x] **T12** — Create library scanner (`src/main/library-scanner.ts` — folder scan, metadata extraction, cover art)
 - [ ] **T13** — Create file watcher (`src/main/file-watcher.ts` — chokidar, live add/remove/update)
 - [ ] **T14** — Create audio decoder (`src/main/audio-decoder.ts` — FFmpeg → PCM f32le, LRU cache)
 - [ ] **T15** — Create audio engine (`src/main/audio-engine.ts` — playback controller, queue, shuffle, repeat)
