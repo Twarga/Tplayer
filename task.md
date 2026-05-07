@@ -107,8 +107,8 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 
 ## Phase 10: Polish
 
-- [ ] **T51** — Add animations & transitions (view fade, card hover, button press, progress thumb, panel slide)
-- [ ] **T52** — Add drag & drop (playlist reorder, queue reorder, visual feedback)
+- [x] **T51** — Add animations & transitions (view fade, card hover, button press, progress thumb, panel slide)
+- [x] **T52** — Add drag & drop (playlist reorder, queue reorder, visual feedback)
 
 ---
 
