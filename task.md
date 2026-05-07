@@ -67,12 +67,12 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 
 ## Phase 6: Layout Components (Three-Column Design)
 
-- [ ] **T31** — Create sidebar (`src/renderer/components/layout/Sidebar.tsx` — 200px, logo, nav, playlists, settings)
-- [ ] **T32** — Create top bar (`src/renderer/components/layout/TopBar.tsx` — search, profile, notifications)
-- [ ] **T33** — Create now playing panel (`src/renderer/components/layout/NowPlayingPanel.tsx` — 320px, tabs, art, controls, queue)
-- [ ] **T34** — Create mini player bar (`src/renderer/components/layout/MiniPlayerBar.tsx` — 64px, track info, controls, volume)
-- [ ] **T35** — Create audio visualizer (`src/renderer/components/player/AudioVisualizer.tsx` — animated bars, 60fps)
-- [ ] **T36** — Create quality badges (`src/renderer/components/player/QualityBadges.tsx` — FLAC, 24-bit, 44.1kHz, Lossless)
+- [x] **T31** — Create sidebar (`src/renderer/components/layout/Sidebar.tsx` — 200px, logo, nav, playlists, settings)
+- [x] **T32** — Create top bar (`src/renderer/components/layout/TopBar.tsx` — search, profile, notifications)
+- [x] **T33** — Create now playing panel (`src/renderer/components/layout/NowPlayingPanel.tsx` — 320px, tabs, art, controls, queue)
+- [x] **T34** — Create mini player bar (`src/renderer/components/layout/MiniPlayerBar.tsx` — 64px, track info, controls, volume)
+- [x] **T35** — Create audio visualizer (`src/renderer/components/player/AudioVisualizer.tsx` — animated bars, 60fps)
+- [x] **T36** — Create quality badges (`src/renderer/components/player/QualityBadges.tsx` — FLAC, 24-bit, 44.1kHz, Lossless)
 
 ---
 
