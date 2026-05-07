@@ -47,8 +47,8 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 
 ## Phase 4: UI Foundation
 
-- [ ] **T21** — Create utility functions (`src/renderer/lib/utils.ts` — cn(), formatDuration, formatTimeAgo)
-- [ ] **T22** — Create shadcn/ui components (Button, Input, Slider, Dialog, DropdownMenu, Tooltip, ContextMenu, Tabs, Switch, ScrollArea, Badge, Skeleton, Avatar, Popover, Select)
+- [x] **T21** — Create utility functions (`src/renderer/lib/utils.ts` — cn(), formatDuration, formatTimeAgo)
+- [x] **T22** — Create shadcn/ui components (Button, Input, Slider, Dialog, DropdownMenu, Tooltip, ContextMenu, Tabs, Switch, ScrollArea, Badge, Skeleton, Avatar, Popover, Select)
 - [ ] **T23** — Create theme provider (`src/renderer/components/ThemeProvider.tsx` — dark/light, accent colors, system sync)
 
 ---
