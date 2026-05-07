@@ -40,8 +40,8 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 
 ## Phase 3: IPC Bridge
 
-- [ ] **T19** — Create preload script (`src/preload/index.ts` — contextBridge API, all namespaces)
-- [ ] **T20** — Create renderer IPC wrapper (`src/renderer/lib/ipc.ts` — typed API, hooks)
+- [x] **T19** — Create preload script (`src/preload/index.ts` — contextBridge API, all namespaces)
+- [x] **T20** — Create renderer IPC wrapper (`src/renderer/lib/ipc.ts` — typed API, hooks)
 
 ---
 
