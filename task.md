@@ -116,7 +116,7 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 
 - [x] **T53** — Add type checking & linting (ESLint, typecheck scripts, fix all errors)
 - [x] **T54** — Test production build (AppImage, all features, performance, memory)
-- [ ] **T55** — Create README & docs (features, install, build, shortcuts, screenshot)
+- [x] **T55** — Create README & docs (features, install, build, shortcuts, screenshot)
 
 ---
 
