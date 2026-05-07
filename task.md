@@ -13,12 +13,12 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 ## Phase 1: Project Foundation
 
 - [x] **T01** — Initialize npm project (`package.json`, scripts, metadata)
-- [ ] **T02** — Install all dependencies (runtime, renderer, dev deps)
-- [ ] **T03** — Create TypeScript configs (`tsconfig.json`, `tsconfig.node.json`, `tsconfig.web.json`)
-- [ ] **T04** — Create Electron-Vite config (`electron.vite.config.ts` — main/preload/renderer)
-- [ ] **T05** — Create Electron-Builder config (`electron-builder.yml`, AppImage/deb/rpm targets)
-- [ ] **T06** — Create Tailwind + PostCSS config (`tailwind.config.ts`, `postcss.config.js`, `globals.css` with design system)
-- [ ] **T07** — Create renderer entry point (`index.html`, `main.tsx`, `App.tsx` scaffold)
+- [x] **T02** — Install all dependencies (runtime, renderer, dev deps)
+- [x] **T03** — Create TypeScript configs (`tsconfig.json`, `tsconfig.node.json`, `tsconfig.web.json`)
+- [x] **T04** — Create Electron-Vite config (`electron.vite.config.ts` — main/preload/renderer)
+- [x] **T05** — Create Electron-Builder config (`electron-builder.yml`, AppImage/deb/rpm targets)
+- [x] **T06** — Create Tailwind + PostCSS config (`tailwind.config.ts`, `postcss.config.js`, `globals.css` with design system)
+- [x] **T07** — Create renderer entry point (`index.html`, `main.tsx`, `App.tsx` scaffold)
 - [ ] **T08** — Create shared types (`src/renderer/lib/types.ts` — Track, Playlist, Queue, PlaybackState, etc.)
 
 ---
