@@ -25,7 +25,7 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 
 ## Phase 2: Backend — Electron Main Process
 
-- [ ] **T09** — Create Electron main entry (`src/main/index.ts` — window creation, app lifecycle)
+- [x] **T09** — Create Electron main entry (`src/main/index.ts` — window creation, app lifecycle)
 - [ ] **T10** — Create IPC registry (`src/main/ipc-registry.ts` — handler registration, push events)
 - [ ] **T11** — Create database layer (`src/main/database.ts` — better-sqlite3, 6 tables, indexes, default settings)
 - [ ] **T12** — Create library scanner (`src/main/library-scanner.ts` — folder scan, metadata extraction, cover art)
