@@ -78,12 +78,12 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 
 ## Phase 7: View Components
 
-- [ ] **T37** — Create home view (`src/renderer/components/home/HomeView.tsx` — greeting, continue listening, recently added, YouTube imports)
-- [ ] **T38** — Create library view (`src/renderer/components/library/LibraryView.tsx` — track list, grid, search, sort, context menu)
-- [ ] **T39** — Create playlist views (`PlaylistListView`, `PlaylistDetailView`, `CreatePlaylistDialog` — CRUD, drag reorder)
-- [ ] **T40** — Create YouTube view (`src/renderer/components/youtube/YouTubeView.tsx` — search, results, download progress, history)
-- [ ] **T41** — Create equalizer view (`src/renderer/components/equalizer/EqualizerView.tsx` — 10 sliders, presets, toggle)
-- [ ] **T42** — Create settings view (`src/renderer/components/settings/SettingsView.tsx` — folders, theme, Last.fm, audio, general)
+- [x] **T37** — Create home view (`src/renderer/components/home/HomeView.tsx` — greeting, continue listening, recently added, YouTube imports)
+- [x] **T38** — Create library view (`src/renderer/components/library/LibraryView.tsx` — track list, grid, search, sort, context menu)
+- [x] **T39** — Create playlist views (`PlaylistListView`, `PlaylistDetailView`, `CreatePlaylistDialog` — CRUD, drag reorder)
+- [x] **T40** — Create YouTube view (`src/renderer/components/youtube/YouTubeView.tsx` — search, results, download progress, history)
+- [x] **T41** — Create equalizer view (`src/renderer/components/equalizer/EqualizerView.tsx` — 10 sliders, presets, toggle)
+- [x] **T42** — Create settings view (`src/renderer/components/settings/SettingsView.tsx` — folders, theme, Last.fm, audio, general)
 
 ---
 
