@@ -89,9 +89,9 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 
 ## Phase 8: Player Components
 
-- [ ] **T43** — Create player controls (`src/renderer/components/player/PlayerControls.tsx` — shuffle, prev, play/pause, next, repeat)
-- [ ] **T44** — Create seek bar (`src/renderer/components/player/SeekBar.tsx` — progress, thumb, time labels)
-- [ ] **T45** — Create volume control (`src/renderer/components/player/VolumeControl.tsx` — icon, slider, mute)
+- [x] **T43** — Create player controls (`src/renderer/components/player/PlayerControls.tsx` — shuffle, prev, play/pause, next, repeat)
+- [x] **T44** — Create seek bar (`src/renderer/components/player/SeekBar.tsx` — progress, thumb, time labels)
+- [x] **T45** — Create volume control (`src/renderer/components/player/VolumeControl.tsx` — icon, slider, mute)
 
 ---
 
