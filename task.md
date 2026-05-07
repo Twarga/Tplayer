@@ -19,7 +19,7 @@ Complete task checklist from zero to production. Detailed steps for each task ar
 - [x] **T05** — Create Electron-Builder config (`electron-builder.yml`, AppImage/deb/rpm targets)
 - [x] **T06** — Create Tailwind + PostCSS config (`tailwind.config.ts`, `postcss.config.js`, `globals.css` with design system)
 - [x] **T07** — Create renderer entry point (`index.html`, `main.tsx`, `App.tsx` scaffold)
-- [ ] **T08** — Create shared types (`src/renderer/lib/types.ts` — Track, Playlist, Queue, PlaybackState, etc.)
+- [x] **T08** — Create shared types (`src/renderer/lib/types.ts` — Track, Playlist, Queue, PlaybackState, etc.)
 
 ---
 
