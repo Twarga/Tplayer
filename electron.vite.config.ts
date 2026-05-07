@@ -8,11 +8,14 @@ export default defineConfig({
     build: {
       outDir: 'out/main',
       rollupOptions: {
-        external: ['better-sqlite3'],
+        external: ['better-sqlite3', 'chokidar', 'music-metadata', 'fluent-ffmpeg', 'dbus-next'],
         input: {
           index: path.resolve(__dirname, 'src/main/index.ts')
         }
       }
+    },
+    optimizeDeps: {
+      exclude: ['chokidar', 'music-metadata', 'fluent-ffmpeg', 'dbus-next']
     }
   },
   preload: {
