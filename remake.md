@@ -1365,6 +1365,181 @@ Completion notes:
 
 ## Execution Order Summary
 
+## Post-MVP Release And Brand Plan
+
+This phase turns the remade app into a presentable public project with a clear identity, installable builds, release notes, and a GitHub Pages landing page. Keep the app UI stable during this phase unless a packaging or marketing asset exposes a real issue.
+
+### B1. Branding direction lock
+Scope:
+- Define the public identity for Tplayer: product promise, tone, screenshots style, colors, icon usage, and one-sentence pitch.
+- Decide what the app is and is not: a focused local music player with YouTube import, not a Spotify clone with every streaming feature.
+
+Files or systems:
+- `README.md`
+- `docs/brand.md`
+- app metadata
+
+Acceptance criteria:
+- The repo has a short brand guide.
+- README, landing page, and release copy can reuse the same language.
+- The visual direction matches the current dark editorial/music aesthetic.
+
+### B2. README remake
+Scope:
+- Rewrite the README as a public-facing project page instead of an internal architecture dump.
+- Include screenshots, feature list, install notes, development setup, release download links, and known platform support.
+
+Files or systems:
+- `README.md`
+- `assets/`
+- `docs/`
+
+Acceptance criteria:
+- A new visitor can understand what Tplayer is in 30 seconds.
+- A developer can run the app locally without guessing.
+- Users know where to download Linux and Windows builds.
+
+### B3. Repo hygiene pass
+Scope:
+- Clean accidental/local files from the repo.
+- Add contribution, issue, and release documentation where useful.
+- Improve `.gitignore` for packaged output, cache files, and generated artifacts.
+
+Files or systems:
+- `.gitignore`
+- `CONTRIBUTING.md`
+- `docs/`
+- repo root
+
+Acceptance criteria:
+- The repository looks intentional and clean.
+- Generated release artifacts are ignored.
+- Local test/audio scratch files are not presented as product files.
+
+### B4. App metadata and icons
+Scope:
+- Add production app metadata: app id, product name, icon set, categories, maintainer, repository URL, license, and desktop integration fields.
+- Prepare icon assets required for Linux AppImage and Windows executable packaging.
+
+Files or systems:
+- `package.json`
+- `build/`
+- `assets/`
+
+Acceptance criteria:
+- Packaged builds show the right name and icon.
+- Linux desktop launchers have correct metadata.
+- Windows executable properties use Tplayer branding.
+
+### B5. Packaging setup
+Scope:
+- Add a real desktop packaging toolchain.
+- Build Linux AppImage first, then Windows executable artifacts.
+- Keep `npm run build` for compile-only and add separate package scripts.
+
+Files or systems:
+- `package.json`
+- package lock
+- packaging config
+
+Acceptance criteria:
+- `npm run package:linux` creates an AppImage.
+- `npm run package:win` creates a Windows installer or portable executable.
+- Packaging does not break `typecheck`, `build`, or local `dev`.
+
+### B6. Release workflow
+Scope:
+- Add GitHub Actions workflow for tagged releases.
+- Build artifacts for Linux and Windows.
+- Upload release assets automatically.
+
+Files or systems:
+- `.github/workflows/release.yml`
+- `package.json`
+
+Acceptance criteria:
+- Pushing a version tag can create a GitHub Release.
+- Release includes Linux AppImage and Windows executable/installer artifacts.
+- Workflow runs typecheck/build before packaging.
+
+### B7. Manual release checklist
+Scope:
+- Add a release checklist that covers version bump, changelog, smoke tests, screenshots, artifacts, and rollback notes.
+
+Files or systems:
+- `docs/release-checklist.md`
+- `CHANGELOG.md`
+
+Acceptance criteria:
+- A release can be prepared without remembering hidden steps.
+- Every release has clear notes and verified artifacts.
+
+### B8. Landing page structure
+Scope:
+- Add a GitHub Pages landing page that sells the app clearly.
+- Use the Tplayer aesthetic: dramatic dark music UI, warm accent, large artwork, strong typography, no generic SaaS cards.
+
+Files or systems:
+- `site/`
+- GitHub Pages config/workflow
+
+Acceptance criteria:
+- The landing page works locally.
+- It has hero, feature story, screenshots, downloads, and developer section.
+- It links to GitHub releases.
+
+### B9. Landing page polish
+Scope:
+- Add responsive layout, animation, visual rhythm, screenshots, and clear download calls-to-action.
+- Keep it visually aligned with the app, not a random marketing template.
+
+Files or systems:
+- `site/`
+- `assets/`
+
+Acceptance criteria:
+- Landing page looks strong on desktop and mobile.
+- Animations improve the feel without slowing navigation.
+- Screenshots and copy make the project feel real and ready.
+
+### B10. Pages deployment
+Scope:
+- Add GitHub Pages deployment from the landing page folder.
+- Document how to update the page after releases.
+
+Files or systems:
+- `.github/workflows/pages.yml`
+- `site/`
+- `README.md`
+
+Acceptance criteria:
+- GitHub Pages publishes successfully.
+- README links to the live landing page.
+- Landing page download links point to current GitHub Releases.
+
+### B11. Public launch pass
+Scope:
+- Final review of README, release page, screenshots, metadata, website, and installable artifacts.
+- Fix broken links, bad wording, missing screenshots, or packaging issues.
+
+Files or systems:
+- full repo
+- GitHub Releases
+- GitHub Pages
+
+Acceptance criteria:
+- A user can visit the landing page, download the app, install/run it, and understand the project.
+- A developer can clone the repo, run it, and package it.
+- The public presentation matches the quality target of the app remake.
+
+Recommended order:
+
+1. `B1` to `B3`
+2. `B4` to `B5`
+3. `B6` to `B7`
+4. `B8` to `B10`
+5. `B11`
+
 Recommended order:
 
 1. `R1A` to `R1C`
