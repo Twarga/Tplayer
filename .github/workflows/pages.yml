@@ -28,7 +28,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Prepare Site Assets
-        run: cp -r assets site/assets
+        run: |
+          rm site/assets
+          cp -r assets site/assets
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact
