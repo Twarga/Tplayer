@@ -28,6 +28,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { EdgeCaseHandler } from '@/components/EdgeCaseHandler'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { motion, AnimatePresence } from 'framer-motion'
+import { pageMotion, routeTransition } from '@/lib/animations'
 
 const VIEW_META: Record<string, { title: string; subtitle: string }> = {
   home: {
@@ -178,10 +179,11 @@ function AppShell() {
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeView}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, transition: { duration: 0.15 } }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    variants={pageMotion}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={routeTransition}
                     className="absolute inset-0"
                   >
                     {renderView()}

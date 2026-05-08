@@ -1,5 +1,6 @@
 import { usePlayerStore } from '@/stores/playerStore'
 import { formatDuration } from '@/lib/utils'
+import { animations } from '@/lib/animations'
 
 interface SeekBarProps {
   className?: string
@@ -22,7 +23,7 @@ export function SeekBar({ className }: SeekBarProps) {
           className="w-full h-1 bg-progress-bg rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:opacity-0 group-hover:[&::-webkit-slider-thumb]:opacity-100 [&::-webkit-slider-thumb]:transition-opacity relative z-10"
         />
         <div 
-          className="absolute left-0 top-0 h-1 bg-accent rounded-full pointer-events-none transition-all duration-100"
+          className={`absolute left-0 top-0 h-1 bg-accent rounded-full pointer-events-none ${animations.progressFill}`}
           style={{ width: `${progress}%` }}
         />
       </div>

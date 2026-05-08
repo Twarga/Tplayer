@@ -1,12 +1,16 @@
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { Play, X, GripVertical } from 'lucide-react'
 import { useQueueStore } from '@/stores/queueStore'
 import { usePlayerStore } from '@/stores/playerStore'
 import { cn, formatDuration } from '@/lib/utils'
+import { PlayingBars } from '@/components/ui/PlayingBars'
+import { animations, staggerItem, staggerParent } from '@/lib/animations'
 
 export function QueueView() {
-  const { queue, loadQueue, remove, clear } = useQueueStore()
-  const { play, currentTrack } = usePlayerStore()
+  const { queue, loadQueue, remove, clear, reorder } = useQueueStore()
+  const { play, currentTrack, isPlaying } = usePlayerStore()
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
   useEffect(() => {
     loadQueue()
@@ -32,53 +36,82 @@ export function QueueView() {
           <p className="text-sm text-tertiary">Add songs from your library to get started</p>
         </div>
       ) : (
-        <div className="space-y-1">
+        <motion.div
+          variants={staggerParent}
+          initial="hidden"
+          animate="show"
+          className="space-y-1"
+        >
           {queue.map((track, index) => (
-            <div
+            <motion.div
               key={`${track.id}-${index}`}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-md group transition-colors",
-                currentTrack?.id === track.id ? "bg-surface-3" : "hover:bg-surface-2"
-              )}
+              variants={staggerItem}
+              layout
             >
-              <button className="text-tertiary opacity-0 group-hover:opacity-100 cursor-grab transition-opacity">
-                <GripVertical size={16} />
-              </button>
-
-              <div className="w-8 h-8 rounded bg-surface-3 flex items-center justify-center text-tertiary text-xs shrink-0">
-                {index + 1}
-              </div>
-
-              <button
-                onClick={() => play(track.id)}
-                className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+              <div
+                draggable
+                onDragStart={(e) => {
+                  setDraggedIndex(index)
+                  e.dataTransfer.effectAllowed = 'move'
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  e.dataTransfer.dropEffect = 'move'
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  if (draggedIndex !== null && draggedIndex !== index) {
+                    reorder(draggedIndex, index)
+                  }
+                  setDraggedIndex(null)
+                }}
+                onDragEnd={() => setDraggedIndex(null)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-md group interactive-soft",
+                  currentTrack?.id === track.id ? "bg-surface-3" : "hover:bg-surface-2",
+                  draggedIndex === index ? "opacity-50" : ""
+                )}
               >
-                <Play size={14} fill="currentColor" />
-              </button>
+                <div className="text-tertiary opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing transition-opacity">
+                  <GripVertical size={16} />
+                </div>
 
-              <div className="flex-1 min-w-0">
-                <p className={cn(
-                  "text-sm font-medium truncate",
-                  currentTrack?.id === track.id ? "text-accent" : "text-primary"
-                )}>
-                  {track.title}
-                </p>
-                <p className="text-xs text-secondary truncate">{track.artist}</p>
+                <div className="w-8 h-8 rounded bg-surface-3 flex items-center justify-center text-tertiary text-xs shrink-0">
+                  {index + 1}
+                </div>
+
+                <button
+                  onClick={() => play(track.id)}
+                  className={cn("w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent opacity-0 group-hover:opacity-100 shrink-0", animations.controlButton)}
+                >
+                  <Play size={14} fill="currentColor" />
+                </button>
+
+                <div className="flex-1 min-w-0">
+                  <p className={cn(
+                    "text-sm font-medium truncate flex items-center gap-2",
+                    currentTrack?.id === track.id ? "text-accent" : "text-primary"
+                  )}>
+                    {track.title}
+                    {isPlaying && currentTrack?.id === track.id && <PlayingBars />}
+                  </p>
+                  <p className="text-xs text-secondary truncate">{track.artist}</p>
+                </div>
+
+                <span className="text-xs text-tertiary shrink-0">
+                  {formatDuration(track.duration)}
+                </span>
+
+                <button
+                  onClick={() => remove(index)}
+                  className={cn("text-tertiary hover:text-red-400 opacity-0 group-hover:opacity-100 shrink-0 p-1", animations.controlButton)}
+                >
+                  <X size={14} />
+                </button>
               </div>
-
-              <span className="text-xs text-tertiary shrink-0">
-                {formatDuration(track.duration)}
-              </span>
-
-              <button
-                onClick={() => remove(index)}
-                className="text-tertiary hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all shrink-0 p-1"
-              >
-                <X size={14} />
-              </button>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   )
