@@ -557,6 +557,217 @@ Acceptance criteria:
 - The remake plan is explicit about ownership of each major subsystem.
 - We have a clear target structure before changing behavior.
 
+R1 status:
+- Completed as the canonical architecture map for the remake.
+
+R1 architecture goals:
+
+- Remove overlap between main, preload, renderer, and UI state.
+- Give each subsystem one clear owner.
+- Reduce file count pressure by making module boundaries obvious.
+- Prevent the current pattern where types, contracts, and state drift apart.
+- Make the codebase easier to evolve without breaking unrelated features.
+
+R1 target system ownership:
+
+- Main process:
+  - owns database access
+  - owns library scanning and file watching
+  - owns playback state authority
+  - owns YouTube/yt-dlp integration
+  - owns Last.fm integration
+  - owns MPRIS integration
+  - owns IPC handler registration
+
+- Preload:
+  - owns the single renderer-safe bridge to main
+  - exposes only the supported API surface
+  - mirrors shared IPC contracts exactly
+
+- Renderer stores:
+  - own view state and client-side interaction state
+  - mirror backend state for display and interaction
+  - do not invent their own incompatible domain models
+
+- Renderer hooks:
+  - own runtime browser-side behavior such as the audio element and Web Audio graph
+  - do not become alternate domain stores
+
+- Renderer components:
+  - own presentation and user interaction only
+  - do not embed unstable contract logic or duplicate business rules
+
+R1 target structure:
+
+```text
+src/
+  main/
+    index.ts                 # Electron boot, protocols, app lifecycle
+    ipc/
+      registry.ts            # All ipcMain registrations
+      events.ts              # Optional event helpers if needed
+    services/
+      database.ts            # DB init + query helpers
+      library.ts             # Scan, file import, metadata, watcher integration
+      playback.ts            # Playback state authority, queue, repeat/shuffle
+      youtube.ts             # yt-dlp search/download/cancel/history integration
+      lastfm.ts              # Auth/session/scrobble logic
+      mpris.ts               # Linux media integration
+      system.ts              # Tool checks and app-level helpers
+    adapters/
+      scanner.ts             # File/metadata helpers if split is useful
+      watcher.ts             # Chokidar wrapper if split is useful
+
+  preload/
+    index.ts                 # contextBridge API implementation
+
+  shared/
+    types/
+      domain.ts              # Track, Playlist, Download, Settings, etc.
+      playback.ts            # Playback state, queue, repeat/shuffle, payloads
+    ipc/
+      contracts.ts           # invoke signatures + event payload shapes
+      channels.ts            # channel name constants if useful
+
+  renderer/
+    app/
+      AppShell.tsx           # top-level shell once stabilized
+      routes.ts              # active view model if extracted
+    hooks/
+      useAudioPlayer.ts      # audio element + Web Audio runtime
+      useKeyboard.ts
+    stores/
+      playerStore.ts
+      libraryStore.ts
+      queueStore.ts
+      youtubeStore.ts
+      settingsStore.ts
+      playlistStore.ts
+      eqStore.ts
+    components/
+      layout/
+      library/
+      player/
+      queue/
+      youtube/
+      downloads/
+      settings/
+      playlist/
+      ui/
+    lib/
+      ipc.ts                 # bridge access only
+      utils.ts
+      animations.ts          # shared motion helpers if retained
+      audioContext.ts
+```
+
+R1 major subsystem boundaries:
+
+1. Shared domain model boundary
+   - All stable app entities must come from shared types.
+   - Renderer-only convenience types may exist, but only as wrappers around shared types.
+
+2. IPC boundary
+   - Renderer never reaches into Node behavior directly.
+   - All invoke and event contracts are defined once, then used in both preload and renderer typing.
+
+3. Playback boundary
+   - Main owns playback state truth.
+   - Renderer owns actual audio runtime and signal graph.
+   - Store state reflects those systems; it does not replace them.
+
+4. Data boundary
+   - DB queries should come through dedicated service helpers.
+   - Components must never care how SQL is written.
+
+5. Design boundary
+   - UI components present state and capture actions.
+   - UX polish should not depend on hidden business logic living in components.
+
+R1 current files to keep conceptually but rewrite or reorganize:
+
+- `src/main/index.ts`
+- `src/main/ipc-registry.ts`
+- `src/main/database.ts`
+- `src/main/library-scanner.ts`
+- `src/main/file-watcher.ts`
+- `src/main/audio-engine.ts`
+- `src/main/yt-dlp.ts`
+- `src/main/lastfm.ts`
+- `src/main/mpris.ts`
+- `src/preload/index.ts`
+- most renderer stores
+- most renderer layout and player components
+- `src/renderer/globals.css`
+- `tailwind.config.ts`
+
+R1 current files that should become thinner:
+
+- `src/renderer/App.tsx`
+- `src/renderer/lib/types.ts`
+- `src/renderer/lib/preload.d.ts`
+- renderer components that currently know too much about data shape details
+- renderer stores that currently compensate for missing backend contract clarity
+
+R1 files or patterns to deprecate from active architecture:
+
+- duplicated type definitions across multiple stores and components
+- ad hoc event payload assumptions
+- components embedding contract repair logic
+- fake or transitional surfaces that only exist to make the app seem more complete
+- large feature surfaces whose behavior is not backed by stable state flow
+
+R1 target active MVP routes:
+
+- `library`
+- `queue`
+- `youtube`
+- `downloads`
+- `settings`
+- playlist detail when fully supported
+
+R1 routes to minimize or defer:
+
+- dashboard-heavy `home` as a primary product center
+- weak browsing surfaces that duplicate library value without strong purpose
+
+R1 view responsibility model:
+
+- Library:
+  - primary working surface
+  - browse, search, start playback, manage favorites
+
+- Mini player:
+  - compact transport and current-track anchor
+
+- Now-playing panel:
+  - richer detail and secondary playback context
+
+- Queue:
+  - explicit upcoming playback control
+
+- YouTube:
+  - focused import workflow
+
+- Downloads:
+  - status/history workflow
+
+- Settings:
+  - folders, tools, theme, EQ, Last.fm, app behavior
+
+R1 architecture rules during remake:
+
+- No new feature surface without a clear owner in this architecture.
+- No type shape may be defined differently in main, preload, and renderer.
+- No component should become the patch point for backend contract problems.
+- If a module starts owning two unrelated concerns, it should be split.
+- If a surface is visually present in MVP, it must be backed by real state and behavior.
+
+R1 success outcome:
+
+- The remake now has a stable map for where each responsibility belongs.
+- Future tasks can rewrite toward this structure instead of guessing where logic should live.
+
 ### R2. Create a single shared types/contracts module
 Scope:
 - Introduce one shared module for `Track`, `QueueEntry`, `PlaybackState`, `Download`, `Settings`, IPC payloads, and event payloads.
