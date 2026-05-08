@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron'
-import { getState, pause, resume, nextTrack, prevTrack, seek } from './audio-engine'
-import type { PlaybackState } from '../shared/types/playback'
+import { getPlayerStateExport, pause, resume, nextTrack, prevTrack, seek } from './audio-engine'
+import type { PlayerExportState } from '../shared/types/playback'
+import { pathToFileURL } from 'url'
 
 const dbus = require('dbus-next')
 
@@ -15,6 +16,9 @@ class MprisInterface extends Interface {
     PlaybackStatus: 'Playing' | 'Paused' | 'Stopped'
     Metadata: Record<string, unknown>
     Volume: number
+    LoopStatus: 'None' | 'Track' | 'Playlist'
+    Shuffle: boolean
+    Position: number
   }
 
   constructor() {
@@ -22,8 +26,11 @@ class MprisInterface extends Interface {
 
     this._state = {
       PlaybackStatus: 'Stopped',
-      Metadata: { 'mpris:trackid': '/org/mpris/MediaPlayer2/Tplayer/Track/0' },
+      Metadata: { 'mpris:trackid': new dbus.Variant('o', '/org/mpris/MediaPlayer2/Tplayer/Track/0') },
       Volume: 0.8,
+      LoopStatus: 'None',
+      Shuffle: false,
+      Position: 0,
     }
 
     Interface.configureMembers(this.constructor, {
@@ -59,14 +66,7 @@ class MprisInterface extends Interface {
   get Metadata() { return this._state.Metadata }
   get Volume() { return this._state.Volume }
   set Volume(v: number) { this._state.Volume = v }
-
-  get Position() {
-    const state = getState()
-    if (state.playbackState === 'playing' || state.playbackState === 'paused') {
-      return Math.round(state.currentTime * 1e6)
-    }
-    return 0
-  }
+  get Position() { return this._state.Position }
 
   get CanGoNext() { return true }
   get CanGoPrevious() { return true }
@@ -75,29 +75,24 @@ class MprisInterface extends Interface {
   get CanSeek() { return true }
   get CanControl() { return true }
 
-  get LoopStatus() {
-    const state = getState()
-    if (state.repeatMode === 'one') return 'Track'
-    if (state.repeatMode === 'all') return 'Playlist'
-    return 'None'
-  }
+  get LoopStatus() { return this._state.LoopStatus }
   set LoopStatus(_v: string) {}
 
-  get Shuffle() { return getState().isShuffled }
+  get Shuffle() { return this._state.Shuffle }
   set Shuffle(_v: boolean) {}
 
   Next() { nextTrack() }
   Previous() { prevTrack() }
   Pause() { pause() }
   PlayPause() {
-    const state = getState()
+    const state = getPlayerStateExport()
     if (state.isPlaying) pause()
     else resume()
   }
   Stop() { pause() }
   Play() { resume() }
   Seek(offset: number) {
-    const current = getState().currentTime
+    const current = getPlayerStateExport().currentTime
     const newPos = Math.max(0, current + offset / 1e6)
     seek(newPos)
   }
@@ -106,8 +101,8 @@ class MprisInterface extends Interface {
   }
   OpenUri(_uri: string) {}
 
-  updatePlayingState(playbackState: PlaybackState) {
-    switch (playbackState) {
+  syncFromState(state: PlayerExportState) {
+    switch (state.playbackState) {
       case 'playing':
         this._state.PlaybackStatus = 'Playing'
         break
@@ -116,24 +111,45 @@ class MprisInterface extends Interface {
         this._state.PlaybackStatus = 'Paused'
         break
       default:
+        this._state.PlaybackStatus = 'Stopped'
     }
-    try {
-      Interface.emitPropertiesChanged(this, { PlaybackStatus: new dbus.Variant('s', this._state.PlaybackStatus) }, [])
-    } catch {}
-  }
 
-  updateMeta(title: string, artists: string[], album?: string, artUrl?: string, length?: number) {
     const meta: Record<string, unknown> = {
-      'mpris:trackid': new dbus.Variant('o', '/org/mpris/MediaPlayer2/Tplayer/Track/0'),
+      'mpris:trackid': new dbus.Variant(
+        'o',
+        `/org/mpris/MediaPlayer2/Tplayer/Track/${state.currentTrackId ?? 0}`
+      ),
     }
-    if (title) meta['xesam:title'] = new dbus.Variant('s', title)
-    if (artists.length) meta['xesam:artist'] = new dbus.Variant('as', artists)
-    if (album) meta['xesam:album'] = new dbus.Variant('s', album)
-    if (artUrl) meta['mpris:artUrl'] = new dbus.Variant('s', artUrl)
-    if (length && length > 0) meta['mpris:length'] = new dbus.Variant('x', Math.round(length * 1e6))
+
+    if (state.currentTrack) {
+      if (state.currentTrack.title) meta['xesam:title'] = new dbus.Variant('s', state.currentTrack.title)
+      if (state.currentTrack.artist) meta['xesam:artist'] = new dbus.Variant('as', [state.currentTrack.artist])
+      if (state.currentTrack.album) meta['xesam:album'] = new dbus.Variant('s', state.currentTrack.album)
+      if (state.currentTrack.cover_path) {
+        meta['mpris:artUrl'] = new dbus.Variant('s', pathToFileURL(state.currentTrack.cover_path).toString())
+      }
+      if (state.duration > 0) {
+        meta['mpris:length'] = new dbus.Variant('x', Math.round(state.duration * 1e6))
+      }
+    }
+
     this._state.Metadata = meta
+    this._state.Volume = state.volume
+    this._state.Position = Math.round(state.currentTime * 1e6)
+    this._state.LoopStatus =
+      state.repeatMode === 'one' ? 'Track' :
+      state.repeatMode === 'all' ? 'Playlist' :
+      'None'
+    this._state.Shuffle = state.isShuffled
+
     try {
-      Interface.emitPropertiesChanged(this, { Metadata: new dbus.Variant('a{sv}', meta) }, [])
+      Interface.emitPropertiesChanged(this, {
+        PlaybackStatus: new dbus.Variant('s', this._state.PlaybackStatus),
+        Metadata: new dbus.Variant('a{sv}', meta),
+        Volume: new dbus.Variant('d', this._state.Volume),
+        LoopStatus: new dbus.Variant('s', this._state.LoopStatus),
+        Shuffle: new dbus.Variant('b', this._state.Shuffle),
+      }, [])
     } catch {}
   }
 }
@@ -146,6 +162,7 @@ export async function initMpris(win: BrowserWindow): Promise<void> {
     console.log('[mpris] requestName result:', result)
 
     mprisIface = new MprisInterface()
+    mprisIface.syncFromState(getPlayerStateExport())
 
     const RootIface = class extends Interface {
       constructor() { super('org.mpris.MediaPlayer2') }
@@ -194,19 +211,11 @@ export async function initMpris(win: BrowserWindow): Promise<void> {
   }
 }
 
-export function updateMprisMeta(title: string, artists: string[], album?: string, artUrl?: string, length?: number): void {
+export function syncMprisPlayerState(state: PlayerExportState): void {
   try {
-    mprisIface?.updateMeta(title, artists, album, artUrl, length)
+    mprisIface?.syncFromState(state)
   } catch (err) {
-    console.error('[mpris] updateMeta failed:', err)
-  }
-}
-
-export function updateMprisPlayingState(playbackState: PlaybackState): void {
-  try {
-    mprisIface?.updatePlayingState(playbackState)
-  } catch (err) {
-    console.error('[mpris] updatePlayingState failed:', err)
+    console.error('[mpris] syncPlayerState failed:', err)
   }
 }
 

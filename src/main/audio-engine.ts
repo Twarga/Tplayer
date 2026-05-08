@@ -1,11 +1,12 @@
 import { getDb } from './database'
 
 import { send } from './ipc-registry'
-import { updateMprisPlayingState, updateMprisMeta } from './mpris'
+import { syncMprisPlayerState } from './mpris'
 import { updateNowPlaying, scrobble } from './lastfm'
 import { IPC_CHANNELS } from '../shared/ipc/channels'
 import type {
   PlaybackProgressPayload,
+  PlayerExportState,
   PlaybackState,
   PlaybackStatePayload,
   QueueEntry,
@@ -46,6 +47,7 @@ let _queue: QueueItem[] = []
 let _unshuffledQueue: QueueItem[] = []
 let _history: QueueItem[] = []
 let _currentQueueItem: QueueItem | null = null
+let _currentTrack: Track | null = null
 let _queueItemId = 1
 const MAX_HISTORY = 50
 
@@ -107,6 +109,7 @@ function emitPlaybackState(): void {
     repeatMode: _state.repeatMode,
   }
   send(IPC_CHANNELS.player.playbackState, payload)
+  syncMprisPlayerState(getPlayerExportState())
 }
 
 function emitTimeUpdate(): void {
@@ -115,6 +118,21 @@ function emitTimeUpdate(): void {
     duration: _state.duration,
   }
   send(IPC_CHANNELS.player.timeUpdate, payload)
+  syncMprisPlayerState(getPlayerExportState())
+}
+
+function getPlayerExportState(): PlayerExportState {
+  return {
+    currentTrack: _currentTrack,
+    currentTrackId: _state.currentTrackId,
+    isPlaying: _state.isPlaying,
+    currentTime: _state.currentTime,
+    duration: _state.duration,
+    volume: _state.volume,
+    isShuffled: _state.isShuffled,
+    repeatMode: _state.repeatMode,
+    playbackState: _state.playbackState,
+  }
 }
 
 export async function playTrack(trackId: number): Promise<void> {
@@ -135,6 +153,7 @@ async function playQueueItem(queueItem: QueueItem): Promise<void> {
 
   try {
     _currentQueueItem = queueItem
+    _currentTrack = track
     _state.currentTrackId = queueItem.trackId
     _state.duration = track.duration
     _state.currentTime = 0
@@ -163,15 +182,12 @@ async function playQueueItem(queueItem: QueueItem): Promise<void> {
 
     send(IPC_CHANNELS.player.load, payload)
 
-    updateMprisMeta(track.title, [track.artist], track.album, undefined, track.duration)
-    updateMprisPlayingState('playing')
     updateNowPlaying(track.artist, track.title, track.album).catch(() => {})
     emitTimeUpdate()
     emitPlaybackState()
   } catch (err) {
     console.error('[audio-engine] playTrack failed:', err)
     _state.playbackState = 'error'
-    updateMprisPlayingState('error')
     emitPlaybackState()
   }
 }
@@ -180,7 +196,6 @@ export function pause(): void {
   _state.isPlaying = false
   _state.playbackState = 'paused'
   send(IPC_CHANNELS.player.pause)
-  updateMprisPlayingState('paused')
   emitPlaybackState()
 }
 
@@ -188,7 +203,6 @@ export function resume(): void {
   _state.isPlaying = true
   _state.playbackState = 'playing'
   send(IPC_CHANNELS.player.resume)
-  updateMprisPlayingState('playing')
   emitPlaybackState()
 }
 
@@ -378,6 +392,10 @@ export function getState(): PlayerState {
   return { ..._state }
 }
 
+export function getPlayerStateExport(): PlayerExportState {
+  return getPlayerExportState()
+}
+
 export function onTrackEnded(): void {
   if (_state.currentTrackId !== null) {
     const track = getTrack(_state.currentTrackId)
@@ -403,7 +421,6 @@ export function onTrackEnded(): void {
       _state.playbackState = 'idle'
       _state.currentTime = 0
       emitTimeUpdate()
-      updateMprisPlayingState('idle')
       emitPlaybackState()
     }
     return
@@ -415,4 +432,5 @@ export function onTrackEnded(): void {
 export function initAudioEngine(volume = 0.8): void {
   _state.volume = volume
   _state.playbackState = 'idle'
+  syncMprisPlayerState(getPlayerExportState())
 }

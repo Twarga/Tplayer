@@ -14,6 +14,18 @@ export interface PlayerState {
   playbackState: PlaybackState
 }
 
+export interface PlayerExportState {
+  currentTrack: Track | null
+  currentTrackId: number | null
+  isPlaying: boolean
+  currentTime: number
+  duration: number
+  volume: number
+  isShuffled: boolean
+  repeatMode: RepeatMode
+  playbackState: PlaybackState
+}
+
 export interface PlaybackStatePayload {
   state: PlaybackState
   trackId: number | null
