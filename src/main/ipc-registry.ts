@@ -1,7 +1,9 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { getDb, getSetting, setSetting, getAllSettings } from './database'
 import { scanFolders } from './library-scanner'
-import { playTrack, pause, resume, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleShuffle, cycleRepeat, addToQueue, addNext, removeFromQueue, clearQueue, reorderQueue, getQueue } from './audio-engine'
+import { playTrack, pause, resume, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleShuffle, cycleRepeat, addToQueue, addNext, removeFromQueue, clearQueue, reorderQueue, getQueue, onTrackEnded, setQueue } from './audio-engine'
+import { isFFmpegAvailable } from './audio-decoder'
+import { clearDownloadHistory, getDownloadHistory } from './yt-dlp'
 
 let _mainWindow: BrowserWindow | null = null
 
@@ -24,6 +26,7 @@ export function registerAllHandlers(): void {
   registerSettingsHandlers()
   registerEQHandlers()
   registerLastFMHandlers()
+  registerSystemHandlers()
 }
 
 function registerLibraryHandlers(): void {
@@ -44,9 +47,17 @@ function registerLibraryHandlers(): void {
     
     if (opts?.sort) {
       const dir = opts.dir === 'desc' ? 'DESC' : 'ASC'
-      const allowedSorts = ['title', 'artist', 'album', 'date_added', 'play_count', 'duration']
-      if (allowedSorts.includes(opts.sort)) {
-        sql += ` ORDER BY ${opts.sort} ${dir}`
+      const sortMap: Record<string, string> = {
+        title: 'title',
+        artist: 'artist',
+        album: 'album',
+        date_added: 'date_added',
+        play_count: 'play_count',
+        duration: 'duration',
+      }
+      const safeSort = sortMap[opts.sort]
+      if (safeSort) {
+        sql += ` ORDER BY ${safeSort} ${dir}`
       }
     } else {
       sql += ' ORDER BY date_added DESC'
@@ -77,6 +88,10 @@ function registerLibraryHandlers(): void {
     const placeholders = albums.map(() => '?').join(',')
     return getDb().prepare(`SELECT * FROM covers WHERE album IN (${placeholders})`).all(...albums)
   })
+
+  ipcMain.handle('library:get-downloads', async () => {
+    return getDb().prepare('SELECT * FROM downloads ORDER BY created_at DESC').all()
+  })
 }
 
 function registerPlayerHandlers(): void {
@@ -102,6 +117,14 @@ function registerPlayerHandlers(): void {
 
   ipcMain.handle('player:prev', async () => {
     prevTrack()
+  })
+
+  ipcMain.handle('player:track-ended', async () => {
+    onTrackEnded()
+  })
+
+  ipcMain.handle('player:record-play', async (_, trackId: number) => {
+    getDb().prepare("UPDATE tracks SET play_count = play_count + 1, last_played = datetime('now') WHERE id = ?").run(trackId)
   })
 
   ipcMain.handle('player:seek', async (_, time: number) => {
@@ -138,7 +161,7 @@ function registerPlaylistHandlers(): void {
   })
 
   ipcMain.handle('playlist:rename', async (_, id: number, name: string) => {
-    getDb().prepare('UPDATE playlists SET name = ?, updated_at = datetime("now") WHERE id = ?').run(name, id)
+    getDb().prepare("UPDATE playlists SET name = ?, updated_at = datetime('now') WHERE id = ?").run(name, id)
   })
 
   ipcMain.handle('playlist:get-tracks', async (_, id: number) => {
@@ -159,7 +182,7 @@ function registerPlaylistHandlers(): void {
     for (const trackId of trackIds) {
       insert.run(playlistId, trackId, pos++)
     }
-    db.prepare('UPDATE playlists SET updated_at = datetime("now") WHERE id = ?').run(playlistId)
+    db.prepare("UPDATE playlists SET updated_at = datetime('now') WHERE id = ?").run(playlistId)
   })
 
   ipcMain.handle('playlist:remove-track', async (_, playlistId: number, trackId: number) => {
@@ -199,8 +222,17 @@ function registerQueueHandlers(): void {
     clearQueue()
   })
 
+  ipcMain.handle('queue:set', async (_, trackIds: number[]) => {
+    setQueue(trackIds)
+  })
+
   ipcMain.handle('queue:get', async () => {
-    return getQueue()
+    const ids = getQueue()
+    if (!ids.length) return []
+    const db = getDb()
+    const placeholders = ids.map(() => '?').join(',')
+    const rows = db.prepare(`SELECT id, title, artist, album, duration FROM tracks WHERE id IN (${placeholders})`).all(...ids) as any[]
+    return ids.map(id => rows.find(r => r.id === id)).filter(Boolean)
   })
 }
 
@@ -221,11 +253,11 @@ function registerYouTubeHandlers(): void {
   })
 
   ipcMain.handle('youtube:get-history', async () => {
-    return getDb().prepare('SELECT * FROM downloads ORDER BY created_at DESC LIMIT 20').all()
+    return getDownloadHistory()
   })
 
   ipcMain.handle('youtube:clear-history', async () => {
-    getDb().prepare('DELETE FROM downloads').run()
+    clearDownloadHistory()
   })
 }
 
@@ -272,7 +304,8 @@ function registerSettingsHandlers(): void {
 
 function registerEQHandlers(): void {
   ipcMain.handle('eq:set-bands', async (_, bands: number[]) => {
-    // TODO: apply to audio engine
+    setSetting('eq_bands', JSON.stringify(bands))
+    send('eq:bands-changed', bands)
   })
 
   ipcMain.handle('eq:set-preset', async (_, preset: string) => {
@@ -324,5 +357,25 @@ function registerLastFMHandlers(): void {
   ipcMain.handle('lastfm:scrobble', async (_, artist: string, track: string, album?: string, timestamp?: number) => {
     const { scrobble } = await import('./lastfm')
     return scrobble(artist, track, album, timestamp)
+  })
+}
+
+function registerSystemHandlers(): void {
+  ipcMain.handle('system:check-ffmpeg', async () => {
+    return isFFmpegAvailable()
+  })
+
+  ipcMain.handle('system:check-yt-dlp', async () => {
+    const { spawnSync } = await import('child_process')
+    try {
+      const result = spawnSync('yt-dlp', ['--version'], { timeout: 5000 })
+      return result.status === 0
+    } catch {
+      return false
+    }
+  })
+
+  ipcMain.on('system:log', (_event, ...args) => {
+    console.log('[renderer]', ...args)
   })
 }

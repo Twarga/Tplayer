@@ -88,7 +88,6 @@ export interface TplayerAPI {
     onPlaybackState: (callback: (data: PlaybackStatePayload) => void) => () => void
     onTimeUpdate: (callback: (data: TimeUpdatePayload) => void) => () => void
     onLoad: (callback: (data: TrackLoadPayload) => void) => () => void
-    onEnded: (callback: () => void) => () => void
     onSeekTo: (callback: (data: { time: number }) => void) => () => void
   }
   queue: {
