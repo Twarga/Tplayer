@@ -29,8 +29,51 @@ import { EdgeCaseHandler } from '@/components/EdgeCaseHandler'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { motion, AnimatePresence } from 'framer-motion'
 
+const VIEW_META: Record<string, { title: string; subtitle: string }> = {
+  home: {
+    title: 'Overview',
+    subtitle: 'Jump back into your library, queue, and imports without extra dashboard noise.',
+  },
+  library: {
+    title: 'Library',
+    subtitle: 'Browse and start playback from your local collection.',
+  },
+  songs: {
+    title: 'Library',
+    subtitle: 'Browse and start playback from your local collection.',
+  },
+  albums: {
+    title: 'Albums',
+    subtitle: 'Scan your collection by release instead of by file list.',
+  },
+  artists: {
+    title: 'Artists',
+    subtitle: 'Move through your library by artist and album.',
+  },
+  playlists: {
+    title: 'Playlists',
+    subtitle: 'Keep your saved listening flows in one place.',
+  },
+  youtube: {
+    title: 'YouTube Import',
+    subtitle: 'Search, import, and pull new tracks into the local library.',
+  },
+  downloads: {
+    title: 'Downloads',
+    subtitle: 'Track the status of imported audio and recent download history.',
+  },
+  queue: {
+    title: 'Queue',
+    subtitle: 'Inspect and reorder what plays next.',
+  },
+  settings: {
+    title: 'Settings',
+    subtitle: 'Control folders, tools, accounts, and playback behavior.',
+  },
+}
+
 function AppShell() {
-  const [activeView, setActiveView] = useState('home')
+  const [activeView, setActiveView] = useState('library')
   const [npPanelOpen, setNpPanelOpen] = useState(true)
 
   const { init: initPlayer } = usePlayerStore()
@@ -103,9 +146,17 @@ function AppShell() {
       case 'settings':
         return <SettingsView />
       default:
-        return <HomeView />
+        return <LibraryView onViewChange={setActiveView} />
     }
   }
+
+  const viewMeta =
+    activeView.startsWith('playlist-')
+      ? {
+          title: 'Playlist',
+          subtitle: 'Focus on one saved queue and play through it cleanly.',
+        }
+      : VIEW_META[activeView] ?? VIEW_META.library
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -116,7 +167,12 @@ function AppShell() {
           </ErrorBoundary>
 
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-            <TopBar />
+            <TopBar
+              activeView={activeView}
+              title={viewMeta.title}
+              subtitle={viewMeta.subtitle}
+              onViewChange={setActiveView}
+            />
             <main className="flex-1 overflow-hidden relative">
               <ErrorBoundary>
                 <AnimatePresence mode="wait">
@@ -139,7 +195,7 @@ function AppShell() {
         </div>
 
         <ErrorBoundary>
-          <MiniPlayerBar onQueueClick={() => setActiveView('downloads')} />
+          <MiniPlayerBar onQueueClick={() => setActiveView('queue')} />
         </ErrorBoundary>
       </div>
     </TooltipProvider>

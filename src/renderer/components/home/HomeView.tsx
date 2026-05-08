@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useEffect, useCallback } from 'react'
 import { usePlayerStore } from '@/stores/playerStore'
 import { useLibraryStore } from '@/stores/libraryStore'
-import { Play, Pause, ChevronRight } from 'lucide-react'
+import { Play, Pause, ChevronRight, Download, FolderOpen, ListMusic, Settings } from 'lucide-react'
 import { PlayingBars } from '@/components/ui/PlayingBars'
+import { formatDuration } from '@/lib/utils'
 
 interface HomeViewProps {
   onViewChange?: (view: string) => void
@@ -11,20 +12,15 @@ interface HomeViewProps {
 export function HomeView({ onViewChange }: HomeViewProps) {
   const { tracks, loadTracks } = useLibraryStore()
   const { play, isPlaying, currentTrack } = usePlayerStore()
-  const [greeting, setGreeting] = useState('Good evening')
 
   useEffect(() => {
-    const hour = new Date().getHours()
-    if (hour < 12) setGreeting('Good morning')
-    else if (hour < 18) setGreeting('Good afternoon')
-    else setGreeting('Good evening')
-    
     if (tracks.length === 0) {
       loadTracks()
     }
   }, [])
 
   const recentTracks = tracks.slice(0, 6)
+  const highlightTracks = tracks.slice(0, 4)
 
   const handlePlay = useCallback((trackId: number) => {
     play(trackId)
@@ -32,17 +28,60 @@ export function HomeView({ onViewChange }: HomeViewProps) {
 
   return (
     <div className="p-6 overflow-y-auto h-full animate-fade-in">
-      <h1 className="text-display text-primary mb-1">{greeting}</h1>
-      <p className="text-body text-secondary mb-8">Enjoy your music</p>
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4 mb-8">
+        {[
+          {
+            title: 'Open library',
+            description: `${tracks.length} tracks ready for browsing and playback.`,
+            icon: FolderOpen,
+            view: 'library',
+          },
+          {
+            title: 'Check queue',
+            description: 'Inspect what plays next and reorder it cleanly.',
+            icon: ListMusic,
+            view: 'queue',
+          },
+          {
+            title: 'Review downloads',
+            description: 'Watch imported audio and recent download history.',
+            icon: Download,
+            view: 'downloads',
+          },
+          {
+            title: 'Adjust settings',
+            description: 'Manage folders, yt-dlp, and app behavior.',
+            icon: Settings,
+            view: 'settings',
+          },
+        ].map(({ title, description, icon: Icon, view }) => (
+          <button
+            key={view}
+            onClick={() => onViewChange?.(view)}
+            className="text-left rounded-xl border border-border-subtle bg-surface-1 p-4 hover:bg-surface-2 transition-colors"
+          >
+            <div className="w-10 h-10 rounded-xl bg-surface-3 text-accent flex items-center justify-center mb-4">
+              <Icon size={18} />
+            </div>
+            <h2 className="text-sm font-semibold text-primary">{title}</h2>
+            <p className="text-xs text-secondary mt-2 leading-5">{description}</p>
+          </button>
+        ))}
+      </section>
 
-      {/* Recently Played / Continue Listening */}
-      {recentTracks.length > 0 && (
+      {highlightTracks.length > 0 && (
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-h2 text-primary">Continue listening</h2>
+            <h2 className="text-h2 text-primary">Pick up where you left off</h2>
+            <button
+              className="text-caption text-tertiary hover:text-primary flex items-center gap-1 transition-colors"
+              onClick={() => onViewChange?.('library')}
+            >
+              Open library <ChevronRight size={14} />
+            </button>
           </div>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-5">
-            {recentTracks.slice(0, 4).map((track) => (
+            {highlightTracks.map((track) => (
               <div
                 key={track.id}
                 className="bg-surface-1 rounded-lg p-3 cursor-pointer card-lift group"
@@ -74,42 +113,42 @@ export function HomeView({ onViewChange }: HomeViewProps) {
         </section>
       )}
 
-      {/* Recently Added */}
-      {tracks.length > 0 && (
+      {recentTracks.length > 0 && (
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-h2 text-primary">Recently added</h2>
-            <button 
+            <button
               className="text-caption text-tertiary hover:text-primary flex items-center gap-1 transition-colors"
               onClick={() => onViewChange?.('library')}
             >
               See all <ChevronRight size={14} />
             </button>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6">
-            {tracks.slice(0, 8).map((track) => (
-              <div
+          <div className="rounded-xl border border-border-subtle overflow-hidden">
+            {recentTracks.map((track, index) => (
+              <button
                 key={track.id}
-                className="w-[160px] flex-shrink-0 cursor-pointer group"
                 onClick={() => handlePlay(track.id)}
+                className="w-full grid grid-cols-[40px_minmax(0,1fr)_120px_72px] items-center gap-3 px-4 py-3 text-left bg-surface-1 hover:bg-surface-2 transition-colors border-b border-border-subtle last:border-b-0"
               >
-                <div className="aspect-square rounded-md bg-surface-2 mb-2 overflow-hidden">
-                  <div className="w-full h-full bg-gradient-to-br from-surface-3 to-surface-2 flex items-center justify-center text-accent text-2xl font-bold group-hover:scale-105 transition-transform duration-300">
-                    {track.title?.[0] || '♪'}
-                  </div>
+                <div className="w-10 h-10 rounded-md bg-surface-3 flex items-center justify-center text-tertiary">
+                  {index + 1}
                 </div>
-                <p className="text-[13px] font-medium text-primary truncate flex items-center gap-2">
-                  {track.title}
-                  {isPlaying && currentTrack?.id === track.id && <PlayingBars />}
-                </p>
-                <p className="text-xs text-secondary truncate">{track.artist}</p>
-              </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-primary truncate flex items-center gap-2">
+                    {track.title}
+                    {isPlaying && currentTrack?.id === track.id && <PlayingBars />}
+                  </p>
+                  <p className="text-xs text-secondary truncate">{track.artist}</p>
+                </div>
+                <p className="text-xs text-secondary truncate">{track.album}</p>
+                <p className="text-xs text-tertiary text-right">{formatDuration(track.duration)}</p>
+              </button>
             ))}
           </div>
         </section>
       )}
 
-      {/* Empty State */}
       {tracks.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
           <div className="w-20 h-20 rounded-full bg-surface-2 flex items-center justify-center mb-6">

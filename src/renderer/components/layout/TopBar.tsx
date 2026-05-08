@@ -1,13 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, ChevronDown } from 'lucide-react'
+import { Search, Download, Library, ListMusic, Settings } from 'lucide-react'
 import { useLibraryStore } from '@/stores/libraryStore'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 
 interface TopBarProps {
+  activeView: string
+  title: string
+  subtitle: string
+  onViewChange?: (view: string) => void
   onSearch?: (query: string) => void
 }
 
-export function TopBar({ onSearch }: TopBarProps) {
+export function TopBar({ activeView, title, subtitle, onViewChange, onSearch }: TopBarProps) {
   const [searchValue, setSearchValue] = useState('')
   const { search } = useLibraryStore()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -42,30 +47,50 @@ export function TopBar({ onSearch }: TopBarProps) {
   }, [])
 
   return (
-    <div className="h-16 px-6 flex items-center justify-between gap-4">
-      <div className="relative flex-1 max-w-[500px]">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-tertiary pointer-events-none" />
-        <Input
-          ref={inputRef}
-          value={searchValue}
-          onChange={handleSearch}
-          placeholder="Search songs, artists, albums..."
-          className="pl-10 pr-16 h-10 bg-input-bg border-input-border"
-        />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-muted bg-surface-2 px-1.5 py-0.5 rounded">
-          Ctrl K
-        </span>
+    <div className="px-6 pt-5 pb-4 flex items-start justify-between gap-6 border-b border-border-subtle bg-background/95">
+      <div className="min-w-0 flex-1">
+        <div className="mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-tertiary">Tplayer</p>
+          <h1 className="text-2xl font-semibold text-primary mt-1 truncate">{title}</h1>
+          <p className="text-sm text-secondary mt-1 max-w-2xl">{subtitle}</p>
+        </div>
+
+        <div className="relative max-w-[520px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-tertiary pointer-events-none" />
+          <Input
+            ref={inputRef}
+            value={searchValue}
+            onChange={handleSearch}
+            placeholder="Search songs, artists, albums..."
+            className="pl-10 pr-16 h-10 bg-input-bg border-input-border"
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-muted bg-surface-2 px-1.5 py-0.5 rounded">
+            Ctrl K
+          </span>
+        </div>
       </div>
 
-      <div className="flex items-center gap-3">
-
-        <button className="h-8 pl-1 pr-3 rounded-full bg-black/40 hover:bg-black/60 border border-border-default flex items-center gap-2 transition-colors group">
-          <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-background text-xs font-bold">
-            U
-          </div>
-          <span className="text-sm font-medium text-primary">Local User</span>
-          <ChevronDown size={14} className="text-tertiary group-hover:text-primary transition-colors" />
-        </button>
+      <div className="flex items-center gap-2 shrink-0">
+        {[
+          { view: 'library', label: 'Library', icon: Library },
+          { view: 'queue', label: 'Queue', icon: ListMusic },
+          { view: 'downloads', label: 'Downloads', icon: Download },
+          { view: 'settings', label: 'Settings', icon: Settings },
+        ].map(({ view, label, icon: Icon }) => (
+          <button
+            key={view}
+            onClick={() => onViewChange?.(view)}
+            className={cn(
+              'h-10 px-3 rounded-xl border flex items-center gap-2 text-sm transition-colors',
+              activeView === view
+                ? 'bg-surface-2 border-border-default text-primary'
+                : 'bg-surface-1/60 border-border-subtle text-secondary hover:text-primary hover:bg-surface-2'
+            )}
+          >
+            <Icon size={16} />
+            <span>{label}</span>
+          </button>
+        ))}
       </div>
     </div>
   )
