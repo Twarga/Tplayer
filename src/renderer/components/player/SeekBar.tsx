@@ -60,9 +60,9 @@ export function SeekBar({ className }: SeekBarProps) {
         onPointerCancel={handlePointerEnd}
         className={`group w-full h-5 flex items-center ${canSeek ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
       >
-        <div className="relative h-px w-full bg-white/18">
+        <div className="relative h-[3px] w-full bg-white/16">
           <div
-            className={`absolute left-0 top-0 h-px bg-accent ${animations.progressFill}`}
+            className={`absolute left-0 top-0 h-full bg-accent ${animations.progressFill}`}
             style={{ width: `${progress}%` }}
           />
           <div
