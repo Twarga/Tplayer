@@ -15,15 +15,15 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 w-full h-10 px-3.5 rounded-xl text-sm font-medium interactive-soft relative",
+        "flex items-center gap-3 w-full h-11 px-3.5 rounded-[1rem] text-sm font-medium interactive-soft relative",
         active
-          ? 'bg-surface-3 text-primary shadow-card'
-          : 'text-secondary hover:bg-surface-2 hover:text-primary'
+          ? 'bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] text-primary shadow-card border border-white/6'
+          : 'text-secondary hover:bg-white/[0.04] hover:text-primary'
       )}
     >
       <div 
         className={cn(
-          "absolute left-0 top-2 bottom-2 w-1 bg-accent rounded-r-full transition-transform duration-slow origin-center",
+          "absolute left-0 top-2.5 bottom-2.5 w-1 bg-accent rounded-r-full transition-transform duration-slow origin-center",
           active ? "scale-y-100" : "scale-y-0"
         )} 
       />
@@ -54,18 +54,18 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
   }
 
   return (
-    <aside className="w-[238px] min-w-[238px] h-full rounded-[28px] bg-sidebar-bg border border-border-subtle flex flex-col select-none shadow-card overflow-hidden backdrop-glass">
-      <div className="px-5 pb-5 pt-5 flex items-center gap-3 shrink-0 border-b border-border-subtle">
-        <div className="w-10 h-10 rounded-[1.15rem] bg-accent flex items-center justify-center text-background font-bold text-sm shadow-accent-glow">
+    <aside className="w-[248px] min-w-[248px] h-full rounded-[32px] bg-[linear-gradient(180deg,rgba(13,14,17,0.98),rgba(10,11,13,0.92))] border border-white/7 flex flex-col select-none shadow-card overflow-hidden backdrop-glass">
+      <div className="px-5 pb-5 pt-5 flex items-center gap-3 shrink-0 border-b border-white/[0.06]">
+        <div className="w-11 h-11 rounded-[1.2rem] bg-accent flex items-center justify-center text-background font-bold text-sm shadow-accent-glow">
           T
         </div>
         <div className="min-w-0">
-          <span className="font-display font-bold text-primary text-[1.05rem] leading-none">Tplayer</span>
-          <p className="text-[11px] text-tertiary mt-1 tracking-[0.08em] uppercase">Library-first desktop player</p>
+          <span className="font-display font-bold text-primary text-[1.08rem] leading-none">Tplayer</span>
+          <p className="text-[11px] text-tertiary mt-1 tracking-[0.1em] uppercase">Library-first desktop player</p>
         </div>
       </div>
 
-      <nav className="flex flex-col gap-1 px-3 py-3 flex-1 overflow-y-auto">
+      <nav className="flex flex-col gap-1.5 px-3 py-4 flex-1 overflow-y-auto">
         <NavItem icon={<Library size={20} />} label="Library" active={activeView === 'library'} onClick={() => onViewChange('library')} />
         <NavItem icon={<Inbox size={20} />} label="Queue" active={activeView === 'queue'} onClick={() => onViewChange('queue')} />
         <NavItem icon={<ListMusic size={20} />} label="Playlists" active={activeView === 'playlists'} onClick={() => onViewChange('playlists')} />
@@ -78,11 +78,11 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
         <NavItem icon={<Download size={20} />} label="Downloads" active={activeView === 'downloads'} onClick={() => onViewChange('downloads')} />
 
         {/* Playlists Section */}
-        <div className="flex items-center justify-between px-3 pt-5 pb-2">
+        <div className="flex items-center justify-between px-3 pt-6 pb-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-tertiary">Playlists</p>
           <button
             onClick={() => setShowCreateDialog(true)}
-            className="w-7 h-7 rounded-full hover:bg-surface-2 flex items-center justify-center text-tertiary hover:text-primary interactive-soft"
+            className="w-8 h-8 rounded-full hover:bg-white/[0.05] flex items-center justify-center text-tertiary hover:text-primary interactive-soft"
             title="Create playlist"
           >
             <Plus size={14} />
@@ -100,7 +100,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="px-3 pb-4 pt-3 flex flex-col gap-1 shrink-0 border-t border-border-subtle bg-surface-1/30">
+      <div className="px-3 pb-4 pt-3 flex flex-col gap-1 shrink-0 border-t border-white/[0.06] bg-white/[0.02]">
         <NavItem icon={<Settings size={20} />} label="Settings" active={activeView === 'settings'} onClick={() => onViewChange('settings')} />
       </div>
 

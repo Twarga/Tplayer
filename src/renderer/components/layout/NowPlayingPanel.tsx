@@ -36,15 +36,14 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
         animate={collapsed ? 'closed' : 'open'}
         variants={panelMotion}
         className={cn(
-          'h-full rounded-[28px] bg-surface-1 border border-border-subtle flex flex-col shrink-0 overflow-hidden surface-panel shadow-card',
-          collapsed ? 'w-0 pointer-events-none' : 'w-[320px]'
+          'h-full rounded-[32px] bg-[linear-gradient(180deg,rgba(14,16,19,0.98),rgba(11,12,14,0.92))] border border-white/[0.08] flex flex-col shrink-0 overflow-hidden surface-panel shadow-card',
+          collapsed ? 'w-0 pointer-events-none' : 'w-[336px]'
         )}
       >
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border-subtle">
-          <div className="flex gap-6">
-            <span className="text-sm font-medium text-primary">
-              Now Playing
-            </span>
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/[0.06]">
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-tertiary">Playback Detail</span>
+            <span className="text-sm font-medium text-primary">Now Playing</span>
           </div>
           <button
             onClick={onToggle}
@@ -60,9 +59,9 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
             variants={staggerParent}
             initial="hidden"
             animate="show"
-            className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gradient-now-playing"
+            className="flex-1 overflow-y-auto px-5 py-5 flex flex-col bg-[radial-gradient(circle_at_top,rgba(232,168,124,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_45%)]"
           >
-            <motion.div variants={staggerItem} className="w-full aspect-square rounded-[1.4rem] overflow-hidden shadow-2xl mb-5 bg-surface-2 flex items-center justify-center relative border border-white/5">
+            <motion.div variants={staggerItem} className="w-full aspect-square rounded-[1.65rem] overflow-hidden shadow-2xl mb-5 bg-surface-2 flex items-center justify-center relative border border-white/[0.07]">
               {currentTrack?.cover_path && (
                 <div 
                   className="absolute inset-0 bg-cover bg-center blur-xl opacity-40 transform scale-110" 
@@ -73,10 +72,10 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
                 <img 
                   src={`tplayer-img://media/${encodeURIComponent(currentTrack.cover_path)}`} 
                   alt="Album Art" 
-                  className="w-full h-full object-cover relative z-10 rounded-[1.4rem]"
+                  className="w-full h-full object-cover relative z-10 rounded-[1.65rem]"
                 />
               ) : currentTrack ? (
-                <div className="w-full h-full bg-gradient-to-br from-accent/20 to-surface-2 flex items-center justify-center text-accent text-6xl font-bold relative z-10 rounded-[1.4rem]">
+                <div className="w-full h-full bg-gradient-to-br from-accent/20 to-surface-2 flex items-center justify-center text-accent text-6xl font-bold relative z-10 rounded-[1.65rem]">
                   {currentTrack.title?.[0] || '♪'}
                 </div>
               ) : (
@@ -103,7 +102,7 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
 
             <motion.div variants={staggerItem} className="mb-3">
               <div
-                className="w-full h-1 bg-progress-bg rounded-full cursor-pointer group relative"
+                className="w-full h-1.5 bg-progress-bg rounded-full cursor-pointer group relative"
                 onClick={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect()
                   const ratio = (e.clientX - rect.left) / rect.width
@@ -123,7 +122,7 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
               </div>
             </motion.div>
 
-            <motion.div variants={staggerItem} className="flex items-center justify-center gap-5 my-4">
+            <motion.div variants={staggerItem} className="flex items-center justify-center gap-5 my-5">
               <button
                 onClick={toggleShuffle}
                 className={cn(animations.controlButton, isShuffled ? "text-accent" : "text-tertiary hover:text-primary")}
@@ -137,7 +136,7 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
 
               <button
                 onClick={togglePlay}
-                className={cn('w-14 h-14 rounded-full bg-accent text-background flex items-center justify-center shadow-accent-glow', animations.controlButton)}
+                className={cn('w-[3.75rem] h-[3.75rem] rounded-full bg-accent text-background flex items-center justify-center shadow-accent-glow', animations.controlButton)}
               >
                 {isPlaying ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" className="ml-1" />}
               </button>

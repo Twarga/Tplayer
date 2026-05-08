@@ -175,12 +175,13 @@ function AppShell() {
   return (
     <TooltipProvider delayDuration={300}>
       <div className="h-screen w-screen bg-background text-primary overflow-hidden flex flex-col">
-        <div className="flex flex-1 overflow-hidden p-3 gap-3">
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(232,168,124,0.12),transparent_28%),radial-gradient(circle_at_85%_14%,rgba(255,255,255,0.05),transparent_22%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent_55%)]" />
+        <div className="flex flex-1 overflow-hidden p-3 gap-3 relative">
           <ErrorBoundary>
             <Sidebar activeView={activeView} onViewChange={handleViewChange} />
           </ErrorBoundary>
 
-          <div className="flex-1 flex flex-col overflow-hidden min-w-0 rounded-[28px] border border-border-subtle bg-surface-panel shadow-card">
+          <div className="flex-1 flex flex-col overflow-hidden min-w-0 rounded-[32px] border border-white/8 bg-surface-panel shadow-card backdrop-glass">
             <TopBar
               activeView={activeView}
               title={viewMeta.title}
@@ -197,7 +198,7 @@ function AppShell() {
                     animate="animate"
                     exit="exit"
                     transition={routeTransition}
-                    className="absolute inset-0 overflow-hidden rounded-[24px]"
+                    className="absolute inset-0 overflow-hidden rounded-[28px] bg-surface-1/58 border border-white/[0.03]"
                   >
                     {renderView()}
                   </motion.div>
