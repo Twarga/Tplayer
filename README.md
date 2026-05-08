@@ -9,6 +9,11 @@
 </p>
 
 <p align="center">
+  <strong><a href="https://twarga.github.io/Tplayer/">Website</a></strong> •
+  <strong><a href="https://github.com/Twarga/Tplayer/releases">Downloads</a></strong>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Electron-Desktop-1f1f1f?style=flat-square&logo=electron&logoColor=white" alt="Electron" />
   <img src="https://img.shields.io/badge/React-Frontend-1f1f1f?style=flat-square&logo=react&logoColor=61DAFB" alt="React" />
   <img src="https://img.shields.io/badge/Vite-Build-1f1f1f?style=flat-square&logo=vite&logoColor=646CFF" alt="Vite" />
