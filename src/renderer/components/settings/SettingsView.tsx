@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { FolderOpen, Plus, Trash2, RefreshCw } from 'lucide-react'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useLibraryStore } from '@/stores/libraryStore'
@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { useTheme } from '@/components/ThemeProvider'
 import { cn } from '@/lib/utils'
+import { api } from '@/lib/ipc'
 
 const ACCENT_COLORS = [
   { name: 'Amber', value: 'amber', color: '#E8A87C' },
@@ -21,8 +22,68 @@ export function SettingsView() {
   const { musicFolders, settings, load, set, addFolder, removeFolder, getBoolean } = useSettingsStore()
   const { loadTracks, scanProgress } = useLibraryStore()
   const { theme, accent, setTheme, setAccent } = useTheme()
+  const [lastFmConnected, setLastFmConnected] = useState(false)
+  const [lastFmBusy, setLastFmBusy] = useState(false)
+  const [lastFmMessage, setLastFmMessage] = useState<string>('')
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    void load()
+    void refreshLastFmState()
+  }, [])
+
+  useEffect(() => {
+    if (lastFmConnected) {
+      setLastFmMessage(`Connected${settings.lastfm_username ? ` as ${settings.lastfm_username}` : ''}.`)
+    }
+  }, [lastFmConnected, settings.lastfm_username])
+
+  const refreshLastFmState = async () => {
+    try {
+      const connected = await api.lastfm.isAuthd()
+      setLastFmConnected(connected)
+      setLastFmMessage(
+        connected
+          ? `Connected${settings.lastfm_username ? ` as ${settings.lastfm_username}` : ''}.`
+          : 'Not connected.'
+      )
+    } catch (err) {
+      console.error('[settings] lastfm status failed:', err)
+      setLastFmConnected(false)
+      setLastFmMessage('Unable to read Last.fm status.')
+    }
+  }
+
+  const handleLastFmConnect = async () => {
+    setLastFmBusy(true)
+    setLastFmMessage('Waiting for Last.fm approval in your browser...')
+    try {
+      const username = await api.lastfm.auth(settings.lastfm_api_key || '', settings.lastfm_secret || '')
+      await load()
+      setLastFmConnected(true)
+      setLastFmMessage(username ? `Connected as ${username}.` : 'Connected to Last.fm.')
+    } catch (err) {
+      console.error('[settings] lastfm auth failed:', err)
+      setLastFmConnected(false)
+      setLastFmMessage(err instanceof Error ? err.message : 'Last.fm connection failed.')
+    } finally {
+      setLastFmBusy(false)
+    }
+  }
+
+  const handleLastFmDisconnect = async () => {
+    setLastFmBusy(true)
+    try {
+      await api.lastfm.disconnect()
+      await load()
+      setLastFmConnected(false)
+      setLastFmMessage('Disconnected from Last.fm.')
+    } catch (err) {
+      console.error('[settings] lastfm disconnect failed:', err)
+      setLastFmMessage('Failed to disconnect Last.fm.')
+    } finally {
+      setLastFmBusy(false)
+    }
+  }
 
   return (
     <div className="p-6 overflow-y-auto h-full max-w-2xl">
@@ -157,10 +218,49 @@ export function SettingsView() {
 
       <section className="mb-8">
         <h2 className="text-lg font-semibold text-primary mb-4">Last.fm</h2>
-        <p className="text-sm text-secondary mb-3">Connect your Last.fm account to scrobble plays.</p>
-        <Button variant="outline" size="sm">
-          Connect Last.fm
-        </Button>
+        <p className="text-sm text-secondary mb-4">Connect your Last.fm account to scrobble plays.</p>
+        <div className="space-y-4 rounded-2xl border border-border-subtle bg-surface-1 p-4">
+          <div>
+            <p className="text-sm text-secondary mb-2">API Key</p>
+            <Input
+              value={settings.lastfm_api_key || ''}
+              onChange={(e) => set('lastfm_api_key', e.target.value)}
+              placeholder="Your Last.fm API key"
+            />
+          </div>
+          <div>
+            <p className="text-sm text-secondary mb-2">Shared Secret</p>
+            <Input
+              value={settings.lastfm_secret || ''}
+              onChange={(e) => set('lastfm_secret', e.target.value)}
+              placeholder="Your Last.fm shared secret"
+              type="password"
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className={cn('text-sm font-medium', lastFmConnected ? 'text-green-400' : 'text-primary')}>
+                {lastFmConnected ? 'Last.fm connected' : 'Last.fm not connected'}
+              </p>
+              <p className="text-xs text-tertiary mt-1">{lastFmMessage || 'Authorize in your browser, then return to Tplayer.'}</p>
+            </div>
+            <div className="flex gap-2">
+              {lastFmConnected && (
+                <Button variant="ghost" size="sm" onClick={handleLastFmDisconnect} disabled={lastFmBusy}>
+                  Disconnect
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLastFmConnect}
+                disabled={lastFmBusy || !(settings.lastfm_api_key || '').trim() || !(settings.lastfm_secret || '').trim()}
+              >
+                {lastFmBusy ? 'Waiting...' : lastFmConnected ? 'Reconnect' : 'Connect Last.fm'}
+              </Button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section>

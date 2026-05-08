@@ -174,6 +174,7 @@ export function initDatabase(): BetterSqlite3.Database {
     lastfm_api_key: '',
     lastfm_secret: '',
     lastfm_session_key: '',
+    lastfm_username: '',
     scan_on_startup: 'true',
   }
 

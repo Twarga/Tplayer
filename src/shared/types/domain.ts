@@ -72,7 +72,9 @@ export interface Settings {
   eq_enabled: boolean
   eq_bands: number[]
   lastfm_api_key: string
+  lastfm_secret: string
   lastfm_session_key: string
+  lastfm_username?: string
   scan_on_startup: boolean
   close_to_tray: boolean
   show_mini_player: boolean

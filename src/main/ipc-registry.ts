@@ -289,19 +289,19 @@ function registerEQHandlers(): void {
 }
 
 function registerLastFMHandlers(): void {
-  ipcMain.handle(IPC_CHANNELS.lastfm.auth, async (_, apiKey: string) => {
-    setSetting('lastfm_api_key', apiKey)
-    return ''
+  ipcMain.handle(IPC_CHANNELS.lastfm.auth, async (_, apiKey: string, secret?: string) => {
+    const { auth } = await import('./lastfm')
+    return auth(apiKey, secret || '')
   })
 
   ipcMain.handle(IPC_CHANNELS.lastfm.isAuthd, async () => {
-    const key = getSetting('lastfm_api_key')
-    return !!key && key.length > 0
+    const { isAuthd } = await import('./lastfm')
+    return isAuthd()
   })
 
   ipcMain.handle(IPC_CHANNELS.lastfm.disconnect, async () => {
-    setSetting('lastfm_api_key', '')
-    setSetting('lastfm_session_key', '')
+    const { disconnect } = await import('./lastfm')
+    disconnect()
   })
 
   ipcMain.handle(IPC_CHANNELS.lastfm.nowPlaying, async (_, artist: string, track: string, album?: string) => {
