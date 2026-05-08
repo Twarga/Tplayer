@@ -6,6 +6,39 @@ import type { GetTracksOptions } from '../shared/ipc/contracts'
 
 let _db: BetterSqlite3.Database | null = null
 
+export interface TrackUpsertInput {
+  file_path: string
+  title: string
+  artist: string
+  album: string
+  album_artist: string | null
+  track_number: number | null
+  disc_number: number | null
+  year: number | null
+  genre: string | null
+  duration: number
+  bitrate: number | null
+  sample_rate: number | null
+  file_size: number
+  file_format: string
+  has_cover: number
+  cover_path: string | null
+  play_count: number
+  skip_count: number
+  is_favorite: number
+  rating: number
+  bpm: number | null
+  color_palette: string | null
+}
+
+export interface TrackSummary {
+  id: number
+  title: string
+  artist: string
+  album: string
+  duration: number
+}
+
 export function getDb(): BetterSqlite3.Database {
   if (!_db) throw new Error('Database not initialized')
   return _db
@@ -242,6 +275,60 @@ export function getTrackById(id: number): Track | null {
 
 export function getTrackByFilePath(filePath: string): Track | null {
   return (getDb().prepare('SELECT * FROM tracks WHERE file_path = ?').get(filePath) as Track | undefined) ?? null
+}
+
+export function getTrackSummaryByFilePath(filePath: string): TrackSummary | null {
+  return (
+    getDb()
+      .prepare('SELECT id, title, artist, album, duration FROM tracks WHERE file_path = ?')
+      .get(filePath) as TrackSummary | undefined
+  ) ?? null
+}
+
+export function upsertTrack(track: TrackUpsertInput): void {
+  getDb().prepare(`
+    INSERT INTO tracks (
+      file_path, title, artist, album, album_artist, track_number, disc_number,
+      year, genre, duration, bitrate, sample_rate, file_size, file_format,
+      has_cover, cover_path, play_count, skip_count, is_favorite, rating, bpm, color_palette
+    ) VALUES (
+      @file_path, @title, @artist, @album, @album_artist, @track_number, @disc_number,
+      @year, @genre, @duration, @bitrate, @sample_rate, @file_size, @file_format,
+      @has_cover, @cover_path, @play_count, @skip_count, @is_favorite, @rating, @bpm, @color_palette
+    )
+    ON CONFLICT(file_path) DO UPDATE SET
+      title = @title,
+      artist = @artist,
+      album = @album,
+      album_artist = @album_artist,
+      track_number = @track_number,
+      disc_number = @disc_number,
+      year = @year,
+      genre = @genre,
+      duration = @duration,
+      bitrate = @bitrate,
+      sample_rate = @sample_rate,
+      file_size = @file_size,
+      file_format = @file_format,
+      has_cover = @has_cover,
+      cover_path = @cover_path,
+      bpm = @bpm,
+      color_palette = @color_palette
+  `).run(track)
+}
+
+export function saveCoverRecord(album: string, artist: string, imageBuffer: Buffer, mimeType: string): void {
+  getDb().prepare(`
+    INSERT OR REPLACE INTO covers (album, artist, image_blob, mime_type)
+    VALUES (?, ?, ?, ?)
+  `).run(album, artist, imageBuffer, mimeType)
+}
+
+export function deleteTrackByFilePath(filePath: string): { id: number } | null {
+  const existing = getDb().prepare('SELECT id FROM tracks WHERE file_path = ?').get(filePath) as { id: number } | undefined
+  if (!existing) return null
+  getDb().prepare('DELETE FROM tracks WHERE id = ?').run(existing.id)
+  return existing
 }
 
 export function getQueueTracksByIds(ids: number[]): Array<Pick<Track, 'id' | 'title' | 'artist' | 'album' | 'duration'>> {

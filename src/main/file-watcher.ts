@@ -1,9 +1,8 @@
 import { watch, FSWatcher } from 'chokidar'
 import path from 'path'
-import { getSetting } from './database'
+import { deleteTrackByFilePath, getMusicFolders } from './database'
 import { scanFile } from './library-scanner'
 import { send } from './ipc-registry'
-import { getDb } from './database'
 import { IPC_CHANNELS } from '../shared/ipc/channels'
 
 let _watcher: FSWatcher | null = null
@@ -18,16 +17,6 @@ function isAudioFile(filePath: string): boolean {
   return SUPPORTED_EXTENSIONS.has(path.extname(filePath).toLowerCase())
 }
 
-function getMusicFolders(): string[] {
-  const raw = getSetting('music_folders')
-  if (!raw) return []
-  try {
-    return JSON.parse(raw)
-  } catch {
-    return []
-  }
-}
-
 function startDebounce(): void {
   if (_debounceTimer) clearTimeout(_debounceTimer)
   _debounceTimer = setTimeout(async () => {
@@ -39,7 +28,10 @@ function startDebounce(): void {
     const addedTracks = []
     for (const filePath of files) {
       const track = await scanFile(filePath)
-      if (track) addedTracks.push(track)
+      if (track) {
+        addedTracks.push(track)
+        send(IPC_CHANNELS.library.fileAdded, track)
+      }
     }
 
     if (addedTracks.length > 0) {
@@ -73,10 +65,8 @@ export function startWatcher(): void {
 
   _watcher.on('unlink', (filePath) => {
     if (!isAudioFile(filePath)) return
-    const db = getDb()
-      const track = db.prepare('SELECT id FROM tracks WHERE file_path = ?').get(filePath) as { id: number } | undefined
+    const track = deleteTrackByFilePath(filePath)
     if (track) {
-      db.prepare('DELETE FROM tracks WHERE id = ?').run(track.id)
       send(IPC_CHANNELS.library.fileRemoved, { id: track.id, filePath })
     }
   })

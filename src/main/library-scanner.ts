@@ -3,8 +3,16 @@ import path from 'path'
 import crypto from 'crypto'
 import { app } from 'electron'
 import { parseFile } from 'music-metadata'
-import { getDb } from './database'
+import {
+  getTrackByFilePath,
+  getTrackSummaryByFilePath,
+  saveCoverRecord,
+  upsertTrack,
+  type TrackSummary,
+  type TrackUpsertInput,
+} from './database'
 import { send } from './ipc-registry'
+import { IPC_CHANNELS } from '../shared/ipc/channels'
 
 const { stat: fsStat, readdir: fsReaddir } = fs.promises
 
@@ -12,7 +20,7 @@ const SUPPORTED_EXTENSIONS = new Set([
   '.mp3', '.flac', '.ogg', '.opus', '.wav', '.aac', '.m4a', '.wma', '.aiff',
 ])
 
-interface TrackMeta {
+interface TrackMeta extends TrackUpsertInput {
   file_path: string
   title: string
   artist: string
@@ -115,36 +123,7 @@ async function extractMetadata(filePath: string): Promise<TrackMeta> {
 }
 
 function insertOrReplaceTrack(track: TrackMeta): void {
-  const db = getDb()
-  db.prepare(`
-    INSERT INTO tracks (
-      file_path, title, artist, album, album_artist, track_number, disc_number,
-      year, genre, duration, bitrate, sample_rate, file_size, file_format,
-      has_cover, cover_path, play_count, skip_count, is_favorite, rating, bpm, color_palette
-    ) VALUES (
-      @file_path, @title, @artist, @album, @album_artist, @track_number, @disc_number,
-      @year, @genre, @duration, @bitrate, @sample_rate, @file_size, @file_format,
-      @has_cover, @cover_path, @play_count, @skip_count, @is_favorite, @rating, @bpm, @color_palette
-    )
-    ON CONFLICT(file_path) DO UPDATE SET
-      title = @title,
-      artist = @artist,
-      album = @album,
-      album_artist = @album_artist,
-      track_number = @track_number,
-      disc_number = @disc_number,
-      year = @year,
-      genre = @genre,
-      duration = @duration,
-      bitrate = @bitrate,
-      sample_rate = @sample_rate,
-      file_size = @file_size,
-      file_format = @file_format,
-      has_cover = @has_cover,
-      cover_path = @cover_path,
-      bpm = @bpm,
-      color_palette = @color_palette
-  `).run(track)
+  upsertTrack(track)
 }
 
 async function scanDir(dirPath: string): Promise<string[]> {
@@ -191,7 +170,7 @@ export async function scanFolders(folders: string[]): Promise<{ added: number; u
       const current = i + 1
 
       if (_scanCount > 0 && _scanCount % 10 === 0) {
-        send('library:scan-progress', {
+        send(IPC_CHANNELS.library.scanProgress, {
           current,
           processed: current,
           total,
@@ -200,9 +179,7 @@ export async function scanFolders(folders: string[]): Promise<{ added: number; u
         })
       }
 
-      const existing = getDb()
-        .prepare('SELECT id, file_path FROM tracks WHERE file_path = ?')
-        .get(filePath) as { id: number; file_path: string } | undefined
+      const existing = getTrackByFilePath(filePath)
 
       const track = await extractMetadata(filePath)
       insertOrReplaceTrack(track)
@@ -230,10 +207,7 @@ export function saveCover(album: string, artist: string, imageBuffer: Buffer, mi
     fs.mkdirSync(coversDir, { recursive: true })
     fs.writeFileSync(coverPath, imageBuffer)
 
-    getDb().prepare(`
-      INSERT OR REPLACE INTO covers (album, artist, image_blob, mime_type)
-      VALUES (?, ?, ?, ?)
-    `).run(album, artist, imageBuffer, mimeType)
+    saveCoverRecord(album, artist, imageBuffer, mimeType)
 
     return coverPath
   } catch {
@@ -241,20 +215,14 @@ export function saveCover(album: string, artist: string, imageBuffer: Buffer, mi
   }
 }
 
-export async function scanFile(filePath: string): Promise<{ id: number; title: string; artist: string; album: string; duration: number } | null> {
+export async function scanFile(filePath: string): Promise<TrackSummary | null> {
   if (!SUPPORTED_EXTENSIONS.has(path.extname(filePath).toLowerCase())) return null
   try {
     const track = await extractMetadata(filePath)
     insertOrReplaceTrack(track)
-    const row = getDb().prepare('SELECT id, title, artist, album, duration FROM tracks WHERE file_path = ?').get(filePath) as
-      { id: number; title: string; artist: string; album: string; duration: number } | undefined
-    return row || null
+    return getTrackSummaryByFilePath(filePath)
   } catch (err) {
     console.error('[scanner] scanFile failed:', err)
     return null
   }
-}
-
-export function removeTrack(filePath: string): void {
-  getDb().prepare('DELETE FROM tracks WHERE file_path = ?').run(filePath)
 }
