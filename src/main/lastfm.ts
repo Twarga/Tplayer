@@ -136,8 +136,6 @@ export async function updateNowPlaying(artist: string, track: string, album?: st
 }
 
 let _scrobbleQueue: Array<{ artist: string; track: string; album?: string; timestamp: number }> = []
-let _retryCount = 0
-const MAX_RETRIES = 3
 
 export async function scrobble(artist: string, track: string, album?: string, timestamp?: number): Promise<void> {
   if (!isAuthd()) return
@@ -146,35 +144,17 @@ export async function scrobble(artist: string, track: string, album?: string, ti
   const entry = { artist, track, album, timestamp: ts }
 
   try {
-    const result = await lastFmRequest({
+    await lastFmRequest({
       method: 'track.scrobble',
       artist,
       track,
       timestamp: ts.toString(),
       ...(album ? { album } : {}),
-    }) as { scrobbles?: { scrobble: { correct?: string } } }
-
-    if ((result as Record<string, unknown>)?.[''] === 'ok') {
-      _retryCount = 0
-      return
-    }
-
-    _scrobbleQueue.push(entry)
-    await retryScrobbles()
+    })
+    return
   } catch {
     _scrobbleQueue.push(entry)
   }
-}
-
-async function retryScrobbles(): Promise<void> {
-  if (_retryCount >= MAX_RETRIES || _scrobbleQueue.length === 0) {
-    _scrobbleQueue = []
-    _retryCount = 0
-    return
-  }
-
-  _retryCount++
-  await new Promise((r) => setTimeout(r, 2000 * _retryCount))
 }
 
 export function getQueueLength(): number {

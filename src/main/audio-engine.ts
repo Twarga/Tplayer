@@ -48,8 +48,12 @@ let _unshuffledQueue: QueueItem[] = []
 let _history: QueueItem[] = []
 let _currentQueueItem: QueueItem | null = null
 let _currentTrack: Track | null = null
+let _currentTrackStartedAt = 0
+let _currentTrackScrobbled = false
 let _queueItemId = 1
 const MAX_HISTORY = 50
+const MIN_SCROBBLE_SECONDS = 30
+const MAX_SCROBBLE_THRESHOLD_SECONDS = 240
 
 function createQueueItem(trackId: number): QueueItem {
   const item: QueueItem = {
@@ -86,6 +90,36 @@ function getRepeatSeed(): QueueItem[] {
 
 function getTrack(id: number): Track | undefined {
   return getDb().prepare('SELECT * FROM tracks WHERE id = ?').get(id) as Track | undefined
+}
+
+function resetTrackSession(track: Track): void {
+  _currentTrack = track
+  _currentTrackStartedAt = Math.floor(Date.now() / 1000)
+  _currentTrackScrobbled = false
+}
+
+function maybeScrobbleCurrentTrack(listenedSeconds = _state.currentTime): void {
+  if (_currentTrackScrobbled || !_currentTrack) return
+
+  const duration = _state.duration > 0 ? _state.duration : _currentTrack.duration
+  if (!Number.isFinite(duration) || duration < MIN_SCROBBLE_SECONDS) {
+    return
+  }
+
+  const scrobbleThreshold = Math.min(MAX_SCROBBLE_THRESHOLD_SECONDS, duration / 2)
+  if (listenedSeconds < scrobbleThreshold) {
+    return
+  }
+
+  _currentTrackScrobbled = true
+  scrobble(
+    _currentTrack.artist,
+    _currentTrack.title,
+    _currentTrack.album,
+    _currentTrackStartedAt || Math.floor(Date.now() / 1000)
+  ).catch((err) => {
+    console.error('[audio-engine] scrobble failed:', err)
+  })
 }
 
 function emitQueueUpdated(): void {
@@ -153,7 +187,7 @@ async function playQueueItem(queueItem: QueueItem): Promise<void> {
 
   try {
     _currentQueueItem = queueItem
-    _currentTrack = track
+    resetTrackSession(track)
     _state.currentTrackId = queueItem.trackId
     _state.duration = track.duration
     _state.currentTime = 0
@@ -239,6 +273,7 @@ export function syncPlaybackProgress(payload: PlaybackProgressPayload): void {
 
   _state.currentTime = currentTime
   _state.duration = duration
+  maybeScrobbleCurrentTrack(currentTime)
   emitTimeUpdate()
 }
 
@@ -415,12 +450,7 @@ export function getPlayerStateExport(): PlayerExportState {
 }
 
 export function onTrackEnded(): void {
-  if (_state.currentTrackId !== null) {
-    const track = getTrack(_state.currentTrackId)
-    if (track) {
-      scrobble(track.artist, track.title, track.album).catch(() => {})
-    }
-  }
+  maybeScrobbleCurrentTrack(_state.duration || _state.currentTime)
 
   if (_state.repeatMode === 'one') {
     if (_currentQueueItem) {
@@ -438,6 +468,7 @@ export function onTrackEnded(): void {
       _state.isPlaying = false
       _state.playbackState = 'idle'
       _state.currentTime = 0
+      _currentTrack = null
       emitTimeUpdate()
       emitPlaybackState()
     }
