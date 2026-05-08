@@ -1,6 +1,10 @@
 # Tplayer
 
-A beautiful, Spotify-like local music player for Linux with YouTube download integration.
+A polished local-first desktop music player with YouTube import.
+
+Tplayer is built for focused listening: fast local playback, clean queue control, imported tracks beside your albums, Last.fm scrobbling, Linux media-key support, and a warm dark interface that puts the music first.
+
+Brand direction for screenshots, release copy, and the upcoming landing page lives in [docs/brand.md](docs/brand.md).
 
 ## Features
 
