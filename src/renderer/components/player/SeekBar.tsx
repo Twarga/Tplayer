@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type PointerEvent } from 'react'
+import { useCallback, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { usePlayerStore } from '@/stores/playerStore'
 import { formatDuration } from '@/lib/utils'
 import { animations } from '@/lib/animations'
@@ -12,7 +12,7 @@ export function SeekBar({ className }: SeekBarProps) {
   const trackRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
+  const progress = duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0
   const canSeek = duration > 0 && Number.isFinite(duration)
   const remaining = Math.max(0, duration - currentTime)
 
@@ -44,6 +44,20 @@ export function SeekBar({ className }: SeekBarProps) {
     setIsDragging(false)
   }
 
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!canSeek) return
+
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault()
+      void seek(Math.max(0, currentTime - 5))
+    }
+
+    if (event.key === 'ArrowRight') {
+      event.preventDefault()
+      void seek(Math.min(duration, currentTime + 5))
+    }
+  }
+
   return (
     <div className={`flex flex-col gap-1 ${className || ''}`}>
       <div
@@ -58,6 +72,7 @@ export function SeekBar({ className }: SeekBarProps) {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerEnd}
         onPointerCancel={handlePointerEnd}
+        onKeyDown={handleKeyDown}
         className={`group w-full h-5 flex items-center ${canSeek ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
       >
         <div className="relative h-[3px] w-full bg-white/16">
@@ -67,7 +82,7 @@ export function SeekBar({ className }: SeekBarProps) {
           />
           <div
             className={`absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-accent transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-            style={{ left: `calc(${progress}% - 6px)` }}
+            style={{ left: `${progress}%`, transform: 'translate(-50%, -50%)' }}
           />
         </div>
       </div>

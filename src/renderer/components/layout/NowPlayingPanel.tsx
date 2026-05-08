@@ -4,6 +4,7 @@ import { usePlayerStore } from '@/stores/playerStore'
 import { useLibraryStore } from '@/stores/libraryStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { QualityBadges } from '@/components/player/QualityBadges'
+import { SeekBar } from '@/components/player/SeekBar'
 import { cn, formatDuration } from '@/lib/utils'
 import { animations, panelMotion, staggerItem, staggerParent } from '@/lib/animations'
 
@@ -16,8 +17,6 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
   const {
     currentTrack,
     isPlaying,
-    currentTime,
-    duration,
     isShuffled,
     repeatMode,
     togglePlay,
@@ -25,12 +24,9 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
     prev,
     toggleShuffle,
     toggleRepeat,
-    seek,
   } = usePlayerStore()
   const { toggleFavorite, isFavorite } = useLibraryStore()
   const { queue, clear } = useQueueStore()
-
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
     <>
@@ -103,25 +99,7 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
             </motion.div>
 
             <motion.div variants={staggerItem} className="mb-3">
-              <div
-                className="w-full h-1.5 bg-progress-bg rounded-full cursor-pointer group relative"
-                onClick={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect()
-                  const ratio = (e.clientX - rect.left) / rect.width
-                  seek(ratio * duration)
-                }}
-              >
-                <div
-                  className={cn('h-full bg-accent rounded-full relative', animations.progressFill)}
-                  style={{ width: `${progress}%` }}
-                >
-                  <span className={cn('absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-accent rounded-full opacity-0 shadow-progress-thumb', animations.progressThumb)} />
-                </div>
-              </div>
-              <div className="flex justify-between text-[11px] text-tertiary mt-1">
-                <span>{formatDuration(currentTime)}</span>
-                <span>{formatDuration(duration)}</span>
-              </div>
+              <SeekBar />
             </motion.div>
 
             <motion.div variants={staggerItem} className="flex items-center justify-center gap-5 my-5">

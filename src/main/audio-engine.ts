@@ -246,7 +246,8 @@ export function togglePlay(): void {
 }
 
 export function seek(time: number): void {
-  time = Math.max(0, Math.min(time, _state.duration))
+  const maxTime = _state.duration > 0 ? _state.duration : time
+  time = Math.max(0, Math.min(time, maxTime))
   _state.currentTime = time
 
   if (_state.currentTrackId !== null) {
