@@ -1,6 +1,8 @@
 import BetterSqlite3 from 'better-sqlite3'
 import { app } from 'electron'
 import path from 'path'
+import type { Cover, Download, Playlist, Track } from '../shared/types/domain'
+import type { GetTracksOptions } from '../shared/ipc/contracts'
 
 let _db: BetterSqlite3.Database | null = null
 
@@ -81,7 +83,7 @@ export function initDatabase(): BetterSqlite3.Database {
       progress   REAL DEFAULT 0,
       track_id   INTEGER,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      FOREIGN KEY (track_id) REFERENCES tracks(id)
+      FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE SET NULL
     );
 
     CREATE TABLE IF NOT EXISTS settings (
@@ -98,6 +100,35 @@ export function initDatabase(): BetterSqlite3.Database {
     CREATE INDEX IF NOT EXISTS idx_playlist_tracks_playlist ON playlist_tracks(playlist_id);
     CREATE INDEX IF NOT EXISTS idx_downloads_status ON downloads(status);
   `)
+
+  try {
+    const fkInfo = db.prepare(`PRAGMA foreign_key_list(downloads)`).all() as Array<{ on_delete: string }>
+    const needsMigration = fkInfo.length > 0 && !fkInfo.some(fk => fk.on_delete === 'SET NULL')
+    if (needsMigration) {
+      db.exec(`
+        PRAGMA foreign_keys = OFF;
+        CREATE TABLE downloads_new (
+          id         INTEGER PRIMARY KEY AUTOINCREMENT,
+          url        TEXT NOT NULL,
+          video_id   TEXT NOT NULL,
+          title      TEXT NOT NULL,
+          artist     TEXT,
+          status     TEXT DEFAULT 'pending',
+          progress   REAL DEFAULT 0,
+          track_id   INTEGER,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE SET NULL
+        );
+        INSERT INTO downloads_new SELECT * FROM downloads;
+        DROP TABLE downloads;
+        ALTER TABLE downloads_new RENAME TO downloads;
+        PRAGMA foreign_keys = ON;
+      `)
+      console.log('[database] Migrated downloads table foreign key')
+    }
+  } catch (err) {
+    console.log('[database] Downloads migration skipped:', err)
+  }
 
   const defaults: Record<string, string> = {
     music_folders: '[]',
@@ -139,6 +170,162 @@ export function getAllSettings(): Record<string, string> {
     result[row.key] = row.value
   }
   return result
+}
+
+export function getMusicFolders(): string[] {
+  const raw = getSetting('music_folders')
+  if (!raw) return []
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return []
+  }
+}
+
+export function addMusicFolder(folderPath: string): void {
+  const folders = getMusicFolders()
+  if (!folders.includes(folderPath)) {
+    folders.push(folderPath)
+    setSetting('music_folders', JSON.stringify(folders))
+  }
+}
+
+export function removeMusicFolder(folderPath: string): void {
+  const folders = getMusicFolders().filter((folder) => folder !== folderPath)
+  setSetting('music_folders', JSON.stringify(folders))
+}
+
+export function getTracks(opts?: GetTracksOptions): Track[] {
+  const db = getDb()
+  let sql = 'SELECT * FROM tracks'
+  const params: (string | number)[] = []
+
+  if (opts?.query) {
+    sql += ' WHERE title LIKE ? OR artist LIKE ? OR album LIKE ?'
+    const query = `%${opts.query}%`
+    params.push(query, query, query)
+  }
+
+  if (opts?.sort) {
+    const dir = opts.dir === 'desc' ? 'DESC' : 'ASC'
+    const sortMap: Record<string, string> = {
+      title: 'title',
+      artist: 'artist',
+      album: 'album',
+      date_added: 'date_added',
+      play_count: 'play_count',
+      duration: 'duration',
+    }
+    const safeSort = sortMap[opts.sort]
+    if (safeSort) {
+      sql += ` ORDER BY ${safeSort} ${dir}`
+    }
+  } else {
+    sql += ' ORDER BY date_added DESC'
+  }
+
+  if (opts?.limit) {
+    sql += ' LIMIT ?'
+    params.push(opts.limit)
+    if (opts.offset) {
+      sql += ' OFFSET ?'
+      params.push(opts.offset)
+    }
+  }
+
+  return db.prepare(sql).all(...params) as Track[]
+}
+
+export function getTrackById(id: number): Track | null {
+  return (getDb().prepare('SELECT * FROM tracks WHERE id = ?').get(id) as Track | undefined) ?? null
+}
+
+export function getTrackByFilePath(filePath: string): Track | null {
+  return (getDb().prepare('SELECT * FROM tracks WHERE file_path = ?').get(filePath) as Track | undefined) ?? null
+}
+
+export function getQueueTracksByIds(ids: number[]): Array<Pick<Track, 'id' | 'title' | 'artist' | 'album' | 'duration'>> {
+  if (ids.length === 0) return []
+  const db = getDb()
+  const placeholders = ids.map(() => '?').join(',')
+  const rows = db.prepare(`SELECT id, title, artist, album, duration FROM tracks WHERE id IN (${placeholders})`).all(...ids) as Track[]
+  return ids.map((id) => rows.find((row) => row.id === id)).filter(Boolean) as Array<Pick<Track, 'id' | 'title' | 'artist' | 'album' | 'duration'>>
+}
+
+export function toggleFavoriteTrack(id: number): void {
+  getDb().prepare('UPDATE tracks SET is_favorite = CASE WHEN is_favorite = 1 THEN 0 ELSE 1 END WHERE id = ?').run(id)
+}
+
+export function recordTrackPlay(id: number): void {
+  getDb().prepare("UPDATE tracks SET play_count = play_count + 1, last_played = datetime('now') WHERE id = ?").run(id)
+}
+
+export function getCoversByAlbums(albums: string[]): Cover[] {
+  if (albums.length === 0) return []
+  const placeholders = albums.map(() => '?').join(',')
+  return getDb().prepare(`SELECT * FROM covers WHERE album IN (${placeholders})`).all(...albums) as Cover[]
+}
+
+export function getDownloads(): Download[] {
+  return getDb().prepare('SELECT * FROM downloads ORDER BY created_at DESC').all() as Download[]
+}
+
+export function getRecentDownloads(limit = 20): Download[] {
+  return getDb().prepare('SELECT * FROM downloads ORDER BY created_at DESC LIMIT ?').all(limit) as Download[]
+}
+
+export function createPlaylist(name: string, description = ''): Playlist {
+  const db = getDb()
+  const result = db.prepare('INSERT INTO playlists (name, description) VALUES (?, ?)').run(name, description)
+  return db.prepare('SELECT * FROM playlists WHERE id = ?').get(result.lastInsertRowid) as Playlist
+}
+
+export function getPlaylists(): Playlist[] {
+  return getDb().prepare('SELECT * FROM playlists ORDER BY updated_at DESC').all() as Playlist[]
+}
+
+export function deletePlaylist(id: number): void {
+  getDb().prepare('DELETE FROM playlists WHERE id = ?').run(id)
+}
+
+export function renamePlaylist(id: number, name: string): void {
+  getDb().prepare("UPDATE playlists SET name = ?, updated_at = datetime('now') WHERE id = ?").run(name, id)
+}
+
+export function getPlaylistTracks(playlistId: number): Track[] {
+  return getDb().prepare(`
+    SELECT t.*, pt.position
+    FROM tracks t
+    JOIN playlist_tracks pt ON t.id = pt.track_id
+    WHERE pt.playlist_id = ?
+    ORDER BY pt.position
+  `).all(playlistId) as Track[]
+}
+
+export function addTracksToPlaylist(playlistId: number, trackIds: number[]): void {
+  const db = getDb()
+  const maxPos = db.prepare('SELECT MAX(position) as maxPos FROM playlist_tracks WHERE playlist_id = ?').get(playlistId) as { maxPos: number | null }
+  let pos = (maxPos?.maxPos ?? 0) + 1
+  const insert = db.prepare('INSERT OR IGNORE INTO playlist_tracks (playlist_id, track_id, position) VALUES (?, ?, ?)')
+  for (const trackId of trackIds) {
+    insert.run(playlistId, trackId, pos++)
+  }
+  db.prepare("UPDATE playlists SET updated_at = datetime('now') WHERE id = ?").run(playlistId)
+}
+
+export function removeTrackFromPlaylist(playlistId: number, trackId: number): void {
+  getDb().prepare('DELETE FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?').run(playlistId, trackId)
+}
+
+export function reorderPlaylistTracks(playlistId: number, fromPos: number, toPos: number): void {
+  const db = getDb()
+  db.prepare('UPDATE playlist_tracks SET position = -1 WHERE playlist_id = ? AND position = ?').run(playlistId, fromPos)
+  if (fromPos < toPos) {
+    db.prepare('UPDATE playlist_tracks SET position = position - 1 WHERE playlist_id = ? AND position > ? AND position <= ?').run(playlistId, fromPos, toPos)
+  } else {
+    db.prepare('UPDATE playlist_tracks SET position = position + 1 WHERE playlist_id = ? AND position >= ? AND position < ?').run(playlistId, toPos, fromPos)
+  }
+  db.prepare('UPDATE playlist_tracks SET position = ? WHERE playlist_id = ? AND position = -1').run(toPos, playlistId)
 }
 
 export function closeDatabase(): void {
