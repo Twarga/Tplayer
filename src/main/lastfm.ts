@@ -6,12 +6,35 @@ const LASTFM_API = 'https://ws.audioscrobbler.com/2.0/'
 const LASTFM_AUTH = 'https://www.last.fm/api/auth/'
 const AUTH_TIMEOUT_MS = 2 * 60 * 1000
 const AUTH_POLL_MS = 3000
+const MAX_RETRY_ATTEMPTS = 5
+const RETRY_BASE_DELAY_MS = 5_000
+const RETRY_MAX_DELAY_MS = 60_000
 
 interface LastFmConfig {
   apiKey: string
   secret: string
   sessionKey: string
   username: string
+}
+
+interface ScrobbleQueueEntry {
+  artist: string
+  track: string
+  album?: string
+  timestamp: number
+  attempts: number
+  nextRetryAt: number
+  lastError?: string
+}
+
+class LastFmRequestError extends Error {
+  recoverable: boolean
+
+  constructor(message: string, recoverable: boolean) {
+    super(message)
+    this.name = 'LastFmRequestError'
+    this.recoverable = recoverable
+  }
 }
 
 function getConfig(): LastFmConfig {
@@ -36,7 +59,7 @@ async function lastFmRequest(params: Record<string, string>): Promise<unknown> {
 async function signedRequest(allParams: Record<string, string>): Promise<unknown> {
   const { secret } = getConfig()
   if (!secret) {
-    throw new Error('Last.fm secret is not configured')
+    throw new LastFmRequestError('Last.fm secret is not configured', false)
   }
 
   const payload = Object.entries(allParams)
@@ -55,9 +78,32 @@ async function signedRequest(allParams: Record<string, string>): Promise<unknown
 
   const json = await response.json() as Record<string, unknown>
   if (!response.ok || json.error) {
-    throw new Error(String(json.message || `Last.fm request failed with status ${response.status}`))
+    const errorCode = typeof json.error === 'number' ? json.error : Number(json.error)
+    const message = String(json.message || `Last.fm request failed with status ${response.status}`)
+    const recoverable =
+      response.status >= 500 ||
+      response.status === 429 ||
+      errorCode === 11 ||
+      errorCode === 16 ||
+      errorCode === 26 ||
+      /network|timeout|temporar|rate limit|unavailable/i.test(message)
+
+    throw new LastFmRequestError(message, recoverable)
   }
   return json
+}
+
+function isRecoverableLastFmError(error: unknown): boolean {
+  if (error instanceof LastFmRequestError) {
+    return error.recoverable
+  }
+
+  const message = error instanceof Error ? error.message : String(error)
+  return /network|fetch|timeout|temporar|rate limit|unavailable/i.test(message)
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }
 
 export async function auth(apiKey: string, secret: string): Promise<string> {
@@ -93,6 +139,9 @@ export async function auth(apiKey: string, secret: string): Promise<string> {
       if (sessionKey) {
         setSetting('lastfm_session_key', sessionKey)
         setSetting('lastfm_username', sessionResponse.session?.name || '')
+        if (_scrobbleQueue.length > 0) {
+          void retryQueuedScrobbles()
+        }
         return sessionResponse.session?.name || ''
       }
     } catch (error) {
@@ -116,6 +165,11 @@ export function isAuthd(): boolean {
 export function disconnect(): void {
   setSetting('lastfm_session_key', '')
   setSetting('lastfm_username', '')
+  _scrobbleQueue = []
+  if (_retryTimer) {
+    clearTimeout(_retryTimer)
+    _retryTimer = null
+  }
 }
 
 export async function updateNowPlaying(artist: string, track: string, album?: string): Promise<void> {
@@ -130,12 +184,91 @@ export async function updateNowPlaying(artist: string, track: string, album?: st
 
   try {
     await lastFmRequest(params)
+    if (_scrobbleQueue.length > 0) {
+      void retryQueuedScrobbles()
+    }
   } catch {
     // silently fail
   }
 }
 
-let _scrobbleQueue: Array<{ artist: string; track: string; album?: string; timestamp: number }> = []
+let _scrobbleQueue: ScrobbleQueueEntry[] = []
+let _retryTimer: NodeJS.Timeout | null = null
+
+function queueKey(entry: Pick<ScrobbleQueueEntry, 'artist' | 'track' | 'timestamp'>): string {
+  return `${entry.artist}::${entry.track}::${entry.timestamp}`
+}
+
+function scheduleRetryProcessing(): void {
+  if (_retryTimer || _scrobbleQueue.length === 0) return
+
+  const nextRetryAt = Math.min(..._scrobbleQueue.map((entry) => entry.nextRetryAt))
+  const delay = Math.max(0, nextRetryAt - Date.now())
+  _retryTimer = setTimeout(() => {
+    _retryTimer = null
+    void retryQueuedScrobbles()
+  }, delay)
+}
+
+function enqueueScrobbleRetry(entry: Pick<ScrobbleQueueEntry, 'artist' | 'track' | 'album' | 'timestamp'>, error: unknown): void {
+  const lastError = getErrorMessage(error)
+  const existing = _scrobbleQueue.find((item) => queueKey(item) === queueKey(entry))
+  if (existing) {
+    existing.lastError = lastError
+    existing.nextRetryAt = Math.min(existing.nextRetryAt, Date.now() + RETRY_BASE_DELAY_MS)
+    scheduleRetryProcessing()
+    return
+  }
+
+  _scrobbleQueue.push({
+    ...entry,
+    attempts: 0,
+    nextRetryAt: Date.now() + RETRY_BASE_DELAY_MS,
+    lastError,
+  })
+  scheduleRetryProcessing()
+}
+
+async function submitScrobble(entry: Pick<ScrobbleQueueEntry, 'artist' | 'track' | 'album' | 'timestamp'>): Promise<void> {
+  await lastFmRequest({
+    method: 'track.scrobble',
+    artist: entry.artist,
+    track: entry.track,
+    timestamp: entry.timestamp.toString(),
+    ...(entry.album ? { album: entry.album } : {}),
+  })
+}
+
+async function retryQueuedScrobbles(): Promise<void> {
+  if (!isAuthd() || _scrobbleQueue.length === 0) return
+
+  const now = Date.now()
+  const dueEntries = _scrobbleQueue.filter((entry) => entry.nextRetryAt <= now)
+  if (dueEntries.length === 0) {
+    scheduleRetryProcessing()
+    return
+  }
+
+  for (const entry of dueEntries) {
+    try {
+      await submitScrobble(entry)
+      _scrobbleQueue = _scrobbleQueue.filter((item) => queueKey(item) !== queueKey(entry))
+    } catch (error) {
+      entry.attempts += 1
+      entry.lastError = getErrorMessage(error)
+
+      if (!isRecoverableLastFmError(error) || entry.attempts >= MAX_RETRY_ATTEMPTS) {
+        _scrobbleQueue = _scrobbleQueue.filter((item) => queueKey(item) !== queueKey(entry))
+        continue
+      }
+
+      const delay = Math.min(RETRY_BASE_DELAY_MS * 2 ** (entry.attempts - 1), RETRY_MAX_DELAY_MS)
+      entry.nextRetryAt = Date.now() + delay
+    }
+  }
+
+  scheduleRetryProcessing()
+}
 
 export async function scrobble(artist: string, track: string, album?: string, timestamp?: number): Promise<void> {
   if (!isAuthd()) return
@@ -144,16 +277,18 @@ export async function scrobble(artist: string, track: string, album?: string, ti
   const entry = { artist, track, album, timestamp: ts }
 
   try {
-    await lastFmRequest({
-      method: 'track.scrobble',
-      artist,
-      track,
-      timestamp: ts.toString(),
-      ...(album ? { album } : {}),
-    })
+    await submitScrobble(entry)
+    if (_scrobbleQueue.length > 0) {
+      void retryQueuedScrobbles()
+    }
     return
-  } catch {
-    _scrobbleQueue.push(entry)
+  } catch (error) {
+    if (isRecoverableLastFmError(error)) {
+      enqueueScrobbleRetry(entry, error)
+      return
+    }
+
+    throw error
   }
 }
 
