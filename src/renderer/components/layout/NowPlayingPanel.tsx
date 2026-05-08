@@ -2,6 +2,7 @@ import { Heart, SkipBack, SkipForward, Shuffle, Repeat, Repeat1, Play, Pause, X 
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayerStore } from '@/stores/playerStore'
 import { useLibraryStore } from '@/stores/libraryStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { QualityBadges } from '@/components/player/QualityBadges'
 import { cn, formatDuration } from '@/lib/utils'
 import { animations, panelMotion, staggerItem, staggerParent } from '@/lib/animations'
@@ -27,6 +28,7 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
     seek,
   } = usePlayerStore()
   const { toggleFavorite, isFavorite } = useLibraryStore()
+  const { queue, clear } = useQueueStore()
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
@@ -36,14 +38,14 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
         animate={collapsed ? 'closed' : 'open'}
         variants={panelMotion}
         className={cn(
-          'h-full rounded-[18px] bg-[linear-gradient(180deg,rgba(14,16,19,0.98),rgba(11,12,14,0.94))] border border-white/[0.08] flex flex-col shrink-0 overflow-hidden surface-panel shadow-card',
+          'h-full border-l border-white/[0.075] bg-[linear-gradient(180deg,rgba(13,14,16,0.34),rgba(9,10,12,0.28))] flex flex-col shrink-0 overflow-hidden',
           collapsed ? 'w-0 pointer-events-none' : 'w-[336px]'
         )}
       >
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/[0.06]">
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-tertiary">Playback Detail</span>
-            <span className="text-sm font-medium text-primary">Now Playing</span>
+        <div className="flex items-center justify-between px-6 pt-6 pb-5">
+          <div className="flex items-center gap-7 border-b border-white/[0.06] pb-2">
+            <span className="text-sm font-semibold text-accent">Now Playing</span>
+            <span className="text-sm text-tertiary">Lyrics</span>
           </div>
           <button
             onClick={onToggle}
@@ -59,12 +61,12 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
             variants={staggerParent}
             initial="hidden"
             animate="show"
-            className="flex-1 overflow-y-auto px-5 py-5 flex flex-col bg-[radial-gradient(circle_at_top,rgba(232,168,124,0.08),transparent_24%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_45%)]"
+            className="flex-1 overflow-y-auto px-6 pb-6 flex flex-col"
           >
-            <motion.div variants={staggerItem} className="w-full aspect-square rounded-[10px] overflow-hidden shadow-2xl mb-5 bg-surface-2 flex items-center justify-center relative border border-white/[0.07]">
+            <motion.div variants={staggerItem} className="w-full aspect-square rounded-[7px] overflow-hidden mb-4 bg-black/30 flex items-center justify-center relative">
               {currentTrack?.cover_path && (
                 <div 
-                  className="absolute inset-0 bg-cover bg-center blur-xl opacity-40 transform scale-110" 
+                  className="absolute inset-0 bg-cover bg-center blur-xl opacity-20 transform scale-110" 
                   style={{ backgroundImage: `url('tplayer-img://media/${encodeURIComponent(currentTrack.cover_path)}')` }}
                 />
               )}
@@ -72,10 +74,10 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
                 <img 
                   src={`tplayer-img://media/${encodeURIComponent(currentTrack.cover_path)}`} 
                   alt="Album Art" 
-                  className="w-full h-full object-cover relative z-10 rounded-[10px]"
+                  className="w-full h-full object-cover relative z-10"
                 />
               ) : currentTrack ? (
-                <div className="w-full h-full bg-gradient-to-br from-accent/20 to-surface-2 flex items-center justify-center text-accent text-6xl font-bold relative z-10 rounded-[10px]">
+                <div className="w-full h-full bg-gradient-to-br from-accent/20 to-white/[0.03] flex items-center justify-center text-accent text-6xl font-bold relative z-10">
                   {currentTrack.title?.[0] || '♪'}
                 </div>
               ) : (
@@ -163,6 +165,35 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
                 />
               </motion.div>
             )}
+
+            <motion.div variants={staggerItem} className="mt-1">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-primary">Queue</h3>
+                <button
+                  onClick={clear}
+                  className="text-xs text-tertiary hover:text-primary transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="space-y-2">
+                {queue.slice(0, 5).map((item, index) => (
+                  <div key={`${item.id}-${index}`} className="grid grid-cols-[32px_minmax(0,1fr)_42px] items-center gap-3 py-1">
+                    <div className="grid h-8 w-8 place-items-center bg-white/[0.045] text-[11px] text-accent">
+                      {index + 1}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-primary">{item.title}</p>
+                      <p className="truncate text-xs text-secondary">{item.artist}</p>
+                    </div>
+                    <span className="text-right text-xs text-tertiary">{formatDuration(item.duration)}</span>
+                  </div>
+                ))}
+                {queue.length === 0 && (
+                  <p className="py-3 text-sm text-tertiary">Queue is empty.</p>
+                )}
+              </div>
+            </motion.div>
           </motion.div>
         </AnimatePresence>
       </motion.aside>

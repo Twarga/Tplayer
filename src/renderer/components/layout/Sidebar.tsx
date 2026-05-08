@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Home, Library, Settings, Plus, Download, Inbox, Music4, ListMusic, Disc3, UserRound, FolderOpen } from 'lucide-react'
+import { Home, Library, Settings, Plus, Download, Inbox, Music4, ListMusic, Disc3, UserRound, FolderOpen, Compass } from 'lucide-react'
 import { usePlaylistStore } from '@/stores/playlistStore'
 import { cn } from '@/lib/utils'
 
@@ -15,10 +15,10 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 w-full h-10 px-3 rounded-[10px] text-sm font-medium interactive-soft relative border",
+        "flex items-center gap-3 w-full h-10 px-3 rounded-[8px] text-sm font-medium interactive-soft relative",
         active
-          ? 'bg-[rgba(198,157,84,0.12)] text-primary shadow-card border-[rgba(198,157,84,0.18)]'
-          : 'text-secondary border-transparent hover:bg-white/[0.03] hover:text-primary'
+          ? 'bg-[rgba(198,157,84,0.13)] text-primary'
+          : 'text-secondary hover:bg-white/[0.035] hover:text-primary'
       )}
     >
       <div 
@@ -54,7 +54,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
   }
 
   return (
-    <aside className="w-[252px] min-w-[252px] h-full rounded-[18px] bg-[linear-gradient(180deg,rgba(12,13,15,0.98),rgba(9,10,12,0.96))] border border-white/7 flex flex-col select-none shadow-card overflow-hidden backdrop-glass">
+    <aside className="w-[252px] min-w-[252px] h-full bg-[linear-gradient(180deg,rgba(13,14,17,0.72),rgba(9,10,12,0.52))] border-r border-white/[0.075] flex flex-col select-none overflow-hidden">
       <div className="px-5 pb-5 pt-5 flex items-center gap-3 shrink-0 border-b border-white/[0.06]">
         <div className="w-11 h-11 rounded-full border border-accent/40 bg-accent/10 flex items-center justify-center text-accent font-bold text-sm">
           T
@@ -86,13 +86,14 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
           onClick={() => onViewChange('youtube')}
         />
         <NavItem icon={<Download size={20} />} label="Downloads" active={activeView === 'downloads'} onClick={() => onViewChange('downloads')} />
+        <NavItem icon={<Compass size={18} />} label="Discover" active={false} onClick={() => onViewChange('youtube')} />
         <NavItem icon={<Inbox size={20} />} label="Queue" active={activeView === 'queue'} onClick={() => onViewChange('queue')} />
 
         <div className="flex items-center justify-between px-3 pt-6 pb-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-tertiary">Playlists</p>
           <button
             onClick={() => setShowCreateDialog(true)}
-            className="w-8 h-8 rounded-[10px] hover:bg-white/[0.05] flex items-center justify-center text-tertiary hover:text-primary interactive-soft"
+            className="w-7 h-7 rounded-full hover:bg-white/[0.05] flex items-center justify-center text-tertiary hover:text-primary interactive-soft"
             title="Create playlist"
           >
             <Plus size={14} />

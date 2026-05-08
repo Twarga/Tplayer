@@ -182,45 +182,47 @@ function AppShell() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="h-screen w-screen bg-background text-primary overflow-hidden flex flex-col">
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(232,168,124,0.08),transparent_24%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_42%)]" />
-        <div className="flex flex-1 overflow-hidden p-2.5 gap-2.5 relative">
-          <ErrorBoundary>
-            <Sidebar activeView={activeView} onViewChange={handleViewChange} />
-          </ErrorBoundary>
+      <div className="h-screen w-screen bg-black text-primary overflow-hidden p-5">
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_32%_14%,rgba(210,166,86,0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.025),transparent_36%)]" />
+        <div className="relative h-full w-full overflow-hidden rounded-[18px] border border-white/12 bg-[#090a0c]/96 shadow-[0_26px_80px_rgba(0,0,0,0.58)]">
+          <div className="flex h-[calc(100%-86px)] min-h-0">
+            <ErrorBoundary>
+              <Sidebar activeView={activeView} onViewChange={handleViewChange} />
+            </ErrorBoundary>
 
-          <div className="flex-1 flex flex-col overflow-hidden min-w-0 rounded-[18px] border border-white/8 bg-[#0d0f12]/96 shadow-card backdrop-glass">
-            <TopBar
-              activeView={activeView}
-              title={viewMeta.title}
-              subtitle={viewMeta.subtitle}
-              onViewChange={handleViewChange}
-            />
-            <main className="flex-1 overflow-hidden relative px-2 pb-2">
-              <ErrorBoundary>
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeView}
-                    variants={pageMotion}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    transition={routeTransition}
-                    className="absolute inset-0 overflow-hidden rounded-[12px] bg-[#0f1115]/70 border border-white/[0.03]"
-                  >
-                    {renderView()}
-                  </motion.div>
-                </AnimatePresence>
-              </ErrorBoundary>
-            </main>
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+              <TopBar
+                activeView={activeView}
+                title={viewMeta.title}
+                subtitle={viewMeta.subtitle}
+                onViewChange={handleViewChange}
+              />
+              <main className="relative flex-1 overflow-hidden">
+                <ErrorBoundary>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={activeView}
+                      variants={pageMotion}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      transition={routeTransition}
+                      className="absolute inset-0 overflow-hidden"
+                    >
+                      {renderView()}
+                    </motion.div>
+                  </AnimatePresence>
+                </ErrorBoundary>
+              </main>
+            </div>
+
+            <NowPlayingPanel collapsed={!npPanelOpen} onToggle={() => setNpPanelOpen(false)} />
           </div>
 
-          <NowPlayingPanel collapsed={!npPanelOpen} onToggle={() => setNpPanelOpen(false)} />
+          <ErrorBoundary>
+            <MiniPlayerBar onQueueClick={() => handleViewChange('queue')} />
+          </ErrorBoundary>
         </div>
-
-        <ErrorBoundary>
-          <MiniPlayerBar onQueueClick={() => handleViewChange('queue')} />
-        </ErrorBoundary>
       </div>
     </TooltipProvider>
   )

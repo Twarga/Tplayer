@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from 'react'
 import { usePlayerStore } from '@/stores/playerStore'
 import { useLibraryStore } from '@/stores/libraryStore'
-import { Play, Pause, ChevronRight, Download, FolderOpen, ListMusic, Settings } from 'lucide-react'
+import { Play, Pause, ChevronRight, MoreVertical } from 'lucide-react'
 import { PlayingBars } from '@/components/ui/PlayingBars'
 import { formatDuration } from '@/lib/utils'
 
@@ -21,79 +21,49 @@ export function HomeView({ onViewChange }: HomeViewProps) {
 
   const recentTracks = tracks.slice(0, 6)
   const highlightTracks = tracks.slice(0, 4)
+  const importRows = tracks.slice(0, 3)
 
   const handlePlay = useCallback((trackId: number) => {
     play(trackId)
   }, [play])
 
-  return (
-    <div className="p-6 overflow-y-auto h-full animate-fade-in">
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3 mb-8">
-        {[
-          {
-            title: 'Open library',
-            description: `${tracks.length} tracks ready for browsing and playback.`,
-            icon: FolderOpen,
-            view: 'library',
-          },
-          {
-            title: 'Check queue',
-            description: 'Inspect what plays next and reorder it cleanly.',
-            icon: ListMusic,
-            view: 'queue',
-          },
-          {
-            title: 'Review downloads',
-            description: 'Watch imported audio and recent download history.',
-            icon: Download,
-            view: 'downloads',
-          },
-          {
-            title: 'Adjust settings',
-            description: 'Manage folders, yt-dlp, and app behavior.',
-            icon: Settings,
-            view: 'settings',
-          },
-        ].map(({ title, description, icon: Icon, view }) => (
-          <button
-            key={view}
-            onClick={() => onViewChange?.(view)}
-            className="text-left rounded-[10px] border border-border-subtle bg-surface-1/80 p-4 hover:bg-surface-2 transition-colors"
-          >
-            <div className="w-10 h-10 rounded-[10px] bg-surface-3 text-accent flex items-center justify-center mb-4">
-              <Icon size={18} />
-            </div>
-            <h2 className="text-sm font-semibold text-primary">{title}</h2>
-            <p className="text-xs text-secondary mt-2 leading-5">{description}</p>
-          </button>
-        ))}
-      </section>
+  const artwork = (track: (typeof tracks)[number]) =>
+    track.cover_path
+      ? `tplayer-img://media/${encodeURIComponent(track.cover_path)}`
+      : undefined
 
+  return (
+    <div className="h-full overflow-y-auto px-8 pb-8 animate-fade-in">
       {highlightTracks.length > 0 && (
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-h2 text-primary">Pick up where you left off</h2>
+        <section className="mb-9">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[1.05rem] font-semibold text-primary">Continue listening</h2>
             <button
-              className="text-caption text-tertiary hover:text-primary flex items-center gap-1 transition-colors"
+              className="grid h-8 w-8 place-items-center rounded-[6px] border border-white/[0.08] text-tertiary hover:text-primary hover:bg-white/[0.04] transition-colors"
               onClick={() => onViewChange?.('library')}
+              title="Open library"
             >
-              Open library <ChevronRight size={14} />
+              <ChevronRight size={16} />
             </button>
           </div>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-5">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
             {highlightTracks.map((track) => (
-              <div
+              <button
                 key={track.id}
-                className="bg-surface-1 rounded-[10px] p-3 cursor-pointer card-lift group border border-white/[0.04]"
+                className="group overflow-hidden rounded-[7px] bg-white/[0.035] text-left transition-colors hover:bg-white/[0.055]"
                 onClick={() => handlePlay(track.id)}
               >
-                <div className="aspect-square rounded-[8px] bg-surface-2 mb-3 overflow-hidden relative">
-                  <div className="w-full h-full bg-gradient-to-br from-accent/10 to-surface-2 flex items-center justify-center text-accent text-3xl font-bold">
-                    {track.title?.[0] || '♪'}
-                  </div>
+                <div className="relative aspect-square overflow-hidden bg-black/25">
+                  {artwork(track) ? (
+                    <img src={artwork(track)} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(210,166,86,0.22),rgba(255,255,255,0.025))] text-4xl font-bold text-accent">
+                      {track.title?.[0] || 'T'}
+                    </div>
+                  )}
                   <button
                     onClick={(e) => { e.stopPropagation(); handlePlay(track.id) }}
-                    className="absolute bottom-3 right-3 w-12 h-12 rounded-full bg-accent text-background flex items-center justify-center shadow-play-button opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-spring hover:scale-105 active:scale-95"
+                    className="absolute bottom-3 right-3 grid h-11 w-11 place-items-center rounded-full bg-accent text-background opacity-0 shadow-play-button transition-all duration-300 ease-spring group-hover:opacity-100"
                   >
                     {isPlaying && currentTrack?.id === track.id ? (
                       <Pause size={20} fill="currentColor" />
@@ -102,47 +72,79 @@ export function HomeView({ onViewChange }: HomeViewProps) {
                     )}
                   </button>
                 </div>
-                <p className="text-sm font-semibold text-primary truncate mb-0.5 flex items-center gap-2">
-                  {track.title}
-                  {isPlaying && currentTrack?.id === track.id && <PlayingBars />}
-                </p>
-                <p className="text-[13px] text-secondary truncate">{track.artist}</p>
-              </div>
+                <div className="px-3 py-3">
+                  <p className="text-sm font-semibold text-primary truncate mb-0.5 flex items-center gap-2">
+                    {track.title}
+                    {isPlaying && currentTrack?.id === track.id && <PlayingBars />}
+                  </p>
+                  <p className="text-[13px] text-secondary truncate">{track.artist}</p>
+                </div>
+              </button>
             ))}
           </div>
         </section>
       )}
 
       {recentTracks.length > 0 && (
-        <section className="mb-8">
+        <section className="mb-9">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-h2 text-primary">Recently added</h2>
+            <h2 className="text-[1.05rem] font-semibold text-primary">Recently added</h2>
             <button
-              className="text-caption text-tertiary hover:text-primary flex items-center gap-1 transition-colors"
+              className="grid h-8 w-8 place-items-center rounded-[6px] border border-white/[0.08] text-tertiary hover:text-primary hover:bg-white/[0.04] transition-colors"
               onClick={() => onViewChange?.('library')}
+              title="See all"
             >
-              See all <ChevronRight size={14} />
+              <ChevronRight size={16} />
             </button>
           </div>
-          <div className="rounded-[10px] border border-border-subtle overflow-hidden">
-            {recentTracks.map((track, index) => (
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-4">
+            {recentTracks.map((track) => (
               <button
                 key={track.id}
                 onClick={() => handlePlay(track.id)}
-                className="w-full grid grid-cols-[40px_minmax(0,1fr)_120px_72px] items-center gap-3 px-4 py-3 text-left bg-surface-1 hover:bg-surface-2 transition-colors border-b border-border-subtle last:border-b-0"
+                className="group text-left"
               >
-                <div className="w-10 h-10 rounded-[8px] bg-surface-3 flex items-center justify-center text-tertiary">
-                  {index + 1}
+                <div className="aspect-square overflow-hidden rounded-[6px] bg-black/25">
+                  {artwork(track) ? (
+                    <img src={artwork(track)} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-white/[0.04] text-xl font-bold text-accent">
+                      {track.title?.[0] || 'T'}
+                    </div>
+                  )}
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-primary truncate flex items-center gap-2">
-                    {track.title}
-                    {isPlaying && currentTrack?.id === track.id && <PlayingBars />}
-                  </p>
-                  <p className="text-xs text-secondary truncate">{track.artist}</p>
+                <p className="mt-2 truncate text-sm font-medium text-primary">{track.title}</p>
+                <p className="mt-0.5 truncate text-xs text-secondary">{track.artist}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {importRows.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-[1.05rem] font-semibold text-primary">YouTube imports</h2>
+          <div className="divide-y divide-white/[0.06] border-y border-white/[0.06]">
+            {importRows.map((track) => (
+              <button
+                key={track.id}
+                onClick={() => handlePlay(track.id)}
+                className="grid w-full grid-cols-[48px_minmax(0,1fr)_64px_84px_84px_24px] items-center gap-3 py-2.5 text-left transition-colors hover:bg-white/[0.025]"
+              >
+                <div className="h-10 w-10 overflow-hidden rounded-[5px] bg-white/[0.05]">
+                  {artwork(track) ? (
+                    <img src={artwork(track)} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-xs font-bold text-accent">
+                      {track.title?.[0] || 'T'}
+                    </div>
+                  )}
                 </div>
-                <p className="text-xs text-secondary truncate">{track.album}</p>
-                <p className="text-xs text-tertiary text-right">{formatDuration(track.duration)}</p>
+                <p className="truncate text-sm font-medium text-primary">{track.title}</p>
+                <p className="text-right text-xs text-secondary">{formatDuration(track.duration)}</p>
+                <span className="justify-self-end rounded-[5px] bg-accent/14 px-2 py-1 text-[11px] font-semibold text-accent">MP3</span>
+                <span className="text-right text-xs text-tertiary">local</span>
+                <MoreVertical size={16} className="text-tertiary" />
               </button>
             ))}
           </div>
@@ -151,7 +153,7 @@ export function HomeView({ onViewChange }: HomeViewProps) {
 
       {tracks.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-          <div className="w-20 h-20 rounded-full bg-surface-2 flex items-center justify-center mb-6">
+          <div className="w-20 h-20 rounded-full bg-white/[0.035] flex items-center justify-center mb-6">
             <Play size={32} className="text-tertiary" />
           </div>
           <h3 className="text-h3 text-primary mb-2">Start listening</h3>

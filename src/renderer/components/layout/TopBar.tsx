@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, Download, Home, Library, ListMusic, Settings, PlaySquare, Bell } from 'lucide-react'
+import { Search, Bell, SlidersHorizontal, UserRound } from 'lucide-react'
 import { useLibraryStore } from '@/stores/libraryStore'
 import { Input } from '@/components/ui/input'
-import { cn } from '@/lib/utils'
 
 interface TopBarProps {
   activeView: string
@@ -12,7 +11,7 @@ interface TopBarProps {
   onSearch?: (query: string) => void
 }
 
-export function TopBar({ activeView, title, subtitle, onViewChange, onSearch }: TopBarProps) {
+export function TopBar({ title, subtitle, onViewChange, onSearch }: TopBarProps) {
   const [searchValue, setSearchValue] = useState('')
   const { search } = useLibraryStore()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -47,16 +46,16 @@ export function TopBar({ activeView, title, subtitle, onViewChange, onSearch }: 
   }, [])
 
   return (
-    <div className="px-6 pt-5 pb-4 flex items-start justify-between gap-6 border-b border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.008))] backdrop-glass">
+    <div className="px-8 pt-6 pb-4 flex items-start justify-between gap-6">
       <div className="min-w-0 flex-1">
-        <div className="relative max-w-[520px] mb-6">
+        <div className="relative max-w-[520px] mb-7">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-tertiary pointer-events-none" />
           <Input
             ref={inputRef}
             value={searchValue}
             onChange={handleSearch}
             placeholder="Search songs, artists, albums..."
-            className="pl-10 pr-16 h-11 rounded-full bg-input-bg border-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+            className="pl-10 pr-16 h-10 rounded-full bg-black/22 border-white/[0.11] shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]"
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-muted bg-surface-2 px-2 py-1 rounded-md border border-white/[0.06]">
             Ctrl K
@@ -64,55 +63,31 @@ export function TopBar({ activeView, title, subtitle, onViewChange, onSearch }: 
         </div>
 
         <div>
-          <h1 className="font-display text-[2.15rem] font-bold text-primary mt-1 truncate">{title}</h1>
+          <h1 className="font-display text-[2.05rem] font-bold text-primary mt-1 truncate">{title}</h1>
           <p className="text-sm text-secondary mt-1.5 max-w-2xl leading-6">{subtitle}</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0 pt-0.5">
-        {[
-          { view: 'home', label: 'Home', icon: Home },
-          { view: 'library', label: 'Library', icon: Library },
-        ].map(({ view, label, icon: Icon }) => (
-          <button
-            key={view}
-            onClick={() => onViewChange?.(view)}
-            className={cn(
-              'h-10 px-3 rounded-[10px] border flex items-center gap-2 text-sm interactive-soft',
-              activeView === view
-                ? 'bg-[rgba(198,157,84,0.12)] border-[rgba(198,157,84,0.2)] text-primary'
-                : 'bg-transparent border-transparent text-secondary hover:text-primary hover:bg-white/[0.04]'
-            )}
-          >
-            <Icon size={16} />
-            <span>{label}</span>
-          </button>
-        ))}
-
-        <button className="w-10 h-10 rounded-[10px] border border-white/[0.05] text-secondary hover:text-primary hover:bg-white/[0.04] flex items-center justify-center interactive-soft">
+      <div className="flex items-center gap-4 shrink-0 pt-0.5">
+        <button
+          onClick={() => onViewChange?.('settings')}
+          className="text-secondary hover:text-accent interactive-soft"
+          title="Audio settings"
+        >
+          <SlidersHorizontal size={18} />
+        </button>
+        <button className="text-secondary hover:text-accent interactive-soft" title="Notifications">
           <Bell size={16} />
         </button>
-
-        {[
-          { view: 'queue', label: 'Queue', icon: ListMusic },
-          { view: 'playlists', label: 'Playlists', icon: PlaySquare },
-          { view: 'downloads', label: 'Downloads', icon: Download },
-          { view: 'settings', label: 'Settings', icon: Settings },
-        ].map(({ view, label, icon: Icon }) => (
-          <button
-            key={view}
-            onClick={() => onViewChange?.(view)}
-            className={cn(
-              'h-10 px-3 rounded-[10px] border flex items-center gap-2 text-sm interactive-soft',
-              activeView === view
-                ? 'bg-[rgba(198,157,84,0.12)] border-[rgba(198,157,84,0.2)] text-primary'
-                : 'bg-surface-1/30 border-white/[0.05] text-secondary hover:text-primary hover:bg-white/[0.04]'
-            )}
-          >
-            <Icon size={16} />
-            <span>{label}</span>
-          </button>
-        ))}
+        <button
+          onClick={() => onViewChange?.('settings')}
+          className="flex items-center gap-2 text-sm text-secondary hover:text-primary interactive-soft"
+        >
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-accent/14 text-accent">
+            <UserRound size={15} />
+          </span>
+          <span>Younes</span>
+        </button>
       </div>
     </div>
   )
