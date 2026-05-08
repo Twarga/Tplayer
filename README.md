@@ -108,7 +108,17 @@ npm run build
 
 ## Packaging
 
-Linux AppImage and Windows executable packaging are planned as part of the release milestone. Until then, `npm run build` outputs compiled files to `out/` which can be used to run the application manually from source.
+To package the application for distribution, you can use the built-in packaging scripts:
+
+```bash
+# Build Linux AppImage
+npm run package:linux
+
+# Build Windows installer
+npm run package:win
+```
+
+Release artifacts will be generated in the `release/` directory.
 
 ## License
 
