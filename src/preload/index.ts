@@ -82,7 +82,7 @@ const tplayerAPI: TplayerAPI = {
 
   youtube: {
     search: (query: string) => ipcRenderer.invoke(IPC_CHANNELS.youtube.search, query),
-    download: (url: string, videoId: string) => ipcRenderer.invoke(IPC_CHANNELS.youtube.download, url, videoId),
+    download: (url: string, videoId: string, title?: string) => ipcRenderer.invoke(IPC_CHANNELS.youtube.download, url, videoId, title),
     cancelDownload: (videoId: string) => ipcRenderer.invoke(IPC_CHANNELS.youtube.cancelDownload, videoId),
     getHistory: () => ipcRenderer.invoke(IPC_CHANNELS.youtube.getHistory),
     clearHistory: () => ipcRenderer.invoke(IPC_CHANNELS.youtube.clearHistory),

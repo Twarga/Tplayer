@@ -205,9 +205,9 @@ function registerYouTubeHandlers(): void {
     return searchYoutube(query)
   })
 
-  ipcMain.handle(IPC_CHANNELS.youtube.download, async (_, url: string, videoId: string) => {
+  ipcMain.handle(IPC_CHANNELS.youtube.download, async (_, url: string, videoId: string, title?: string) => {
     const { downloadAudio } = await import('./yt-dlp')
-    return downloadAudio(url, videoId)
+    return downloadAudio(url, videoId, title)
   })
 
   ipcMain.handle(IPC_CHANNELS.youtube.cancelDownload, async (_, videoId: string) => {
@@ -322,13 +322,8 @@ function registerSystemHandlers(): void {
   })
 
   ipcMain.handle(IPC_CHANNELS.system.checkYtDlp, async () => {
-    const { spawnSync } = await import('child_process')
-    try {
-      const result = spawnSync('yt-dlp', ['--version'], { timeout: 5000 })
-      return result.status === 0
-    } catch {
-      return false
-    }
+    const { checkYtDlpAvailability } = await import('./yt-dlp')
+    return checkYtDlpAvailability()
   })
 
   ipcMain.on(IPC_CHANNELS.system.log, (_event, ...args) => {

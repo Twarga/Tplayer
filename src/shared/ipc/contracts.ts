@@ -39,6 +39,14 @@ export interface DownloadProgressPayload {
   size: string
 }
 
+export interface DownloadStartedPayload {
+  id: string
+  videoId: string
+  title: string
+  folder: string
+  status: 'downloading'
+}
+
 export interface DownloadDonePayload {
   id: string
   videoId: string
@@ -51,6 +59,19 @@ export interface DownloadErrorPayload {
   id: string
   videoId: string
   error: string
+}
+
+export interface DownloadCancelledPayload {
+  id: string | null
+  videoId: string
+  error: string
+}
+
+export interface ToolAvailabilityPayload {
+  available: boolean
+  path: string
+  source: 'settings' | 'bundled' | 'system' | 'fallback'
+  error?: string
 }
 
 export interface GetTracksOptions {
@@ -115,15 +136,15 @@ export interface TplayerAPI {
   }
   youtube: {
     search: (query: string) => Promise<YtSearchResult[]>
-    download: (url: string, videoId: string) => Promise<void>
-    cancelDownload: (videoId: string) => Promise<void>
+    download: (url: string, videoId: string, title?: string) => Promise<DownloadStartedPayload>
+    cancelDownload: (videoId: string) => Promise<DownloadCancelledPayload>
     getHistory: () => Promise<Download[]>
     clearHistory: () => Promise<void>
     onDownloadProgress: (callback: (data: DownloadProgressPayload) => void) => () => void
     onDownloadDone: (callback: (data: DownloadDonePayload) => void) => () => void
     onDownloadError: (callback: (data: DownloadErrorPayload) => void) => () => void
-    onDownloadStarted: (callback: (data: { id: string; videoId: string; folder: string }) => void) => () => void
-    onDownloadCancelled: (callback: (data: { videoId: string }) => void) => () => void
+    onDownloadStarted: (callback: (data: DownloadStartedPayload) => void) => () => void
+    onDownloadCancelled: (callback: (data: DownloadCancelledPayload) => void) => () => void
     onHistoryCleared: (callback: () => void) => () => void
   }
   settings: {
@@ -151,7 +172,7 @@ export interface TplayerAPI {
   }
   system: {
     checkFfmpeg: () => Promise<boolean>
-    checkYtDlp: () => Promise<boolean>
+    checkYtDlp: () => Promise<ToolAvailabilityPayload>
     log?: (...args: unknown[]) => void
   }
 }

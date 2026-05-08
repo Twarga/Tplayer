@@ -3,9 +3,11 @@ import { api } from '@/lib/ipc'
 import { getToastStore } from './toastStore'
 import { useLibraryStore } from './libraryStore'
 import type {
+  DownloadCancelledPayload,
   DownloadDonePayload,
   DownloadErrorPayload,
   DownloadProgressPayload,
+  DownloadStartedPayload,
 } from '../../shared/ipc/contracts'
 import type { YtSearchResult } from '../../shared/types/domain'
 
@@ -43,11 +45,13 @@ export const useYouTubeStore = create<YouTubeStore>((set) => ({
 
   init() {
     const cleanups = [
-      api.youtube.onDownloadStarted(({ id, folder }) => {
+      api.youtube.onDownloadStarted(({ id, videoId, folder, title }) => {
         set((s) => ({
-          downloads: s.downloads.map((d) =>
-            d.id === id ? { ...d, status: 'downloading' as const, folder } : d
-          ),
+          downloads: s.downloads.some((d) => d.id === id)
+            ? s.downloads.map((d) =>
+                d.id === id ? { ...d, videoId, title, status: 'downloading' as const, folder } : d
+              )
+            : [{ id, videoId, title, status: 'downloading', progress: 0, folder }, ...s.downloads],
         }))
       }),
 
@@ -78,10 +82,10 @@ export const useYouTubeStore = create<YouTubeStore>((set) => ({
         getToastStore().add(`Download failed: ${error}`, 'error')
       }),
 
-      api.youtube.onDownloadCancelled(({ videoId }: { videoId: string }) => {
+      api.youtube.onDownloadCancelled(({ id, videoId, error }: DownloadCancelledPayload) => {
         set((s) => ({
           downloads: s.downloads.map((d) =>
-            d.videoId === videoId ? { ...d, status: 'failed' as const, error: 'Cancelled' } : d
+            d.videoId === videoId || (id && d.id === id) ? { ...d, status: 'failed' as const, error } : d
           ),
         }))
       })
@@ -96,28 +100,31 @@ export const useYouTubeStore = create<YouTubeStore>((set) => ({
       set({ searchResults: results, isSearching: false })
     } catch (err) {
       console.error('[youtubeStore] search failed:', err)
-      set({ searchError: 'Search failed', isSearching: false })
+      const message = err instanceof Error ? err.message : 'Search failed'
+      set({ searchError: message, isSearching: false })
     }
   },
 
   download: async (url, videoId, title) => {
-    const item: DownloadItem = {
-      id: Date.now().toString(),
-      videoId,
-      title: title || 'Downloading...',
-      status: 'pending',
-      progress: 0,
-    }
-    set((s) => ({ downloads: [item, ...s.downloads] }))
     try {
-      await api.youtube.download(url, videoId)
+      const started: DownloadStartedPayload = await api.youtube.download(url, videoId, title)
+      set((s) => ({
+        downloads: [
+          {
+            id: started.id,
+            videoId: started.videoId,
+            title: started.title,
+            status: started.status,
+            progress: 0,
+            folder: started.folder,
+          },
+          ...s.downloads.filter((d) => d.id !== started.id),
+        ],
+      }))
     } catch (err) {
       console.error('[youtubeStore] download failed:', err)
-      set((s) => ({
-        downloads: s.downloads.map((d) =>
-          d.id === item.id ? { ...d, status: 'failed' as const, error: 'Download failed' } : d
-        ),
-      }))
+      const message = err instanceof Error ? err.message : 'Download failed'
+      getToastStore().add(message, 'error')
     }
   },
 

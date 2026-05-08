@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 
 interface EdgeCaseHandlerProps {
-  children: React.ReactNode
+  children?: React.ReactNode
 }
 
 export function EdgeCaseHandler({ children }: EdgeCaseHandlerProps) {
@@ -9,13 +9,12 @@ export function EdgeCaseHandler({ children }: EdgeCaseHandlerProps) {
   const [ytDlpError, setYtDlpError] = useState(false)
 
   useEffect(() => {
-    // Check FFmpeg availability
-    import('@/lib/ipc').then(({ api }) => {
-      api.settings.get('ffmpeg_checked').then((val) => {
-        if (!val) {
-          api.settings.set('ffmpeg_checked', 'true')
-        }
-      })
+    window.tplayerAPI.system.checkFfmpeg().then((available) => {
+      if (!available) setFfmpegError(true)
+    }).catch(() => {})
+
+    window.tplayerAPI.system.checkYtDlp().then((status) => {
+      if (!status.available) setYtDlpError(true)
     }).catch(() => {})
   }, [])
 
