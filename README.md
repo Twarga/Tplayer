@@ -121,6 +121,8 @@ Key docs:
 
 - [Brand guide](docs/brand.md): public identity, voice, colors, screenshot direction.
 - [Remake plan](remake.md): completed MVP work and post-MVP release plan.
+- [Contributing](CONTRIBUTING.md): local setup, commit scope, and contribution rules.
+- [Repository hygiene](docs/repository-hygiene.md): what should and should not be committed.
 
 ## Release Plan
 

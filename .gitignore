@@ -1,5 +1,47 @@
+# Dependencies
 node_modules/
+
+# Build output
 out/
 dist/
+release/
+dist-electron/
+build/release/
+*.AppImage
+*.appimage
+*.deb
+*.rpm
+*.snap
+*.dmg
+*.exe
+*.msi
+*.blockmap
+latest*.yml
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Logs and diagnostics
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local notes and scratch media
+problems.md
+*.local.md
+scratch/
+tmp/
+*.ogg
+*.mp3
+*.wav
+*.flac
+
+# OS and editor files
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/
