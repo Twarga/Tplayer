@@ -17,6 +17,16 @@ let mediaSourceNode: MediaElementAudioSourceNode | null = null
 let gainNode: GainNode | null = null
 let eqNodes: BiquadFilterNode[] | null = null
 let lastProgressSyncAt = 0
+let currentLoadToken = 0
+let endedToken = -1
+let playbackErrorToken = -1
+
+function updatePlaybackStore(currentTime: number, duration: number): void {
+  usePlayerStore.setState((state) => ({
+    currentTime: Number.isFinite(currentTime) ? currentTime : state.currentTime,
+    duration: Number.isFinite(duration) && duration > 0 ? duration : state.duration,
+  }))
+}
 
 function syncPlaybackProgress(payload: PlaybackProgressPayload): void {
   const now = Date.now()
@@ -24,6 +34,21 @@ function syncPlaybackProgress(payload: PlaybackProgressPayload): void {
 
   lastProgressSyncAt = now
   window.tplayerAPI.player.syncProgress(payload).catch(() => {})
+}
+
+function syncPlaybackRuntime(force = false): void {
+  if (!audioElement) return
+
+  const currentTime = audioElement.currentTime
+  const duration = audioElement.duration
+
+  updatePlaybackStore(currentTime, duration)
+
+  if (force) {
+    lastProgressSyncAt = 0
+  }
+
+  syncPlaybackProgress({ currentTime, duration })
 }
 
 function ensureAudioGraph() {
@@ -61,6 +86,25 @@ function ensureAudioGraph() {
 
     audioElement.addEventListener('play', () => {
       playRecorded = false
+      usePlayerStore.setState({ isPlaying: true, playbackState: 'playing' })
+    })
+
+    audioElement.addEventListener('pause', () => {
+      if (!audioElement?.ended) {
+        usePlayerStore.setState({ isPlaying: false, playbackState: 'paused' })
+      }
+    })
+
+    audioElement.addEventListener('loadedmetadata', () => {
+      syncPlaybackRuntime(true)
+    })
+
+    audioElement.addEventListener('durationchange', () => {
+      syncPlaybackRuntime(true)
+    })
+
+    audioElement.addEventListener('seeked', () => {
+      syncPlaybackRuntime(true)
     })
 
     audioElement.addEventListener('timeupdate', () => {
@@ -69,8 +113,7 @@ function ensureAudioGraph() {
       const currentTime = audioElement.currentTime
       const duration = audioElement.duration
       
-      usePlayerStore.setState({ currentTime })
-      syncPlaybackProgress({ currentTime, duration })
+      syncPlaybackRuntime()
 
       if (!playRecorded && duration > 0) {
         if (currentTime > 30 || currentTime > duration * 0.5) {
@@ -84,19 +127,18 @@ function ensureAudioGraph() {
     })
     
     audioElement.addEventListener('ended', () => {
-      if (audioElement) {
-        syncPlaybackProgress({
-          currentTime: audioElement.duration || audioElement.currentTime,
-          duration: audioElement.duration,
-        })
-      }
+      if (endedToken === currentLoadToken) return
+      endedToken = currentLoadToken
+      syncPlaybackRuntime(true)
       window.tplayerAPI.player.trackEnded()
     })
 
     audioElement.addEventListener('error', () => {
+      if (playbackErrorToken === currentLoadToken) return
+      playbackErrorToken = currentLoadToken
       const errorStr = audioElement?.error?.message || 'Unknown decode error'
       getToastStore().add(`Failed to play track: ${errorStr}`, 'error')
-      window.tplayerAPI.player.trackEnded()
+      usePlayerStore.setState({ isPlaying: false, playbackState: 'error' })
     })
   }
 }
@@ -129,17 +171,26 @@ export function useAudioPlayer() {
     ensureAudioGraph()
 
     const cleanupLoad = window.tplayerAPI.player.onLoad((data: TrackLoadPayload) => {
+      currentLoadToken += 1
+      endedToken = -1
+      playbackErrorToken = -1
       window.tplayerAPI.system.log?.('onLoad triggered', data)
       if (data.url && audioElement) {
         window.tplayerAPI.system.log?.('setting src and playing')
         if (getAudioContext().state === 'suspended') {
           getAudioContext().resume().then(() => window.tplayerAPI.system.log?.('AudioContext resumed')).catch(e => window.tplayerAPI.system.log?.('Resume error:', e))
         }
+        audioElement.pause()
         audioElement.src = data.url
         audioElement.currentTime = data.startTime || 0
+        audioElement.load()
+        updatePlaybackStore(data.startTime || 0, data.duration)
         audioElement.play()
           .then(() => window.tplayerAPI.system.log?.('Play successful'))
-          .catch(e => window.tplayerAPI.system.log?.('[audio] Play failed:', e.message))
+          .catch(e => {
+            if (e?.name === 'AbortError') return
+            window.tplayerAPI.system.log?.('[audio] Play failed:', e.message)
+          })
       } else {
         window.tplayerAPI.system.log?.('Missing url or audioElement', { hasUrl: !!data.url, hasElement: !!audioElement })
       }
@@ -159,6 +210,7 @@ export function useAudioPlayer() {
     const cleanupSeekTo = window.tplayerAPI.player.onSeekTo?.((data: SeekPayload) => {
        if (audioElement) {
          audioElement.currentTime = data.time
+         updatePlaybackStore(data.time, audioElement.duration)
        }
     })
 
