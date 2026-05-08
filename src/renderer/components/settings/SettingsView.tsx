@@ -219,7 +219,7 @@ export function SettingsView() {
       <section className="mb-8">
         <h2 className="text-lg font-semibold text-primary mb-4">Last.fm</h2>
         <p className="text-sm text-secondary mb-4">Connect your Last.fm account to scrobble plays.</p>
-        <div className="space-y-4 rounded-2xl border border-border-subtle bg-surface-1 p-4">
+        <div className="space-y-4 border-y border-white/[0.06] py-4">
           <div>
             <p className="text-sm text-secondary mb-2">API Key</p>
             <Input

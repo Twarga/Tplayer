@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from 'react'
 import { usePlayerStore } from '@/stores/playerStore'
 import { useLibraryStore } from '@/stores/libraryStore'
-import { Play, Pause, ChevronRight, MoreVertical, Radio, Shuffle, Sparkles } from 'lucide-react'
+import { Play, Pause, ChevronRight, MoreVertical } from 'lucide-react'
 import { PlayingBars } from '@/components/ui/PlayingBars'
 import { formatDuration } from '@/lib/utils'
 
@@ -22,7 +22,7 @@ export function HomeView({ onViewChange }: HomeViewProps) {
   const recentTracks = tracks.slice(0, 6)
   const highlightTracks = tracks.slice(0, 4)
   const importRows = tracks.slice(0, 3)
-  const featuredTrack = currentTrack
+  const nowPlayingTrack = currentTrack
     ? tracks.find((track) => track.id === currentTrack.id) ?? tracks[0]
     : tracks[0]
 
@@ -37,95 +37,36 @@ export function HomeView({ onViewChange }: HomeViewProps) {
 
   return (
     <div className="h-full overflow-y-auto px-8 pb-28 animate-fade-in">
-      {featuredTrack && (
-        <section className="mb-8 grid min-h-[420px] grid-cols-[minmax(320px,0.58fr)_minmax(280px,0.42fr)] overflow-hidden">
+      {nowPlayingTrack && (
+        <section className="mb-8 border-y border-white/[0.06] py-5">
           <button
-            onClick={() => handlePlay(featuredTrack.id)}
-            className="group relative min-h-[420px] overflow-hidden bg-accent text-left text-black"
+            onClick={() => handlePlay(nowPlayingTrack.id)}
+            className="grid w-full grid-cols-[96px_minmax(0,1fr)_auto] items-center gap-5 text-left"
           >
-            {artwork(featuredTrack) ? (
-              <img
-                src={artwork(featuredTrack)}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover mix-blend-multiply grayscale-[0.1] contrast-125"
-              />
-            ) : (
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_54%_30%,rgba(0,0,0,0.35),transparent_28%),linear-gradient(135deg,rgba(0,0,0,0.12),transparent)]" />
-            )}
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_42%,rgba(0,0,0,0.32))]" />
-            <div className="absolute bottom-0 left-0 right-0 px-6 pb-2">
-              <h2 className="max-w-full truncate font-display text-[clamp(3.2rem,8vw,6.8rem)] font-extrabold leading-none text-white drop-shadow-[0_8px_28px_rgba(0,0,0,0.36)]">
-                {featuredTrack.artist || featuredTrack.title}
-              </h2>
-            </div>
-            <span className="absolute right-6 top-6 grid h-12 w-12 place-items-center rounded-full bg-black/70 text-accent opacity-0 transition-opacity group-hover:opacity-100">
-              {isPlaying && currentTrack?.id === featuredTrack.id ? (
-                <Pause size={22} fill="currentColor" />
+            <div className="h-24 w-24 overflow-hidden bg-white/[0.04]">
+              {artwork(nowPlayingTrack) ? (
+                <img src={artwork(nowPlayingTrack)} alt="" className="h-full w-full object-cover" />
               ) : (
-                <Play size={22} fill="currentColor" className="ml-1" />
+                <div className="grid h-full w-full place-items-center bg-accent/16 text-3xl font-bold text-accent">
+                  {nowPlayingTrack.title?.[0] || 'T'}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">Now playing</p>
+              <h2 className="truncate text-[clamp(1.8rem,4vw,4rem)] font-extrabold leading-none text-primary">
+                {nowPlayingTrack.title}
+              </h2>
+              <p className="mt-2 truncate text-sm text-secondary">{nowPlayingTrack.artist || 'Unknown artist'}</p>
+            </div>
+            <span className="grid h-12 w-12 place-items-center rounded-full bg-accent text-black">
+              {isPlaying && currentTrack?.id === nowPlayingTrack.id ? (
+                <Pause size={20} fill="currentColor" />
+              ) : (
+                <Play size={20} fill="currentColor" className="ml-0.5" />
               )}
             </span>
           </button>
-
-          <aside className="bg-[linear-gradient(135deg,rgba(255,176,0,0.14),rgba(19,13,8,0.78)_38%,rgba(9,7,12,0.94))] px-7 py-7">
-            <div className="mb-7 flex items-center gap-2 text-xs text-secondary">
-              <Sparkles size={14} className="text-accent" />
-              <span>Now playing</span>
-            </div>
-            <h2 className="text-2xl font-bold text-primary">{featuredTrack.title}</h2>
-            <p className="mt-1 text-sm text-secondary">{featuredTrack.artist || 'Unknown artist'}</p>
-            <p className="mt-6 max-w-sm text-sm leading-6 text-secondary">
-              Your local library stays first: quick playback, clean queue control, and imported tracks ready beside your albums.
-            </p>
-            <div className="mt-8 flex items-center gap-3">
-              <button
-                onClick={() => handlePlay(featuredTrack.id)}
-                className="grid h-12 w-12 place-items-center rounded-full bg-accent text-black shadow-accent-glow"
-                title="Play featured track"
-              >
-                {isPlaying && currentTrack?.id === featuredTrack.id ? (
-                  <Pause size={20} fill="currentColor" />
-                ) : (
-                  <Play size={20} fill="currentColor" className="ml-0.5" />
-                )}
-              </button>
-              <button className="flex items-center gap-2 text-sm text-secondary hover:text-primary">
-                <Shuffle size={16} />
-                Shuffle
-              </button>
-              <button className="flex items-center gap-2 text-sm text-secondary hover:text-primary">
-                <Radio size={16} />
-                Radio
-              </button>
-            </div>
-            <div className="mt-10">
-              <h3 className="mb-3 text-sm font-semibold text-primary">Top songs</h3>
-              <div className="space-y-3">
-                {tracks.slice(0, 5).map((track) => (
-                  <button
-                    key={track.id}
-                    onClick={() => handlePlay(track.id)}
-                    className="grid w-full grid-cols-[38px_minmax(0,1fr)_48px] items-center gap-3 text-left"
-                  >
-                    <div className="h-9 w-9 overflow-hidden rounded-[5px] bg-white/[0.05]">
-                      {artwork(track) ? (
-                        <img src={artwork(track)} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="grid h-full w-full place-items-center bg-accent/18 text-xs font-bold text-accent">
-                          {track.title?.[0] || 'T'}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-primary">{track.title}</p>
-                      <p className="truncate text-xs text-secondary">{track.artist}</p>
-                    </div>
-                    <span className="text-right text-xs text-tertiary">{formatDuration(track.duration)}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </aside>
         </section>
       )}
 
@@ -141,14 +82,14 @@ export function HomeView({ onViewChange }: HomeViewProps) {
               <ChevronRight size={16} />
             </button>
           </div>
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-5">
             {highlightTracks.map((track) => (
               <button
                 key={track.id}
-                className="group overflow-hidden rounded-[7px] bg-white/[0.035] text-left transition-colors hover:bg-white/[0.055]"
+                className="group border-b border-white/[0.06] pb-3 text-left transition-colors hover:border-accent/35"
                 onClick={() => handlePlay(track.id)}
               >
-                <div className="relative aspect-square overflow-hidden bg-black/25">
+                <div className="relative aspect-square overflow-hidden bg-white/[0.04]">
                   {artwork(track) ? (
                     <img src={artwork(track)} alt="" className="h-full w-full object-cover" />
                   ) : (
@@ -167,7 +108,7 @@ export function HomeView({ onViewChange }: HomeViewProps) {
                     )}
                   </button>
                 </div>
-                <div className="px-3 py-3">
+                <div className="pt-3">
                   <p className="text-sm font-semibold text-primary truncate mb-0.5 flex items-center gap-2">
                     {track.title}
                     {isPlaying && currentTrack?.id === track.id && <PlayingBars />}
@@ -199,7 +140,7 @@ export function HomeView({ onViewChange }: HomeViewProps) {
                 onClick={() => handlePlay(track.id)}
                 className="group text-left"
               >
-                <div className="aspect-square overflow-hidden rounded-[6px] bg-black/25">
+                <div className="aspect-square overflow-hidden bg-white/[0.04]">
                   {artwork(track) ? (
                     <img src={artwork(track)} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
                   ) : (
@@ -226,7 +167,7 @@ export function HomeView({ onViewChange }: HomeViewProps) {
                 onClick={() => handlePlay(track.id)}
                 className="grid w-full grid-cols-[48px_minmax(0,1fr)_64px_84px_84px_24px] items-center gap-3 py-2.5 text-left transition-colors hover:bg-white/[0.025]"
               >
-                <div className="h-10 w-10 overflow-hidden rounded-[5px] bg-white/[0.05]">
+                <div className="h-10 w-10 overflow-hidden bg-white/[0.05]">
                   {artwork(track) ? (
                     <img src={artwork(track)} alt="" className="h-full w-full object-cover" />
                   ) : (
@@ -237,7 +178,7 @@ export function HomeView({ onViewChange }: HomeViewProps) {
                 </div>
                 <p className="truncate text-sm font-medium text-primary">{track.title}</p>
                 <p className="text-right text-xs text-secondary">{formatDuration(track.duration)}</p>
-                <span className="justify-self-end rounded-[5px] bg-accent/14 px-2 py-1 text-[11px] font-semibold text-accent">MP3</span>
+                <span className="justify-self-end border-b border-accent/40 px-1 py-1 text-[11px] font-semibold text-accent">MP3</span>
                 <span className="text-right text-xs text-tertiary">local</span>
                 <MoreVertical size={16} className="text-tertiary" />
               </button>
