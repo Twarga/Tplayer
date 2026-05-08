@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { TopBar } from '@/components/layout/TopBar'
 import { NowPlayingPanel } from '@/components/layout/NowPlayingPanel'
 import { MiniPlayerBar } from '@/components/layout/MiniPlayerBar'
+import { HomeView } from '@/components/home/HomeView'
 import { LibraryView } from '@/components/library/LibraryView'
 import { AlbumView } from '@/components/library/AlbumView'
 import { ArtistView } from '@/components/library/ArtistView'
@@ -30,6 +31,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { pageMotion, routeTransition } from '@/lib/animations'
 
 type ShellView =
+  | 'home'
   | 'library'
   | 'albums'
   | 'artists'
@@ -41,6 +43,10 @@ type ShellView =
   | `playlist-${number}`
 
 const VIEW_META: Record<Exclude<ShellView, `playlist-${number}`>, { title: string; subtitle: string }> = {
+  home: {
+    title: 'Good evening',
+    subtitle: 'Enjoy your music.',
+  },
   library: {
     title: 'Library',
     subtitle: 'Browse and start playback from your local collection.',
@@ -76,7 +82,7 @@ const VIEW_META: Record<Exclude<ShellView, `playlist-${number}`>, { title: strin
 }
 
 function AppShell() {
-  const [activeView, setActiveView] = useState<ShellView>('library')
+  const [activeView, setActiveView] = useState<ShellView>('home')
   const [npPanelOpen, setNpPanelOpen] = useState(true)
 
   const { init: initPlayer } = usePlayerStore()
@@ -143,6 +149,8 @@ function AppShell() {
     }
 
     switch (activeView) {
+      case 'home':
+        return <HomeView onViewChange={handleViewChange} />
       case 'library':
         return <LibraryView onViewChange={handleViewChange} />
       case 'albums':
@@ -175,13 +183,13 @@ function AppShell() {
   return (
     <TooltipProvider delayDuration={300}>
       <div className="h-screen w-screen bg-background text-primary overflow-hidden flex flex-col">
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(232,168,124,0.12),transparent_28%),radial-gradient(circle_at_85%_14%,rgba(255,255,255,0.05),transparent_22%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent_55%)]" />
-        <div className="flex flex-1 overflow-hidden p-3 gap-3 relative">
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(232,168,124,0.08),transparent_24%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_42%)]" />
+        <div className="flex flex-1 overflow-hidden p-2.5 gap-2.5 relative">
           <ErrorBoundary>
             <Sidebar activeView={activeView} onViewChange={handleViewChange} />
           </ErrorBoundary>
 
-          <div className="flex-1 flex flex-col overflow-hidden min-w-0 rounded-[32px] border border-white/8 bg-surface-panel shadow-card backdrop-glass">
+          <div className="flex-1 flex flex-col overflow-hidden min-w-0 rounded-[18px] border border-white/8 bg-[#0d0f12]/96 shadow-card backdrop-glass">
             <TopBar
               activeView={activeView}
               title={viewMeta.title}
@@ -198,7 +206,7 @@ function AppShell() {
                     animate="animate"
                     exit="exit"
                     transition={routeTransition}
-                    className="absolute inset-0 overflow-hidden rounded-[28px] bg-surface-1/58 border border-white/[0.03]"
+                    className="absolute inset-0 overflow-hidden rounded-[12px] bg-[#0f1115]/70 border border-white/[0.03]"
                   >
                     {renderView()}
                   </motion.div>

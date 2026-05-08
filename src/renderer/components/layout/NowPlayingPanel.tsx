@@ -36,7 +36,7 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
         animate={collapsed ? 'closed' : 'open'}
         variants={panelMotion}
         className={cn(
-          'h-full rounded-[32px] bg-[linear-gradient(180deg,rgba(14,16,19,0.98),rgba(11,12,14,0.92))] border border-white/[0.08] flex flex-col shrink-0 overflow-hidden surface-panel shadow-card',
+          'h-full rounded-[18px] bg-[linear-gradient(180deg,rgba(14,16,19,0.98),rgba(11,12,14,0.94))] border border-white/[0.08] flex flex-col shrink-0 overflow-hidden surface-panel shadow-card',
           collapsed ? 'w-0 pointer-events-none' : 'w-[336px]'
         )}
       >
@@ -59,9 +59,9 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
             variants={staggerParent}
             initial="hidden"
             animate="show"
-            className="flex-1 overflow-y-auto px-5 py-5 flex flex-col bg-[radial-gradient(circle_at_top,rgba(232,168,124,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_45%)]"
+            className="flex-1 overflow-y-auto px-5 py-5 flex flex-col bg-[radial-gradient(circle_at_top,rgba(232,168,124,0.08),transparent_24%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_45%)]"
           >
-            <motion.div variants={staggerItem} className="w-full aspect-square rounded-[1.65rem] overflow-hidden shadow-2xl mb-5 bg-surface-2 flex items-center justify-center relative border border-white/[0.07]">
+            <motion.div variants={staggerItem} className="w-full aspect-square rounded-[10px] overflow-hidden shadow-2xl mb-5 bg-surface-2 flex items-center justify-center relative border border-white/[0.07]">
               {currentTrack?.cover_path && (
                 <div 
                   className="absolute inset-0 bg-cover bg-center blur-xl opacity-40 transform scale-110" 
@@ -72,10 +72,10 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
                 <img 
                   src={`tplayer-img://media/${encodeURIComponent(currentTrack.cover_path)}`} 
                   alt="Album Art" 
-                  className="w-full h-full object-cover relative z-10 rounded-[1.65rem]"
+                  className="w-full h-full object-cover relative z-10 rounded-[10px]"
                 />
               ) : currentTrack ? (
-                <div className="w-full h-full bg-gradient-to-br from-accent/20 to-surface-2 flex items-center justify-center text-accent text-6xl font-bold relative z-10 rounded-[1.65rem]">
+                <div className="w-full h-full bg-gradient-to-br from-accent/20 to-surface-2 flex items-center justify-center text-accent text-6xl font-bold relative z-10 rounded-[10px]">
                   {currentTrack.title?.[0] || '♪'}
                 </div>
               ) : (

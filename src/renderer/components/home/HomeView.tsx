@@ -28,7 +28,7 @@ export function HomeView({ onViewChange }: HomeViewProps) {
 
   return (
     <div className="p-6 overflow-y-auto h-full animate-fade-in">
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4 mb-8">
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3 mb-8">
         {[
           {
             title: 'Open library',
@@ -58,9 +58,9 @@ export function HomeView({ onViewChange }: HomeViewProps) {
           <button
             key={view}
             onClick={() => onViewChange?.(view)}
-            className="text-left rounded-xl border border-border-subtle bg-surface-1 p-4 hover:bg-surface-2 transition-colors"
+            className="text-left rounded-[10px] border border-border-subtle bg-surface-1/80 p-4 hover:bg-surface-2 transition-colors"
           >
-            <div className="w-10 h-10 rounded-xl bg-surface-3 text-accent flex items-center justify-center mb-4">
+            <div className="w-10 h-10 rounded-[10px] bg-surface-3 text-accent flex items-center justify-center mb-4">
               <Icon size={18} />
             </div>
             <h2 className="text-sm font-semibold text-primary">{title}</h2>
@@ -84,10 +84,10 @@ export function HomeView({ onViewChange }: HomeViewProps) {
             {highlightTracks.map((track) => (
               <div
                 key={track.id}
-                className="bg-surface-1 rounded-lg p-3 cursor-pointer card-lift group"
+                className="bg-surface-1 rounded-[10px] p-3 cursor-pointer card-lift group border border-white/[0.04]"
                 onClick={() => handlePlay(track.id)}
               >
-                <div className="aspect-square rounded-md bg-surface-2 mb-3 overflow-hidden relative">
+                <div className="aspect-square rounded-[8px] bg-surface-2 mb-3 overflow-hidden relative">
                   <div className="w-full h-full bg-gradient-to-br from-accent/10 to-surface-2 flex items-center justify-center text-accent text-3xl font-bold">
                     {track.title?.[0] || '♪'}
                   </div>
@@ -124,14 +124,14 @@ export function HomeView({ onViewChange }: HomeViewProps) {
               See all <ChevronRight size={14} />
             </button>
           </div>
-          <div className="rounded-xl border border-border-subtle overflow-hidden">
+          <div className="rounded-[10px] border border-border-subtle overflow-hidden">
             {recentTracks.map((track, index) => (
               <button
                 key={track.id}
                 onClick={() => handlePlay(track.id)}
                 className="w-full grid grid-cols-[40px_minmax(0,1fr)_120px_72px] items-center gap-3 px-4 py-3 text-left bg-surface-1 hover:bg-surface-2 transition-colors border-b border-border-subtle last:border-b-0"
               >
-                <div className="w-10 h-10 rounded-md bg-surface-3 flex items-center justify-center text-tertiary">
+                <div className="w-10 h-10 rounded-[8px] bg-surface-3 flex items-center justify-center text-tertiary">
                   {index + 1}
                 </div>
                 <div className="min-w-0">

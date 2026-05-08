@@ -60,7 +60,7 @@ export function MiniPlayerBar({ onQueueClick }: { onQueueClick?: () => void }) {
       variants={staggerParent}
       initial="hidden"
       animate="show"
-      className="mx-3 mb-3 h-[78px] rounded-[28px] w-auto bg-[linear-gradient(180deg,rgba(12,12,13,0.96),rgba(10,10,11,0.92))] border border-white/[0.08] px-5 flex items-center shrink-0 z-20 backdrop-player-bar shadow-card"
+      className="mx-2.5 mb-2.5 h-[78px] rounded-[18px] w-auto bg-[linear-gradient(180deg,rgba(12,12,13,0.97),rgba(10,10,11,0.94))] border border-white/[0.08] px-5 flex items-center shrink-0 z-20 backdrop-player-bar shadow-card"
     >
       <div className="w-[30%] flex items-center gap-3 min-w-0">
         {currentTrack ? (
@@ -70,10 +70,10 @@ export function MiniPlayerBar({ onQueueClick }: { onQueueClick?: () => void }) {
                 <img 
                   src={`tplayer-img://media/${encodeURIComponent(currentTrack.cover_path)}`} 
                   alt="Album Art" 
-                  className="w-[3.25rem] h-[3.25rem] rounded-[1rem] object-cover shrink-0 shadow-card"
+                  className="w-[3.25rem] h-[3.25rem] rounded-[8px] object-cover shrink-0 shadow-card"
                 />
               ) : (
-                <div className="w-[3.25rem] h-[3.25rem] rounded-[1rem] bg-surface-2 flex items-center justify-center text-accent font-bold text-lg shrink-0">
+                <div className="w-[3.25rem] h-[3.25rem] rounded-[8px] bg-surface-2 flex items-center justify-center text-accent font-bold text-lg shrink-0">
                   {currentTrack.title?.[0] || '♪'}
                 </div>
               )}
