@@ -54,8 +54,8 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
   }
 
   return (
-    <aside className="w-[252px] min-w-[252px] h-full bg-[linear-gradient(180deg,rgba(13,14,17,0.72),rgba(9,10,12,0.52))] border-r border-white/[0.075] flex flex-col select-none overflow-hidden">
-      <div className="px-5 pb-5 pt-5 flex items-center gap-3 shrink-0 border-b border-white/[0.06]">
+    <aside className="w-[204px] min-w-[204px] h-full bg-[#21190e] border-r border-black/20 flex flex-col select-none overflow-hidden">
+      <div className="px-5 pb-5 pt-5 flex items-center gap-3 shrink-0">
         <div className="w-11 h-11 rounded-full border border-accent/40 bg-accent/10 flex items-center justify-center text-accent font-bold text-sm">
           T
         </div>
@@ -111,7 +111,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="px-3 pb-4 pt-3 flex flex-col gap-1 shrink-0 border-t border-white/[0.06] bg-white/[0.02]">
+      <div className="px-3 pb-4 pt-3 flex flex-col gap-1 shrink-0 border-t border-white/[0.06] bg-black/10">
         <NavItem icon={<Settings size={20} />} label="Settings" active={activeView === 'settings'} onClick={() => onViewChange('settings')} />
       </div>
 

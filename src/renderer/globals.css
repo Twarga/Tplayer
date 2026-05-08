@@ -6,16 +6,16 @@
 
 @layer base {
   :root {
-    --background: #0a0a0b;
+    --background: #0b0811;
     --foreground: #ffffff;
 
-    --surface-1: #111214;
-    --surface-2: #17191c;
-    --surface-3: #202328;
-    --surface-4: #2a2e34;
-    --surface-5: #343941;
-    --surface-elevated: rgba(23, 25, 28, 0.92);
-    --surface-panel: rgba(15, 17, 20, 0.88);
+    --surface-1: #151018;
+    --surface-2: #1c1420;
+    --surface-3: #241a24;
+    --surface-4: #30222b;
+    --surface-5: #3b2c32;
+    --surface-elevated: rgba(28, 20, 32, 0.92);
+    --surface-panel: rgba(15, 11, 19, 0.88);
     --surface-overlay: rgba(8, 8, 10, 0.72);
 
     --text-primary: #f7f7f5;
@@ -23,7 +23,7 @@
     --text-tertiary: #8e8d89;
     --text-muted: #666865;
 
-    --accent: #e8a87c;
+    --accent: #ffb000;
     --accent-hover: color-mix(in srgb, var(--accent) 82%, white);
     --accent-muted: color-mix(in srgb, var(--accent) 18%, transparent);
     --accent-strong: color-mix(in srgb, var(--accent) 66%, #ffffff);
@@ -34,8 +34,8 @@
     --ring-subtle: rgba(232, 168, 124, 0.16);
     --ring-strong: rgba(232, 168, 124, 0.34);
 
-    --sidebar-bg: rgba(10, 11, 13, 0.96);
-    --player-bar-bg: rgba(10, 10, 11, 0.94);
+    --sidebar-bg: rgba(24, 19, 13, 0.96);
+    --player-bar-bg: rgba(13, 10, 12, 0.78);
     --input-bg: rgba(24, 26, 30, 0.9);
     --input-border: rgba(255, 255, 255, 0.1);
     --input-focus: var(--accent);
@@ -64,8 +64,8 @@
     --shadow-modal: 0 28px 70px rgba(0, 0, 0, 0.48);
     --shadow-hover-lift: 0 18px 46px rgba(0, 0, 0, 0.32);
     --shadow-play-button: 0 10px 24px rgba(0, 0, 0, 0.35);
-    --shadow-accent-glow: 0 12px 32px rgba(232, 168, 124, 0.2);
-    --shadow-progress-thumb: 0 0 0 4px rgba(232, 168, 124, 0.15), 0 0 12px rgba(232, 168, 124, 0.42);
+    --shadow-accent-glow: 0 12px 32px rgba(255, 176, 0, 0.22);
+    --shadow-progress-thumb: 0 0 0 4px rgba(255, 176, 0, 0.15), 0 0 12px rgba(255, 176, 0, 0.42);
 
     --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
     --ease-in: cubic-bezier(0.4, 0, 1, 1);
@@ -170,8 +170,8 @@
 
   body {
     background:
-      radial-gradient(circle at top left, rgba(232, 168, 124, 0.08) 0%, transparent 34%),
-      radial-gradient(circle at top right, rgba(255, 255, 255, 0.04) 0%, transparent 26%),
+      radial-gradient(circle at top left, rgba(255, 176, 0, 0.08) 0%, transparent 34%),
+      radial-gradient(circle at top right, rgba(255, 255, 255, 0.035) 0%, transparent 26%),
       var(--background);
     color: var(--text-primary);
     overflow: hidden;
@@ -184,7 +184,7 @@
   h5,
   h6 {
     font-family: 'Manrope', 'Inter', sans-serif;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
   }
 }
 

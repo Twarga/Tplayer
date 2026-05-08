@@ -50,10 +50,20 @@ Each task has:
 
 ## Design Direction Rules
 
-The remake should keep the spirit of the existing design:
+The remake should now move toward the newer reference aesthetic provided during the UI pass:
+
+- editorial music-app layout with a strong artist or album hero
+- warm amber/yellow accent as the main visual signature
+- deep black, brown, and aubergine surfaces rather than neutral gray panels
+- one app-window frame with clear layout zones instead of nested rounded panels
+- large artwork, large artist/title type, and compact supporting lists
+- translucent persistent player treatment over a dark app surface
+- minimal card stacking; repeated items can be cards, but page structure should stay flat
+
+The remake should keep the useful structure of the existing product:
 
 - three-column desktop music-player layout
-- warm dark palette and current visual mood
+- warm dark palette and strong visual mood
 - album-art-first surfaces
 - Spotify-like usability, but not a Spotify copy
 - compact control density with a premium feel
