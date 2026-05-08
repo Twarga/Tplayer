@@ -4,7 +4,6 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { TopBar } from '@/components/layout/TopBar'
 import { NowPlayingPanel } from '@/components/layout/NowPlayingPanel'
 import { MiniPlayerBar } from '@/components/layout/MiniPlayerBar'
-import { HomeView } from '@/components/home/HomeView'
 import { LibraryView } from '@/components/library/LibraryView'
 import { AlbumView } from '@/components/library/AlbumView'
 import { ArtistView } from '@/components/library/ArtistView'
@@ -30,16 +29,19 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { motion, AnimatePresence } from 'framer-motion'
 import { pageMotion, routeTransition } from '@/lib/animations'
 
-const VIEW_META: Record<string, { title: string; subtitle: string }> = {
-  home: {
-    title: 'Overview',
-    subtitle: 'Jump back into your library, queue, and imports without extra dashboard noise.',
-  },
+type ShellView =
+  | 'library'
+  | 'albums'
+  | 'artists'
+  | 'playlists'
+  | 'youtube'
+  | 'downloads'
+  | 'queue'
+  | 'settings'
+  | `playlist-${number}`
+
+const VIEW_META: Record<Exclude<ShellView, `playlist-${number}`>, { title: string; subtitle: string }> = {
   library: {
-    title: 'Library',
-    subtitle: 'Browse and start playback from your local collection.',
-  },
-  songs: {
     title: 'Library',
     subtitle: 'Browse and start playback from your local collection.',
   },
@@ -74,7 +76,7 @@ const VIEW_META: Record<string, { title: string; subtitle: string }> = {
 }
 
 function AppShell() {
-  const [activeView, setActiveView] = useState('library')
+  const [activeView, setActiveView] = useState<ShellView>('library')
   const [npPanelOpen, setNpPanelOpen] = useState(true)
 
   const { init: initPlayer } = usePlayerStore()
@@ -108,6 +110,20 @@ function AppShell() {
     }
   }, [])
 
+  const handleViewChange = (view: string) => {
+    if (view.startsWith('playlist-')) {
+      setActiveView(view as ShellView)
+      return
+    }
+
+    if (view in VIEW_META) {
+      setActiveView(view as Exclude<ShellView, `playlist-${number}`>)
+      return
+    }
+
+    setActiveView('library')
+  }
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
@@ -127,11 +143,8 @@ function AppShell() {
     }
 
     switch (activeView) {
-      case 'home':
-        return <HomeView onViewChange={setActiveView} />
       case 'library':
-      case 'songs':
-        return <LibraryView onViewChange={setActiveView} />
+        return <LibraryView onViewChange={handleViewChange} />
       case 'albums':
         return <AlbumView />
       case 'artists':
@@ -147,7 +160,7 @@ function AppShell() {
       case 'settings':
         return <SettingsView />
       default:
-        return <LibraryView onViewChange={setActiveView} />
+        return <LibraryView onViewChange={handleViewChange} />
     }
   }
 
@@ -157,14 +170,14 @@ function AppShell() {
           title: 'Playlist',
           subtitle: 'Focus on one saved queue and play through it cleanly.',
         }
-      : VIEW_META[activeView] ?? VIEW_META.library
+      : VIEW_META[activeView as Exclude<ShellView, `playlist-${number}`>] ?? VIEW_META.library
 
   return (
     <TooltipProvider delayDuration={300}>
       <div className="h-screen w-screen bg-background text-primary overflow-hidden flex flex-col">
         <div className="flex flex-1 overflow-hidden p-3 gap-3">
           <ErrorBoundary>
-            <Sidebar activeView={activeView} onViewChange={setActiveView} />
+            <Sidebar activeView={activeView} onViewChange={handleViewChange} />
           </ErrorBoundary>
 
           <div className="flex-1 flex flex-col overflow-hidden min-w-0 rounded-[28px] border border-border-subtle bg-surface-panel shadow-card">
@@ -172,7 +185,7 @@ function AppShell() {
               activeView={activeView}
               title={viewMeta.title}
               subtitle={viewMeta.subtitle}
-              onViewChange={setActiveView}
+              onViewChange={handleViewChange}
             />
             <main className="flex-1 overflow-hidden relative px-2 pb-2">
               <ErrorBoundary>
@@ -197,7 +210,7 @@ function AppShell() {
         </div>
 
         <ErrorBoundary>
-          <MiniPlayerBar onQueueClick={() => setActiveView('queue')} />
+          <MiniPlayerBar onQueueClick={() => handleViewChange('queue')} />
         </ErrorBoundary>
       </div>
     </TooltipProvider>

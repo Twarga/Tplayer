@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Home, Library, Settings, Plus, Download, Inbox, Music4 } from 'lucide-react'
+import { Library, Settings, Plus, Download, Inbox, Music4, ListMusic } from 'lucide-react'
 import { usePlaylistStore } from '@/stores/playlistStore'
 import { cn } from '@/lib/utils'
 
@@ -68,6 +68,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
       <nav className="flex flex-col gap-1 px-3 py-3 flex-1 overflow-y-auto">
         <NavItem icon={<Library size={20} />} label="Library" active={activeView === 'library'} onClick={() => onViewChange('library')} />
         <NavItem icon={<Inbox size={20} />} label="Queue" active={activeView === 'queue'} onClick={() => onViewChange('queue')} />
+        <NavItem icon={<ListMusic size={20} />} label="Playlists" active={activeView === 'playlists'} onClick={() => onViewChange('playlists')} />
         <NavItem
           icon={<span className="text-red-500"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></span>}
           label="YouTube Import"
@@ -75,7 +76,6 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
           onClick={() => onViewChange('youtube')}
         />
         <NavItem icon={<Download size={20} />} label="Downloads" active={activeView === 'downloads'} onClick={() => onViewChange('downloads')} />
-        <NavItem icon={<Home size={20} />} label="Overview" active={activeView === 'home'} onClick={() => onViewChange('home')} />
 
         {/* Playlists Section */}
         <div className="flex items-center justify-between px-3 pt-5 pb-2">

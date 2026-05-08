@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, Download, Library, ListMusic, Settings } from 'lucide-react'
+import { Search, Download, Library, ListMusic, Settings, PlaySquare } from 'lucide-react'
 import { useLibraryStore } from '@/stores/libraryStore'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -74,6 +74,7 @@ export function TopBar({ activeView, title, subtitle, onViewChange, onSearch }: 
         {[
           { view: 'library', label: 'Library', icon: Library },
           { view: 'queue', label: 'Queue', icon: ListMusic },
+          { view: 'playlists', label: 'Playlists', icon: PlaySquare },
           { view: 'downloads', label: 'Downloads', icon: Download },
           { view: 'settings', label: 'Settings', icon: Settings },
         ].map(({ view, label, icon: Icon }) => (
