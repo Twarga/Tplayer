@@ -18,6 +18,11 @@ build/release/
 *.blockmap
 latest*.yml
 
+# Caches
+.eslintcache
+.vite/
+.tsbuildinfo
+
 # Local environment
 .env
 .env.*
