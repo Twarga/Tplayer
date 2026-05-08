@@ -17,6 +17,9 @@ interface DownloadItem {
   title: string
   status: DownloadStatus
   progress: number
+  artist?: string | null
+  trackId?: number | null
+  createdAt?: string
   speed?: string
   eta?: string
   size?: string
@@ -31,7 +34,9 @@ interface YouTubeStore {
   searchError: string | null
   hasSearched: boolean
   lastQuery: string
+  isHistoryLoading: boolean
   downloads: DownloadItem[]
+  loadHistory: () => Promise<void>
   search: (query: string) => Promise<void>
   download: (url: string, videoId: string, title?: string) => Promise<void>
   cancelDownload: (videoId: string) => Promise<void>
@@ -46,6 +51,9 @@ function mapPersistedDownload(download: PersistedDownload): DownloadItem {
     title: download.title,
     status: download.status,
     progress: download.progress,
+    artist: download.artist,
+    trackId: download.track_id,
+    createdAt: download.created_at,
   }
 }
 
@@ -55,21 +63,28 @@ export const useYouTubeStore = create<YouTubeStore>((set, get) => ({
   searchError: null,
   hasSearched: false,
   lastQuery: '',
+  isHistoryLoading: false,
   downloads: [],
 
+  loadHistory: async () => {
+    set({ isHistoryLoading: true })
+    try {
+      const history = await api.youtube.getHistory()
+      set((s) => ({
+        downloads: history.map(mapPersistedDownload).map((download) => {
+          const existing = s.downloads.find((item) => item.id === download.id)
+          return existing ? { ...download, ...existing } : download
+        }),
+        isHistoryLoading: false,
+      }))
+    } catch (err) {
+      console.error('[youtubeStore] failed to load history:', err)
+      set({ isHistoryLoading: false })
+    }
+  },
+
   init() {
-    void api.youtube.getHistory()
-      .then((history) => {
-        set((s) => ({
-          downloads: history.map(mapPersistedDownload).map((download) => {
-            const existing = s.downloads.find((item) => item.id === download.id)
-            return existing ? { ...download, ...existing } : download
-          }),
-        }))
-      })
-      .catch((err) => {
-        console.error('[youtubeStore] failed to load history:', err)
-      })
+    void get().loadHistory()
 
     const cleanups = [
       api.youtube.onDownloadStarted(({ id, videoId, folder, title }) => {

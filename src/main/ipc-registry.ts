@@ -11,7 +11,6 @@ import {
   getPlaylistTracks,
   getPlaylists,
   getQueueTracksByIds,
-  getRecentDownloads,
   getSetting,
   getTrackById,
   getTracks,
@@ -216,7 +215,7 @@ function registerYouTubeHandlers(): void {
   })
 
   ipcMain.handle(IPC_CHANNELS.youtube.getHistory, async () => {
-    return getRecentDownloads()
+    return getDownloads()
   })
 
   ipcMain.handle(IPC_CHANNELS.youtube.clearHistory, async () => {
