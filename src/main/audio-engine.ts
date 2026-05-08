@@ -307,7 +307,16 @@ export function prevTrack(): void {
 }
 
 export function toggleShuffle(): void {
-  _state.isShuffled = !_state.isShuffled
+  setShuffle(!_state.isShuffled)
+}
+
+export function setShuffle(enabled: boolean): void {
+  if (_state.isShuffled === enabled) {
+    emitPlaybackState()
+    return
+  }
+
+  _state.isShuffled = enabled
   if (_state.isShuffled) {
     _unshuffledQueue = [..._queue]
     _queue = shuffleQueue(_queue)
@@ -322,7 +331,16 @@ export function toggleShuffle(): void {
 export function cycleRepeat(): void {
   const modes: RepeatMode[] = ['off', 'all', 'one']
   const idx = modes.indexOf(_state.repeatMode)
-  _state.repeatMode = modes[(idx + 1) % modes.length]
+  setRepeatMode(modes[(idx + 1) % modes.length])
+}
+
+export function setRepeatMode(mode: RepeatMode): void {
+  if (_state.repeatMode === mode) {
+    emitPlaybackState()
+    return
+  }
+
+  _state.repeatMode = mode
   emitPlaybackState()
 }
 

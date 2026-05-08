@@ -1,5 +1,5 @@
 import { BrowserWindow } from 'electron'
-import { getPlayerStateExport, pause, resume, nextTrack, prevTrack, seek } from './audio-engine'
+import { getPlayerStateExport, pause, resume, nextTrack, prevTrack, seek, setRepeatMode, setShuffle, setVolume } from './audio-engine'
 import type { PlayerExportState } from '../shared/types/playback'
 import { pathToFileURL } from 'url'
 
@@ -65,7 +65,9 @@ class MprisInterface extends Interface {
   get PlaybackStatus() { return this._state.PlaybackStatus }
   get Metadata() { return this._state.Metadata }
   get Volume() { return this._state.Volume }
-  set Volume(v: number) { this._state.Volume = v }
+  set Volume(v: number) {
+    setVolume(v)
+  }
   get Position() { return this._state.Position }
 
   get CanGoNext() { return true }
@@ -76,10 +78,22 @@ class MprisInterface extends Interface {
   get CanControl() { return true }
 
   get LoopStatus() { return this._state.LoopStatus }
-  set LoopStatus(_v: string) {}
+  set LoopStatus(v: string) {
+    if (v === 'Track') {
+      setRepeatMode('one')
+      return
+    }
+    if (v === 'Playlist') {
+      setRepeatMode('all')
+      return
+    }
+    setRepeatMode('off')
+  }
 
   get Shuffle() { return this._state.Shuffle }
-  set Shuffle(_v: boolean) {}
+  set Shuffle(v: boolean) {
+    setShuffle(Boolean(v))
+  }
 
   Next() { nextTrack() }
   Previous() { prevTrack() }
