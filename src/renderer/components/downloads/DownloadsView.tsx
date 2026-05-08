@@ -18,32 +18,32 @@ export function DownloadsView() {
   }
 
   return (
-    <div className="p-6 overflow-y-auto h-full animate-fade-in">
-      <section className="surface-card rounded-[28px] border border-border-subtle overflow-hidden mb-6">
-        <div className="px-6 py-6 md:px-7 md:py-7 bg-[radial-gradient(circle_at_top_left,rgba(232,168,124,0.18),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
-          <div className="flex items-start justify-between gap-4">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border-default bg-surface-2/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-accent mb-4">
-                <AudioLines size={12} />
-                Download History
-              </div>
-              <h1 className="text-3xl font-bold text-primary">Track every import from search to finished file.</h1>
-              <p className="mt-3 text-sm text-secondary max-w-2xl leading-6">
-                This history is pulled from the database, so completed, failed, and cancelled imports stay visible across restarts.
-              </p>
+    <div className="h-full overflow-y-auto px-8 pb-28 animate-fade-in">
+      <section className="mb-7 border-y border-white/[0.065] py-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="max-w-3xl">
+            <div className="mb-4 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">
+              <AudioLines size={12} />
+              Download History
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => void loadHistory()} className="p-2 text-tertiary hover:text-primary transition-colors interactive-soft" title="Refresh history">
-                <RefreshCw size={18} className={isHistoryLoading ? 'animate-spin' : ''} />
-              </button>
-              <button onClick={clearHistory} className="px-3 py-2 text-xs text-tertiary hover:text-primary transition-colors interactive-soft rounded-xl border border-border-subtle bg-surface-1/80">
-                Clear history
-              </button>
-            </div>
+            <h1 className="max-w-4xl text-[clamp(2rem,4.8vw,4.8rem)] font-extrabold leading-[0.95] text-primary">
+              Imports without clutter.
+            </h1>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-secondary">
+              Completed, failed, and cancelled imports stay visible across restarts.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => void loadHistory()} className="text-tertiary hover:text-accent transition-colors interactive-soft" title="Refresh history">
+              <RefreshCw size={18} className={isHistoryLoading ? 'animate-spin' : ''} />
+            </button>
+            <button onClick={clearHistory} className="text-xs text-tertiary hover:text-primary transition-colors interactive-soft">
+              Clear history
+            </button>
           </div>
         </div>
 
-        <div className="grid gap-3 border-t border-border-subtle p-6 md:grid-cols-4">
+        <div className="mt-8 grid gap-0 border-y border-white/[0.06] md:grid-cols-4">
           <HistoryStat label="All imports" value={stats.total} />
           <HistoryStat label="Active" value={stats.active} tone="accent" />
           <HistoryStat label="Completed" value={stats.completed} tone="success" />
@@ -51,7 +51,7 @@ export function DownloadsView() {
         </div>
       </section>
 
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-5">
         <div>
           <h2 className="text-xl font-semibold text-primary">Recent Activity</h2>
           <p className="text-sm text-secondary">A complete log of persisted imports, with live progress for anything still running.</p>
@@ -59,23 +59,23 @@ export function DownloadsView() {
       </div>
 
       {isHistoryLoading && downloads.length === 0 ? (
-        <div className="surface-card rounded-[24px] border border-border-subtle p-12 text-center">
+        <div className="border-y border-white/[0.06] p-12 text-center">
           <RefreshCw size={24} className="mx-auto text-accent animate-spin mb-4" />
           <p className="text-sm font-medium text-primary">Loading download history</p>
           <p className="text-xs text-tertiary mt-1">Reading persisted records from the local database.</p>
         </div>
       ) : downloads.length === 0 ? (
-        <div className="surface-card rounded-[24px] border border-border-subtle text-center py-16">
+        <div className="border-y border-white/[0.06] text-center py-16">
           <Download size={48} className="mx-auto text-tertiary mb-4 opacity-50" />
           <p className="text-lg text-secondary mb-2">No downloads yet</p>
           <p className="text-sm text-tertiary">Go to YouTube Import to start downloading music.</p>
         </div>
       ) : (
-        <div className="space-y-3 max-w-5xl">
+        <div className="max-w-5xl divide-y divide-white/[0.06] border-y border-white/[0.06]">
           {downloads.map((d) => (
-            <div key={d.id} className="surface-card rounded-[22px] border border-border-subtle p-4">
+            <div key={d.id} className="py-4">
               <div className="flex items-center gap-4">
-                <div className="w-11 h-11 rounded-2xl bg-surface-3 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 bg-white/[0.045] flex items-center justify-center shrink-0">
                 {d.status === 'done' ? <Check size={20} className="text-green-500" /> :
                  d.status === 'cancelled' ? <Clock3 size={20} className="text-yellow-400" /> :
                  d.status === 'failed' ? <X size={20} className="text-red-500" /> :
@@ -130,7 +130,7 @@ export function DownloadsView() {
                   )}
 
                   {(d.status === 'failed' || d.status === 'cancelled') && d.error && (
-                    <div className="mt-3 flex items-start gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-2">
+                    <div className="mt-3 flex items-start gap-2 border-l border-red-500/40 bg-red-500/10 px-3 py-2">
                       <AlertCircle size={14} className="mt-0.5 shrink-0 text-red-300" />
                       <p className="text-xs text-red-300">{d.error}</p>
                     </div>
@@ -155,7 +155,7 @@ function HistoryStat({
   tone?: 'default' | 'accent' | 'success' | 'warning'
 }) {
   return (
-    <div className="rounded-[20px] border border-border-subtle bg-surface-1/85 p-4">
+    <div className="border-r border-white/[0.06] px-4 py-4 last:border-r-0">
       <p className="text-[11px] uppercase tracking-[0.18em] text-tertiary font-semibold">{label}</p>
       <p
         className={cn(

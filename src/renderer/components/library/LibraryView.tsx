@@ -61,33 +61,33 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
   }
 
   return (
-    <div className="p-6 overflow-y-auto h-full animate-fade-in" ref={parentRef}>
-      <section className="surface-card rounded-[26px] border border-border-subtle overflow-hidden mb-6">
-        <div className="px-6 py-6 md:px-7 md:py-7 bg-[radial-gradient(circle_at_top_left,rgba(232,168,124,0.18),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border-default bg-surface-2/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-accent mb-4">
-                <Sparkles size={12} />
-                Core Library
-              </div>
-              <h1 className="text-3xl font-bold text-primary">Browse fast, queue cleanly, and keep the player in motion.</h1>
-              <p className="mt-3 text-sm text-secondary max-w-2xl leading-6">
-                The library is the working home of Tplayer. Search, sort, and start playback without fighting decorative UI.
-              </p>
+    <div className="h-full overflow-y-auto px-8 pb-28 animate-fade-in" ref={parentRef}>
+      <section className="mb-6 border-y border-white/[0.06] py-6">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-accent mb-4">
+              <Sparkles size={12} />
+              Core Library
             </div>
+            <h1 className="max-w-4xl text-[clamp(2rem,4.2vw,4.6rem)] font-extrabold leading-[0.95] text-primary">
+              Browse fast. Queue cleanly.
+            </h1>
+            <p className="mt-4 text-sm text-secondary max-w-2xl leading-6">
+              Search, sort, and start playback from your local collection.
+            </p>
+          </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Button onClick={() => handlePlayTrack(0)} className="gap-2">
-                <Play size={16} fill="currentColor" /> Play All
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => loadTracks()} title="Refresh">
-                <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
-              </Button>
-            </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <button onClick={() => handlePlayTrack(0)} className="inline-flex items-center gap-2 text-sm font-semibold text-accent hover:text-primary">
+              <Play size={16} fill="currentColor" /> Play All
+            </button>
+            <button onClick={() => loadTracks()} title="Refresh" className="text-tertiary hover:text-primary">
+              <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+            </button>
           </div>
         </div>
 
-        <div className="grid gap-3 border-t border-border-subtle p-6 md:grid-cols-[repeat(3,minmax(0,1fr))] xl:grid-cols-[repeat(4,minmax(0,1fr))]">
+        <div className="mt-8 grid gap-0 border-y border-white/[0.06] md:grid-cols-[repeat(3,minmax(0,1fr))] xl:grid-cols-[repeat(4,minmax(0,1fr))]">
           <LibraryStat icon={Disc3} label="Tracks" value={tracks.length.toLocaleString()} />
           <LibraryStat icon={Clock3} label="Listening time" value={hours >= 1 ? `${hours.toFixed(1)}h` : `${Math.round(totalDuration / 60)}m`} />
           <LibraryStat icon={ArrowUpDown} label="Sorted by" value={sortOptions.find((option) => option.field === sortField)?.label || 'Custom'} />
@@ -104,10 +104,10 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
                 key={option.field}
                 onClick={() => sort(option.field, active && sortDir === 'asc' ? 'desc' : 'asc')}
                 className={cn(
-                  'h-10 px-4 rounded-[0.95rem] border text-sm font-medium interactive-soft',
+                  'h-10 px-1 border-b text-sm font-medium interactive-soft',
                   active
-                    ? 'bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] border-white/[0.08] text-primary shadow-card'
-                    : 'bg-surface-1/75 border-border-subtle text-secondary hover:text-primary hover:bg-surface-2'
+                    ? 'border-accent text-primary'
+                    : 'border-transparent text-secondary hover:text-primary'
                 )}
               >
                 <span className="inline-flex items-center gap-2">
@@ -120,7 +120,7 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
         </div>
 
         {scanProgress && (
-          <div className="rounded-[1rem] border border-border-subtle bg-surface-1 px-4 py-3 min-w-[260px]">
+          <div className="border-y border-white/[0.06] px-4 py-3 min-w-[260px]">
             <div className="flex items-center justify-between gap-4 text-xs">
               <span className="font-medium text-primary">Scanning library</span>
               <span className="text-accent font-semibold">{scanProgress.processed} / {scanProgress.total}</span>
@@ -138,11 +138,11 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="h-[4.25rem] surface-card rounded-[18px] animate-pulse" />
+            <div key={i} className="h-[4.25rem] border-y border-white/[0.04] animate-pulse" />
           ))}
         </div>
       ) : error ? (
-        <div className="surface-card rounded-[24px] text-center py-16">
+        <div className="border-y border-white/[0.06] text-center py-16">
           <p className="text-lg text-red-400 mb-2">Error loading library</p>
           <p className="text-sm text-secondary">{error}</p>
           <Button onClick={() => loadTracks()} variant="outline" className="mt-4">
@@ -150,7 +150,7 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
           </Button>
         </div>
       ) : tracks.length === 0 ? (
-        <div className="surface-card rounded-[24px] text-center py-16">
+        <div className="border-y border-white/[0.06] text-center py-16">
           <p className="text-lg text-secondary mb-2">No music found</p>
           <p className="text-sm text-tertiary mb-6">Add a music folder in Settings to build your library.</p>
           <Button variant="outline" onClick={() => onViewChange?.('settings')}>
@@ -158,7 +158,7 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
           </Button>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div>
           <div className="grid grid-cols-[58px_minmax(0,1.4fr)_minmax(0,1fr)_90px_54px] gap-3 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-tertiary mb-1">
             <span>Play</span>
             <span>Track</span>
@@ -186,14 +186,14 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
                 >
                   <div
                     className={cn(
-                      'grid grid-cols-[58px_minmax(0,1.4fr)_minmax(0,1fr)_90px_54px] gap-3 px-4 h-full rounded-[18px] cursor-pointer group transition-all items-center border',
+                      'grid grid-cols-[58px_minmax(0,1.4fr)_minmax(0,1fr)_90px_54px] gap-3 px-4 h-full cursor-pointer group transition-all items-center border-y border-transparent',
                       active
-                        ? 'bg-accent/10 border-accent/20 shadow-card'
-                        : 'bg-surface-1/72 border-transparent hover:bg-surface-2/95 hover:border-white/[0.05]'
+                        ? 'bg-accent/10 border-accent/20'
+                        : 'hover:bg-white/[0.035] hover:border-white/[0.05]'
                     )}
                     onDoubleClick={() => handlePlayTrack(index)}
                   >
-                    <div className="flex items-center justify-center w-11 h-11 rounded-[14px] bg-surface-3 relative shrink-0">
+                    <div className="flex items-center justify-center w-11 h-11 bg-white/[0.04] relative shrink-0">
                       <span className={cn('text-sm text-tertiary group-hover:hidden', active && isPlaying && 'hidden')}>
                         {index + 1}
                       </span>
@@ -214,9 +214,9 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
 
                     <div className="flex items-center gap-3 min-w-0">
                       {track.cover_path ? (
-                        <img src={`tplayer-img://media/${encodeURIComponent(track.cover_path)}`} className="w-11 h-11 rounded-[14px] object-cover shrink-0 shadow-card" alt="" />
+                        <img src={`tplayer-img://media/${encodeURIComponent(track.cover_path)}`} className="w-11 h-11 object-cover shrink-0" alt="" />
                       ) : (
-                        <div className="w-11 h-11 rounded-[14px] bg-surface-3 flex items-center justify-center text-tertiary shrink-0">♪</div>
+                        <div className="w-11 h-11 bg-white/[0.04] flex items-center justify-center text-tertiary shrink-0">♪</div>
                       )}
                       <div className="flex flex-col justify-center min-w-0">
                         <span className={cn('text-[14px] font-semibold truncate flex items-center gap-2', active ? 'text-accent' : 'text-primary')}>
@@ -269,7 +269,7 @@ function LibraryStat({
   value: string
 }) {
   return (
-    <div className="rounded-[20px] border border-border-subtle bg-surface-1/85 p-4">
+    <div className="border-r border-white/[0.06] px-4 py-4 last:border-r-0">
       <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-tertiary font-semibold">
         {Icon ? <Icon size={13} className="text-accent" /> : null}
         <span>{label}</span>

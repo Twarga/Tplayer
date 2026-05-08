@@ -182,9 +182,9 @@ function AppShell() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="h-screen w-screen bg-[#eeecea] text-primary overflow-hidden p-8">
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_52%,rgba(255,176,0,0.16),transparent_32%)]" />
-        <div className="relative h-full w-full overflow-hidden rounded-[24px] border border-black/10 bg-[#100c13] shadow-[0_34px_80px_rgba(0,0,0,0.38)]">
+      <div className="h-screen w-screen bg-[#100c13] text-primary overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_44%_18%,rgba(255,176,0,0.12),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.025),transparent_42%)]" />
+        <div className="relative h-full w-full overflow-hidden bg-[#100c13]">
           <div className="flex h-[calc(100%-86px)] min-h-0">
             <ErrorBoundary>
               <Sidebar activeView={activeView} onViewChange={handleViewChange} />

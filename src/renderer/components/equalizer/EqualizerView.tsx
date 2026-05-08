@@ -8,7 +8,7 @@ export function EqualizerView() {
   const { bands, isEnabled, presetName, setBand, setPreset, enable, reset } = useEqStore()
 
   return (
-    <div className="p-6 overflow-y-auto h-full animate-fade-in">
+    <div className="h-full overflow-y-auto px-8 pb-28 animate-fade-in">
       <div className="flex items-start justify-between gap-6 mb-8">
         <div>
           <p className="text-[11px] uppercase tracking-[0.16em] text-tertiary font-semibold">Playback tone</p>
@@ -18,7 +18,7 @@ export function EqualizerView() {
           </p>
         </div>
 
-        <label className="flex items-center gap-3 cursor-pointer rounded-2xl border border-border-subtle bg-surface-1 px-4 py-3 surface-card">
+        <label className="flex items-center gap-3 cursor-pointer border-y border-white/[0.06] px-4 py-3">
           <div>
             <p className="text-xs uppercase tracking-[0.12em] text-tertiary">EQ</p>
             <p className="text-sm font-semibold text-primary mt-1">{isEnabled ? 'Enabled' : 'Bypassed'}</p>
@@ -41,7 +41,7 @@ export function EqualizerView() {
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)_280px] gap-6 items-start">
-        <section className="rounded-[24px] border border-border-subtle bg-surface-1 p-6 surface-card">
+        <section className="border-y border-white/[0.06] py-6">
           <div className="flex items-center justify-between gap-4 mb-6">
             <div>
               <p className="text-xs uppercase tracking-[0.14em] text-tertiary font-semibold">Current profile</p>
@@ -53,7 +53,7 @@ export function EqualizerView() {
 
             <button
               onClick={() => reset()}
-              className="h-10 px-4 rounded-xl border border-border-subtle bg-surface-2 text-secondary hover:text-primary hover:bg-surface-3 interactive-soft flex items-center gap-2"
+              className="h-10 px-1 border-b border-white/[0.08] text-secondary hover:text-primary hover:border-accent interactive-soft flex items-center gap-2"
             >
               <RotateCcw size={14} />
               Reset
@@ -61,7 +61,7 @@ export function EqualizerView() {
           </div>
 
           <div className={cn(
-            'relative rounded-[22px] border border-border-subtle px-5 py-8 bg-gradient-to-b from-surface-2 to-surface-1',
+            'relative border-y border-white/[0.06] px-5 py-8',
             !isEnabled && 'opacity-70'
           )}>
             <div className="pointer-events-none absolute inset-x-5 top-1/2 h-px bg-border-subtle" />
@@ -115,7 +115,7 @@ export function EqualizerView() {
           </div>
         </section>
 
-        <aside className="rounded-[24px] border border-border-subtle bg-surface-1 p-5 surface-card">
+        <aside className="border-y border-white/[0.06] py-5">
           <p className="text-xs uppercase tracking-[0.14em] text-tertiary font-semibold">Presets</p>
           <div className="grid grid-cols-2 gap-2 mt-4">
             {Object.keys(EQ_PRESETS).map((name) => (
@@ -123,10 +123,10 @@ export function EqualizerView() {
                 key={name}
                 onClick={() => void setPreset(name)}
                 className={cn(
-                  'px-3 py-3 rounded-xl text-xs font-semibold text-left interactive-soft border',
+                  'px-3 py-3 text-xs font-semibold text-left interactive-soft border-b',
                   presetName === name
-                    ? 'bg-accent text-background border-accent shadow-accent-glow'
-                    : 'bg-surface-2 text-secondary border-border-subtle hover:bg-surface-3 hover:text-primary'
+                    ? 'text-accent border-accent'
+                    : 'text-secondary border-white/[0.06] hover:text-primary hover:border-white/[0.14]'
                 )}
               >
                 {name}
@@ -134,7 +134,7 @@ export function EqualizerView() {
             ))}
           </div>
 
-          <div className="mt-5 rounded-2xl bg-surface-2 border border-border-subtle p-4">
+          <div className="mt-5 border-y border-white/[0.06] py-4">
             <p className="text-xs uppercase tracking-[0.14em] text-tertiary font-semibold">Status</p>
             <p className="text-sm font-semibold text-primary mt-2">
               {isEnabled ? `${presetName} is active` : 'EQ is currently bypassed'}

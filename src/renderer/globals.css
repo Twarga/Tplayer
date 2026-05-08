@@ -190,15 +190,15 @@
 
 @layer components {
   .surface-card {
-    background: var(--surface-1);
-    border: 1px solid var(--border-subtle);
-    box-shadow: var(--shadow-card);
+    background: transparent;
+    border-color: var(--border-subtle);
+    box-shadow: none;
   }
 
   .surface-panel {
-    background: var(--surface-panel);
-    border: 1px solid var(--border-default);
-    backdrop-filter: blur(18px);
+    background: transparent;
+    border-color: var(--border-default);
+    backdrop-filter: none;
   }
 
   .surface-elevated {

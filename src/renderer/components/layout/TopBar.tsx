@@ -55,7 +55,7 @@ export function TopBar({ title, subtitle, onViewChange, onSearch }: TopBarProps)
             value={searchValue}
             onChange={handleSearch}
             placeholder="Search songs, artists, albums..."
-            className="pl-10 pr-16 h-10 rounded-full bg-black/22 border-white/[0.11] shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]"
+            className="pl-10 pr-16 h-10 rounded-full bg-[#151018]/85 border-white/[0.11] shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]"
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-muted bg-surface-2 px-2 py-1 rounded-md border border-white/[0.06]">
             Ctrl K

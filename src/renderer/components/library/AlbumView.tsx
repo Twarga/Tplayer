@@ -32,23 +32,23 @@ export function AlbumView() {
   }
 
   return (
-    <div className="p-6 overflow-y-auto h-full animate-fade-in">
+    <div className="h-full overflow-y-auto px-8 pb-28 animate-fade-in">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-primary">Albums</h1>
         <p className="text-sm text-secondary mt-2">Browse your collection by release and start full-album playback quickly.</p>
       </div>
 
       {albums.length === 0 ? (
-        <div className="surface-card rounded-[24px] text-center py-16 text-secondary">No albums found</div>
+        <div className="border-y border-white/[0.06] text-center py-16 text-secondary">No albums found</div>
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-5">
           {albums.map((album) => (
             <div
               key={album.title}
-              className="surface-card rounded-[24px] p-4 group hover:bg-surface-2 transition-colors cursor-pointer card-lift border border-border-subtle"
+              className="group cursor-pointer border-b border-white/[0.06] pb-4 transition-colors hover:border-accent/35"
               onClick={(e) => handlePlayAlbum(e, album.trackIds)}
             >
-              <div className="aspect-square rounded-[18px] bg-[radial-gradient(circle_at_top_left,rgba(232,168,124,0.16),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.03),transparent)] mb-4 flex items-center justify-center relative overflow-hidden border border-white/[0.05]">
+              <div className="aspect-square bg-[radial-gradient(circle_at_top_left,rgba(255,176,0,0.16),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.03),transparent)] mb-4 flex items-center justify-center relative overflow-hidden">
                 <Disc size={48} className="text-tertiary" />
                 <button
                   onClick={(e) => handlePlayAlbum(e, album.trackIds)}

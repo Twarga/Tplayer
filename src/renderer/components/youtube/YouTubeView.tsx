@@ -60,23 +60,23 @@ export function YouTubeView() {
   const downloadByVideoId = new Map(downloads.map((item) => [item.videoId, item]))
 
   return (
-    <div className="p-6 overflow-y-auto h-full animate-fade-in">
-      <section className="surface-card rounded-[28px] border border-border-subtle overflow-hidden mb-6">
-        <div className="px-6 py-6 md:px-7 md:py-7 bg-[radial-gradient(circle_at_top_left,rgba(232,168,124,0.2),transparent_40%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border-default bg-surface-2/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-accent mb-4">
-              <Download size={12} />
-              YouTube Import
-            </div>
-            <h1 className="text-3xl font-bold text-primary">Bring tracks into your library without leaving Tplayer.</h1>
-            <p className="mt-3 text-sm text-secondary max-w-2xl leading-6">
-              Search for a track, review the result, and import it directly into your music folders with real progress feedback.
-            </p>
+    <div className="h-full overflow-y-auto px-8 pb-28 animate-fade-in">
+      <section className="mb-8 border-y border-white/[0.06] py-6">
+        <div className="max-w-3xl">
+          <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-accent mb-4">
+            <Download size={12} />
+            YouTube Import
           </div>
+          <h1 className="max-w-4xl text-[clamp(2rem,4.2vw,4.6rem)] font-extrabold leading-[0.95] text-primary">
+            Bring tracks into your library.
+          </h1>
+          <p className="mt-4 text-sm text-secondary max-w-2xl leading-6">
+            Search for a track, review the result, and import it with real progress feedback.
+          </p>
         </div>
 
-        <div className="grid gap-4 border-t border-border-subtle p-6 md:grid-cols-[minmax(0,1.75fr)_minmax(300px,0.95fr)]">
-          <div className="rounded-[24px] border border-border-subtle bg-surface-1/90 p-5 surface-card">
+        <div className="mt-8 grid gap-6 border-y border-white/[0.06] py-5 md:grid-cols-[minmax(0,1.75fr)_minmax(300px,0.95fr)]">
+          <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-tertiary mb-3">
               <Search size={13} />
               Search
@@ -87,7 +87,7 @@ export function YouTubeView() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="flex-1"
+                className="flex-1 rounded-full bg-[#151018]/85 border-white/[0.11]"
               />
               <Button onClick={handleSearch} disabled={isSearching || !query.trim()} className="min-w-[118px]">
                 {isSearching ? (
@@ -107,7 +107,7 @@ export function YouTubeView() {
               Best for finding one track quickly, then importing it straight into your main library.
             </p>
             {searchError && (
-              <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              <div className="mt-4 border-l border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
                 <div className="flex items-start gap-2">
                   <AlertCircle size={16} className="mt-0.5 shrink-0" />
                   <span>{searchError}</span>
@@ -116,7 +116,7 @@ export function YouTubeView() {
             )}
           </div>
 
-          <div className="rounded-[24px] border border-border-subtle bg-surface-1/90 p-5 surface-card">
+          <div className="border-l border-white/[0.06] pl-6">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-tertiary mb-3">
               <Link2 size={13} />
               Direct URL
@@ -130,7 +130,7 @@ export function YouTubeView() {
                   if (urlError) setUrlError(null)
                 }}
                 onKeyDown={(e) => e.key === 'Enter' && handleDownloadUrl()}
-                className="flex-1"
+                className="flex-1 rounded-full bg-[#151018]/85 border-white/[0.11]"
               />
               <Button onClick={handleDownloadUrl} variant="outline" disabled={!urlInput.trim()} className="w-full">
                 <Download size={16} className="mr-2" />
@@ -160,7 +160,7 @@ export function YouTubeView() {
         </div>
 
         {isSearching ? (
-          <div className="rounded-[24px] border border-border-subtle bg-surface-1/80 p-10 surface-card">
+          <div className="border-y border-white/[0.06] p-10">
             <div className="flex flex-col items-center justify-center text-center">
               <Loader2 size={24} className="animate-spin text-accent mb-3" />
               <p className="text-sm font-medium text-primary">Searching YouTube</p>
@@ -168,7 +168,7 @@ export function YouTubeView() {
             </div>
           </div>
         ) : searchResults.length > 0 ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
             {searchResults.map((result) => {
               const downloadItem = downloadByVideoId.get(result.videoId)
               const isActive = downloadItem?.status === 'downloading'
@@ -177,7 +177,7 @@ export function YouTubeView() {
               return (
                 <div
                   key={result.videoId}
-                  className="surface-card rounded-[24px] overflow-hidden hover:bg-surface-2/80 interactive-soft group"
+                  className="group overflow-hidden border-b border-white/[0.06] pb-4 interactive-soft"
                 >
                   <div className="aspect-video bg-surface-2 relative overflow-hidden">
                     {result.thumbnail ? (
@@ -193,10 +193,10 @@ export function YouTubeView() {
                     )}
 
                     <div className="absolute inset-x-0 bottom-0 p-3 flex items-end justify-between bg-gradient-to-t from-black/55 to-transparent">
-                      <div className="rounded-full bg-black/45 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80 max-w-[65%] truncate">
+                      <div className="bg-black/45 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80 max-w-[65%] truncate">
                         {result.channel}
                       </div>
-                      <div className="rounded-full bg-black/70 px-2 py-1 text-[11px] font-medium text-white">
+                      <div className="bg-black/70 px-2 py-1 text-[11px] font-medium text-white">
                         {result.duration}
                       </div>
                     </div>
@@ -209,7 +209,7 @@ export function YouTubeView() {
                       {downloadItem && (
                         <span
                           className={cn(
-                            'shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]',
+                            'shrink-0 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]',
                             isDone
                               ? 'bg-green-500/15 text-green-300'
                               : isActive
@@ -256,7 +256,7 @@ export function YouTubeView() {
             })}
           </div>
         ) : (
-          <div className="rounded-[24px] border border-dashed border-border-default bg-surface-1/70 p-10 surface-card">
+          <div className="border-y border-dashed border-white/[0.12] p-10">
             <div className="max-w-md">
               <p className="text-sm font-semibold text-primary">
                 {hasSearched ? 'No results matched that search.' : 'Search results will appear here.'}
@@ -283,9 +283,9 @@ export function YouTubeView() {
             </button>
           </div>
 
-          <div className="space-y-3">
+          <div className="divide-y divide-white/[0.06] border-y border-white/[0.06]">
             {downloads.map((item) => (
-              <div key={item.id} className="surface-card rounded-[20px] p-4">
+              <div key={item.id} className="py-4">
                 <div className="flex items-center gap-4 mb-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-primary truncate">{item.title}</p>
