@@ -29,6 +29,8 @@ interface YouTubeStore {
   searchResults: YtSearchResult[]
   isSearching: boolean
   searchError: string | null
+  hasSearched: boolean
+  lastQuery: string
   downloads: DownloadItem[]
   search: (query: string) => Promise<void>
   download: (url: string, videoId: string, title?: string) => Promise<void>
@@ -37,10 +39,12 @@ interface YouTubeStore {
   init: () => () => void
 }
 
-export const useYouTubeStore = create<YouTubeStore>((set) => ({
+export const useYouTubeStore = create<YouTubeStore>((set, get) => ({
   searchResults: [],
   isSearching: false,
   searchError: null,
+  hasSearched: false,
+  lastQuery: '',
   downloads: [],
 
   init() {
@@ -88,24 +92,46 @@ export const useYouTubeStore = create<YouTubeStore>((set) => ({
             d.videoId === videoId || (id && d.id === id) ? { ...d, status: 'failed' as const, error } : d
           ),
         }))
-      })
+      }),
+
+      api.youtube.onHistoryCleared(() => {
+        set({ downloads: [] })
+      }),
     ]
     return () => cleanups.forEach(c => c())
   },
 
   search: async (query) => {
-    set({ isSearching: true, searchError: null })
+    const trimmed = query.trim()
+    if (!trimmed) {
+      set({
+        searchResults: [],
+        isSearching: false,
+        searchError: null,
+        hasSearched: false,
+        lastQuery: '',
+      })
+      return
+    }
+
+    set({ isSearching: true, searchError: null, hasSearched: true, lastQuery: trimmed })
     try {
-      const results = await api.youtube.search(query)
+      const results = await api.youtube.search(trimmed)
       set({ searchResults: results, isSearching: false })
     } catch (err) {
       console.error('[youtubeStore] search failed:', err)
       const message = err instanceof Error ? err.message : 'Search failed'
-      set({ searchError: message, isSearching: false })
+      set({ searchResults: [], searchError: message, isSearching: false })
     }
   },
 
   download: async (url, videoId, title) => {
+    const existing = get().downloads.find((item) => item.videoId === videoId && item.status === 'downloading')
+    if (existing) {
+      getToastStore().add(`Already downloading: ${existing.title}`, 'error')
+      return
+    }
+
     try {
       const started: DownloadStartedPayload = await api.youtube.download(url, videoId, title)
       set((s) => ({
