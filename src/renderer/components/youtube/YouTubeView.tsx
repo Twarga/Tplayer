@@ -9,7 +9,6 @@ import {
   Download,
   FolderOpen,
   HardDrive,
-  Link2,
   Loader2,
   Search,
   X,
@@ -32,7 +31,6 @@ export function YouTubeView() {
   } = useYouTubeStore()
 
   const [query, setQuery] = useState('')
-  const [urlInput, setUrlInput] = useState('')
   const [urlError, setUrlError] = useState<string | null>(null)
 
   const handleSearch = async () => {
@@ -40,12 +38,12 @@ export function YouTubeView() {
   }
 
   const handleDownloadUrl = async () => {
-    if (!urlInput.trim()) {
+    if (!query.trim()) {
       setUrlError(null)
       return
     }
 
-    const url = urlInput.trim()
+    const url = query.trim()
     const videoId = extractVideoId(url)
     if (!videoId) {
       setUrlError('Paste a valid YouTube watch, short, or embed URL.')
@@ -54,95 +52,42 @@ export function YouTubeView() {
 
     setUrlError(null)
     await download(url, videoId)
-    setUrlInput('')
+    setQuery('')
   }
 
   const downloadByVideoId = new Map(downloads.map((item) => [item.videoId, item]))
 
   return (
     <div className="h-full overflow-y-auto px-8 pb-28 animate-fade-in">
-      <section className="mb-8 border-y border-white/[0.06] py-6">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-accent mb-4">
-            <Download size={12} />
-            YouTube Import
-          </div>
-          <h1 className="max-w-4xl text-[clamp(2rem,4.2vw,4.6rem)] font-extrabold leading-[0.95] text-primary">
-            Bring tracks into your library.
-          </h1>
-          <p className="mt-4 text-sm text-secondary max-w-2xl leading-6">
-            Search for a track, review the result, and import it with real progress feedback.
-          </p>
+      <section className="mb-6 border-b border-white/[0.06] pb-5">
+        <div className="flex gap-3">
+          <Input
+            placeholder="Search YouTube or paste a URL..."
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              if (urlError) setUrlError(null)
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && (extractVideoId(query.trim()) ? handleDownloadUrl() : handleSearch())}
+            className="flex-1 rounded-full bg-[#151018]/85 border-white/[0.11]"
+          />
+          <Button onClick={handleSearch} disabled={isSearching || !query.trim()} className="min-w-[112px]">
+            {isSearching ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Search size={16} className="mr-2" />}
+            Search
+          </Button>
+          <Button onClick={handleDownloadUrl} variant="outline" disabled={!extractVideoId(query.trim())}>
+            <Download size={16} className="mr-2" />
+            Import URL
+          </Button>
         </div>
-
-        <div className="mt-8 grid gap-6 border-y border-white/[0.06] py-5 md:grid-cols-[minmax(0,1.75fr)_minmax(300px,0.95fr)]">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-tertiary mb-3">
-              <Search size={13} />
-              Search
+        {(searchError || urlError) && (
+          <div className="mt-4 border-l border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            <div className="flex items-start gap-2">
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+              <span>{searchError || urlError}</span>
             </div>
-            <div className="flex gap-3">
-              <Input
-                placeholder="Search YouTube by song, artist, or set..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="flex-1 rounded-full bg-[#151018]/85 border-white/[0.11]"
-              />
-              <Button onClick={handleSearch} disabled={isSearching || !query.trim()} className="min-w-[118px]">
-                {isSearching ? (
-                  <>
-                    <Loader2 size={16} className="mr-2 animate-spin" />
-                    Searching
-                  </>
-                ) : (
-                  <>
-                    <Search size={16} className="mr-2" />
-                    Search
-                  </>
-                )}
-              </Button>
-            </div>
-            <p className="mt-3 text-xs text-tertiary">
-              Best for finding one track quickly, then importing it straight into your main library.
-            </p>
-            {searchError && (
-              <div className="mt-4 border-l border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                <div className="flex items-start gap-2">
-                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                  <span>{searchError}</span>
-                </div>
-              </div>
-            )}
           </div>
-
-          <div className="border-l border-white/[0.06] pl-6">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-tertiary mb-3">
-              <Link2 size={13} />
-              Direct URL
-            </div>
-            <div className="space-y-3">
-              <Input
-                placeholder="Paste a YouTube URL..."
-                value={urlInput}
-                onChange={(e) => {
-                  setUrlInput(e.target.value)
-                  if (urlError) setUrlError(null)
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && handleDownloadUrl()}
-                className="flex-1 rounded-full bg-[#151018]/85 border-white/[0.11]"
-              />
-              <Button onClick={handleDownloadUrl} variant="outline" disabled={!urlInput.trim()} className="w-full">
-                <Download size={16} className="mr-2" />
-                Download from URL
-              </Button>
-            </div>
-            <p className="mt-3 text-xs text-tertiary">
-              Use this when you already know the exact video you want.
-            </p>
-            {urlError && <p className="mt-3 text-xs text-red-300">{urlError}</p>}
-          </div>
-        </div>
+        )}
       </section>
 
       <section className="mb-8">

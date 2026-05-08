@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Download, Check, X, RefreshCw, Clock3, AlertCircle, AudioLines } from 'lucide-react'
+import { Download, Check, X, RefreshCw, Clock3, AlertCircle } from 'lucide-react'
 import { useYouTubeStore } from '@/stores/youtubeStore'
 import { cn } from '@/lib/utils'
 
@@ -10,53 +10,19 @@ export function DownloadsView() {
     void loadHistory()
   }, [loadHistory])
 
-  const stats = {
-    total: downloads.length,
-    active: downloads.filter((d) => d.status === 'downloading' || d.status === 'pending').length,
-    completed: downloads.filter((d) => d.status === 'done').length,
-    failed: downloads.filter((d) => d.status === 'failed' || d.status === 'cancelled').length,
-  }
-
   return (
     <div className="h-full overflow-y-auto px-8 pb-28 animate-fade-in">
-      <section className="mb-7 border-y border-white/[0.065] py-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="max-w-3xl">
-            <div className="mb-4 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">
-              <AudioLines size={12} />
-              Download History
-            </div>
-            <h1 className="max-w-4xl text-[clamp(2rem,4.8vw,4.8rem)] font-extrabold leading-[0.95] text-primary">
-              Imports without clutter.
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-secondary">
-              Completed, failed, and cancelled imports stay visible across restarts.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => void loadHistory()} className="text-tertiary hover:text-accent transition-colors interactive-soft" title="Refresh history">
-              <RefreshCw size={18} className={isHistoryLoading ? 'animate-spin' : ''} />
-            </button>
-            <button onClick={clearHistory} className="text-xs text-tertiary hover:text-primary transition-colors interactive-soft">
-              Clear history
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-8 grid gap-0 border-y border-white/[0.06] md:grid-cols-4">
-          <HistoryStat label="All imports" value={stats.total} />
-          <HistoryStat label="Active" value={stats.active} tone="accent" />
-          <HistoryStat label="Completed" value={stats.completed} tone="success" />
-          <HistoryStat label="Needs attention" value={stats.failed} tone="warning" />
+      <section className="mb-5 flex items-center justify-between border-b border-white/[0.06] pb-5">
+        <p className="text-xs uppercase tracking-[0.18em] text-tertiary">{downloads.length} imports</p>
+        <div className="flex items-center gap-4">
+          <button onClick={() => void loadHistory()} className="text-tertiary hover:text-accent transition-colors interactive-soft" title="Refresh history">
+            <RefreshCw size={18} className={isHistoryLoading ? 'animate-spin' : ''} />
+          </button>
+          <button onClick={clearHistory} className="text-xs text-tertiary hover:text-primary transition-colors interactive-soft">
+            Clear history
+          </button>
         </div>
       </section>
-
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h2 className="text-xl font-semibold text-primary">Recent Activity</h2>
-          <p className="text-sm text-secondary">A complete log of persisted imports, with live progress for anything still running.</p>
-        </div>
-      </div>
 
       {isHistoryLoading && downloads.length === 0 ? (
         <div className="border-y border-white/[0.06] p-12 text-center">
@@ -141,33 +107,6 @@ export function DownloadsView() {
           ))}
         </div>
       )}
-    </div>
-  )
-}
-
-function HistoryStat({
-  label,
-  value,
-  tone = 'default',
-}: {
-  label: string
-  value: number
-  tone?: 'default' | 'accent' | 'success' | 'warning'
-}) {
-  return (
-    <div className="border-r border-white/[0.06] px-4 py-4 last:border-r-0">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-tertiary font-semibold">{label}</p>
-      <p
-        className={cn(
-          'mt-2 text-2xl font-bold',
-          tone === 'accent' ? 'text-accent' :
-          tone === 'success' ? 'text-green-400' :
-          tone === 'warning' ? 'text-yellow-300' :
-          'text-primary'
-        )}
-      >
-        {value}
-      </p>
     </div>
   )
 }

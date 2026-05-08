@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { RefreshCw, Play, Pause, Heart, ArrowUpDown, Clock3, Disc3, Sparkles } from 'lucide-react'
+import { RefreshCw, Play, Pause, Heart, ArrowUpDown } from 'lucide-react'
 import { useLibraryStore } from '@/stores/libraryStore'
 import { usePlayerStore } from '@/stores/playerStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -23,7 +23,6 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
     isFavorite,
     sortField,
     sortDir,
-    searchQuery,
     scanProgress,
     sort,
   } = useLibraryStore()
@@ -43,8 +42,6 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
     overscan: 10,
   })
 
-  const totalDuration = tracks.reduce((sum, track) => sum + track.duration, 0)
-  const hours = totalDuration / 3600
   const sortOptions: Array<{ field: 'date_added' | 'title' | 'artist' | 'album' | 'play_count'; label: string }> = [
     { field: 'date_added', label: 'Recently added' },
     { field: 'title', label: 'Title' },
@@ -62,40 +59,7 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
 
   return (
     <div className="h-full overflow-y-auto px-8 pb-28 animate-fade-in" ref={parentRef}>
-      <section className="mb-6 border-y border-white/[0.06] py-6">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-accent mb-4">
-              <Sparkles size={12} />
-              Core Library
-            </div>
-            <h1 className="max-w-4xl text-[clamp(2rem,4.2vw,4.6rem)] font-extrabold leading-[0.95] text-primary">
-              Browse fast. Queue cleanly.
-            </h1>
-            <p className="mt-4 text-sm text-secondary max-w-2xl leading-6">
-              Search, sort, and start playback from your local collection.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button onClick={() => handlePlayTrack(0)} className="inline-flex items-center gap-2 text-sm font-semibold text-accent hover:text-primary">
-              <Play size={16} fill="currentColor" /> Play All
-            </button>
-            <button onClick={() => loadTracks()} title="Refresh" className="text-tertiary hover:text-primary">
-              <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-8 grid gap-0 border-y border-white/[0.06] md:grid-cols-[repeat(3,minmax(0,1fr))] xl:grid-cols-[repeat(4,minmax(0,1fr))]">
-          <LibraryStat icon={Disc3} label="Tracks" value={tracks.length.toLocaleString()} />
-          <LibraryStat icon={Clock3} label="Listening time" value={hours >= 1 ? `${hours.toFixed(1)}h` : `${Math.round(totalDuration / 60)}m`} />
-          <LibraryStat icon={ArrowUpDown} label="Sorted by" value={sortOptions.find((option) => option.field === sortField)?.label || 'Custom'} />
-          <LibraryStat label="Filter" value={searchQuery ? `"${searchQuery}"` : 'All music'} />
-        </div>
-      </section>
-
-      <div className="flex flex-col gap-4 mb-5 xl:flex-row xl:items-center xl:justify-between">
+      <div className="mb-5 flex flex-col gap-4 border-b border-white/[0.06] pb-5 xl:flex-row xl:items-end xl:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           {sortOptions.map((option) => {
             const active = sortField === option.field
@@ -117,6 +81,16 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
               </button>
             )
           })}
+        </div>
+
+        <div className="flex items-center gap-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-tertiary">{tracks.length.toLocaleString()} tracks</p>
+          <button onClick={() => handlePlayTrack(0)} className="inline-flex items-center gap-2 text-sm font-semibold text-accent hover:text-primary">
+            <Play size={16} fill="currentColor" /> Play All
+          </button>
+          <button onClick={() => loadTracks()} title="Refresh" className="text-tertiary hover:text-primary">
+            <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+          </button>
         </div>
 
         {scanProgress && (
@@ -255,26 +229,6 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-function LibraryStat({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon?: React.ComponentType<{ size?: number; className?: string }>
-  label: string
-  value: string
-}) {
-  return (
-    <div className="border-r border-white/[0.06] px-4 py-4 last:border-r-0">
-      <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-tertiary font-semibold">
-        {Icon ? <Icon size={13} className="text-accent" /> : null}
-        <span>{label}</span>
-      </div>
-      <p className="mt-2 text-lg font-semibold text-primary truncate">{value}</p>
     </div>
   )
 }

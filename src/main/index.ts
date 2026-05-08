@@ -1,6 +1,8 @@
 import { app, BrowserWindow, nativeTheme, protocol, net } from 'electron'
 import { fileURLToPath } from 'url'
 import path from 'path'
+import { createReadStream, statSync } from 'fs'
+import { Readable } from 'stream'
 import { initDatabase, closeDatabase, getMusicFolders } from './database'
 import { registerAllHandlers, setMainWindow } from './ipc-registry'
 import { startWatcher, stopWatcher } from './file-watcher'
@@ -22,6 +24,54 @@ function getRendererUrl(): string {
     return process.env.ELECTRON_RENDERER_URL
   }
   return `file://${path.join(__dirname, '../renderer/index.html')}`
+}
+
+function getAudioContentType(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase()
+  if (ext === '.mp3') return 'audio/mpeg'
+  if (ext === '.flac') return 'audio/flac'
+  if (ext === '.wav') return 'audio/wav'
+  if (ext === '.ogg') return 'audio/ogg'
+  if (ext === '.m4a' || ext === '.mp4') return 'audio/mp4'
+  if (ext === '.aac') return 'audio/aac'
+  return 'application/octet-stream'
+}
+
+function createAudioResponse(request: Request, filePath: string): Response {
+  const stat = statSync(filePath)
+  const size = stat.size
+  const range = request.headers.get('range')
+  const contentType = getAudioContentType(filePath)
+
+  if (range) {
+    const match = /bytes=(\d*)-(\d*)/.exec(range)
+    if (match) {
+      const start = match[1] ? Number(match[1]) : 0
+      const end = match[2] ? Number(match[2]) : size - 1
+      const safeStart = Math.max(0, Math.min(start, size - 1))
+      const safeEnd = Math.max(safeStart, Math.min(end, size - 1))
+      const chunkSize = safeEnd - safeStart + 1
+
+      return new Response(Readable.toWeb(createReadStream(filePath, { start: safeStart, end: safeEnd })) as ReadableStream, {
+        status: 206,
+        headers: {
+          'Accept-Ranges': 'bytes',
+          'Content-Length': String(chunkSize),
+          'Content-Range': `bytes ${safeStart}-${safeEnd}/${size}`,
+          'Content-Type': contentType,
+        },
+      })
+    }
+  }
+
+  return new Response(Readable.toWeb(createReadStream(filePath)) as ReadableStream, {
+    status: 200,
+    headers: {
+      'Accept-Ranges': 'bytes',
+      'Content-Length': String(size),
+      'Content-Type': contentType,
+    },
+  })
 }
 
 function createWindow(): BrowserWindow {
@@ -79,7 +129,7 @@ app.whenReady().then(async () => {
     const encodedPath = urlStr.replace(/^tplayer-audio:\/\/media\//, '')
     const filePath = decodeURIComponent(encodedPath)
     console.log('[protocol] Serving audio file:', filePath)
-    return net.fetch('file://' + filePath)
+    return createAudioResponse(request, filePath)
   })
   
   protocol.handle('tplayer-img', (request) => {
