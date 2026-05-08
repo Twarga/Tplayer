@@ -70,7 +70,7 @@ export interface TplayerAPI {
     onFileAdded: (callback: (track: Track) => void) => () => void
     onFileRemoved: (callback: (data: { id: number }) => void) => () => void
     onScanProgress: (callback: (data: ScanProgressPayload) => void) => () => void
-    onBatchAdded: (callback: (data: { count: number }) => void) => () => void
+    onBatchAdded: (callback: (data: { count: number; tracks: Track[] }) => void) => () => void
   }
   player: {
     play: (trackId: number) => Promise<void>

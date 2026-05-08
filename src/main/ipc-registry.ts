@@ -4,6 +4,8 @@ import { scanFolders } from './library-scanner'
 import { playTrack, pause, resume, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleShuffle, cycleRepeat, addToQueue, addNext, removeFromQueue, clearQueue, reorderQueue, getQueue, onTrackEnded, setQueue } from './audio-engine'
 import { isFFmpegAvailable } from './audio-decoder'
 import { clearDownloadHistory, getDownloadHistory } from './yt-dlp'
+import { IPC_CHANNELS } from '../shared/ipc/channels'
+import type { GetTracksOptions } from '../shared/ipc/contracts'
 
 let _mainWindow: BrowserWindow | null = null
 
@@ -30,11 +32,11 @@ export function registerAllHandlers(): void {
 }
 
 function registerLibraryHandlers(): void {
-  ipcMain.handle('library:scan', async (_, folders: string[]) => {
+  ipcMain.handle(IPC_CHANNELS.library.scan, async (_, folders: string[]) => {
     return scanFolders(folders)
   })
 
-  ipcMain.handle('library:get-tracks', async (_, opts?: { query?: string; sort?: string; dir?: string; limit?: number; offset?: number }) => {
+  ipcMain.handle(IPC_CHANNELS.library.getTracks, async (_, opts?: GetTracksOptions) => {
     const db = getDb()
     let sql = 'SELECT * FROM tracks'
     const params: (string | number)[] = []
@@ -75,96 +77,96 @@ function registerLibraryHandlers(): void {
     return db.prepare(sql).all(...params)
   })
 
-  ipcMain.handle('library:get-track', async (_, id: number) => {
+  ipcMain.handle(IPC_CHANNELS.library.getTrack, async (_, id: number) => {
     return getDb().prepare('SELECT * FROM tracks WHERE id = ?').get(id)
   })
 
-  ipcMain.handle('library:toggle-favorite', async (_, id: number) => {
+  ipcMain.handle(IPC_CHANNELS.library.toggleFavorite, async (_, id: number) => {
     getDb().prepare('UPDATE tracks SET is_favorite = CASE WHEN is_favorite = 1 THEN 0 ELSE 1 END WHERE id = ?').run(id)
   })
 
-  ipcMain.handle('library:get-covers', async (_, albums: string[]) => {
+  ipcMain.handle(IPC_CHANNELS.library.getCovers, async (_, albums: string[]) => {
     if (!albums.length) return []
     const placeholders = albums.map(() => '?').join(',')
     return getDb().prepare(`SELECT * FROM covers WHERE album IN (${placeholders})`).all(...albums)
   })
 
-  ipcMain.handle('library:get-downloads', async () => {
+  ipcMain.handle(IPC_CHANNELS.library.getDownloads, async () => {
     return getDb().prepare('SELECT * FROM downloads ORDER BY created_at DESC').all()
   })
 }
 
 function registerPlayerHandlers(): void {
-  ipcMain.handle('player:play', async (_, trackId: number) => {
+  ipcMain.handle(IPC_CHANNELS.player.play, async (_, trackId: number) => {
     await playTrack(trackId)
   })
 
-  ipcMain.handle('player:pause', async () => {
+  ipcMain.handle(IPC_CHANNELS.player.pause, async () => {
     pause()
   })
 
-  ipcMain.handle('player:resume', async () => {
+  ipcMain.handle(IPC_CHANNELS.player.resume, async () => {
     resume()
   })
 
-  ipcMain.handle('player:toggle-play', async () => {
+  ipcMain.handle(IPC_CHANNELS.player.togglePlay, async () => {
     togglePlay()
   })
 
-  ipcMain.handle('player:next', async () => {
+  ipcMain.handle(IPC_CHANNELS.player.next, async () => {
     nextTrack()
   })
 
-  ipcMain.handle('player:prev', async () => {
+  ipcMain.handle(IPC_CHANNELS.player.prev, async () => {
     prevTrack()
   })
 
-  ipcMain.handle('player:track-ended', async () => {
+  ipcMain.handle(IPC_CHANNELS.player.trackEnded, async () => {
     onTrackEnded()
   })
 
-  ipcMain.handle('player:record-play', async (_, trackId: number) => {
+  ipcMain.handle(IPC_CHANNELS.player.recordPlay, async (_, trackId: number) => {
     getDb().prepare("UPDATE tracks SET play_count = play_count + 1, last_played = datetime('now') WHERE id = ?").run(trackId)
   })
 
-  ipcMain.handle('player:seek', async (_, time: number) => {
+  ipcMain.handle(IPC_CHANNELS.player.seek, async (_, time: number) => {
     seek(time)
   })
 
-  ipcMain.handle('player:set-volume', async (_, volume: number) => {
+  ipcMain.handle(IPC_CHANNELS.player.setVolume, async (_, volume: number) => {
     setVolume(volume)
     setSetting('volume', volume.toString())
   })
 
-  ipcMain.handle('player:toggle-shuffle', async () => {
+  ipcMain.handle(IPC_CHANNELS.player.toggleShuffle, async () => {
     toggleShuffle()
   })
 
-  ipcMain.handle('player:toggle-repeat', async () => {
+  ipcMain.handle(IPC_CHANNELS.player.toggleRepeat, async () => {
     cycleRepeat()
   })
 }
 
 function registerPlaylistHandlers(): void {
-  ipcMain.handle('playlist:list', async () => {
+  ipcMain.handle(IPC_CHANNELS.playlist.list, async () => {
     return getDb().prepare('SELECT * FROM playlists ORDER BY updated_at DESC').all()
   })
 
-  ipcMain.handle('playlist:create', async (_, name: string, desc?: string) => {
+  ipcMain.handle(IPC_CHANNELS.playlist.create, async (_, name: string, desc?: string) => {
     const db = getDb()
     const result = db.prepare('INSERT INTO playlists (name, description) VALUES (?, ?)').run(name, desc || '')
     return db.prepare('SELECT * FROM playlists WHERE id = ?').get(result.lastInsertRowid)
   })
 
-  ipcMain.handle('playlist:delete', async (_, id: number) => {
+  ipcMain.handle(IPC_CHANNELS.playlist.delete, async (_, id: number) => {
     getDb().prepare('DELETE FROM playlists WHERE id = ?').run(id)
   })
 
-  ipcMain.handle('playlist:rename', async (_, id: number, name: string) => {
+  ipcMain.handle(IPC_CHANNELS.playlist.rename, async (_, id: number, name: string) => {
     getDb().prepare("UPDATE playlists SET name = ?, updated_at = datetime('now') WHERE id = ?").run(name, id)
   })
 
-  ipcMain.handle('playlist:get-tracks', async (_, id: number) => {
+  ipcMain.handle(IPC_CHANNELS.playlist.getTracks, async (_, id: number) => {
     return getDb().prepare(`
       SELECT t.*, pt.position 
       FROM tracks t 
@@ -174,7 +176,7 @@ function registerPlaylistHandlers(): void {
     `).all(id)
   })
 
-  ipcMain.handle('playlist:add-tracks', async (_, playlistId: number, trackIds: number[]) => {
+  ipcMain.handle(IPC_CHANNELS.playlist.addTracks, async (_, playlistId: number, trackIds: number[]) => {
     const db = getDb()
     const maxPos = db.prepare('SELECT MAX(position) as maxPos FROM playlist_tracks WHERE playlist_id = ?').get(playlistId) as { maxPos: number | null }
     let pos = (maxPos?.maxPos ?? 0) + 1
@@ -185,11 +187,11 @@ function registerPlaylistHandlers(): void {
     db.prepare("UPDATE playlists SET updated_at = datetime('now') WHERE id = ?").run(playlistId)
   })
 
-  ipcMain.handle('playlist:remove-track', async (_, playlistId: number, trackId: number) => {
+  ipcMain.handle(IPC_CHANNELS.playlist.removeTrack, async (_, playlistId: number, trackId: number) => {
     getDb().prepare('DELETE FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?').run(playlistId, trackId)
   })
 
-  ipcMain.handle('playlist:reorder', async (_, playlistId: number, fromPos: number, toPos: number) => {
+  ipcMain.handle(IPC_CHANNELS.playlist.reorder, async (_, playlistId: number, fromPos: number, toPos: number) => {
     const db = getDb()
     db.prepare('UPDATE playlist_tracks SET position = -1 WHERE playlist_id = ? AND position = ?').run(playlistId, fromPos)
     if (fromPos < toPos) {
@@ -202,31 +204,31 @@ function registerPlaylistHandlers(): void {
 }
 
 function registerQueueHandlers(): void {
-  ipcMain.handle('queue:add', async (_, trackId: number) => {
+  ipcMain.handle(IPC_CHANNELS.queue.add, async (_, trackId: number) => {
     addToQueue(trackId)
   })
 
-  ipcMain.handle('queue:add-next', async (_, trackId: number) => {
+  ipcMain.handle(IPC_CHANNELS.queue.addNext, async (_, trackId: number) => {
     addNext(trackId)
   })
 
-  ipcMain.handle('queue:remove', async (_, index: number) => {
+  ipcMain.handle(IPC_CHANNELS.queue.remove, async (_, index: number) => {
     removeFromQueue(index)
   })
 
-  ipcMain.handle('queue:reorder', async (_, from: number, to: number) => {
+  ipcMain.handle(IPC_CHANNELS.queue.reorder, async (_, from: number, to: number) => {
     reorderQueue(from, to)
   })
 
-  ipcMain.handle('queue:clear', async () => {
+  ipcMain.handle(IPC_CHANNELS.queue.clear, async () => {
     clearQueue()
   })
 
-  ipcMain.handle('queue:set', async (_, trackIds: number[]) => {
+  ipcMain.handle(IPC_CHANNELS.queue.set, async (_, trackIds: number[]) => {
     setQueue(trackIds)
   })
 
-  ipcMain.handle('queue:get', async () => {
+  ipcMain.handle(IPC_CHANNELS.queue.get, async () => {
     const ids = getQueue()
     if (!ids.length) return []
     const db = getDb()
@@ -237,50 +239,50 @@ function registerQueueHandlers(): void {
 }
 
 function registerYouTubeHandlers(): void {
-  ipcMain.handle('youtube:search', async (_, query: string) => {
+  ipcMain.handle(IPC_CHANNELS.youtube.search, async (_, query: string) => {
     const { searchYoutube } = await import('./yt-dlp')
     return searchYoutube(query)
   })
 
-  ipcMain.handle('youtube:download', async (_, url: string, videoId: string) => {
+  ipcMain.handle(IPC_CHANNELS.youtube.download, async (_, url: string, videoId: string) => {
     const { downloadAudio } = await import('./yt-dlp')
     return downloadAudio(url, videoId)
   })
 
-  ipcMain.handle('youtube:cancel-download', async (_, videoId: string) => {
+  ipcMain.handle(IPC_CHANNELS.youtube.cancelDownload, async (_, videoId: string) => {
     const { cancelDownload } = await import('./yt-dlp')
     return cancelDownload(videoId)
   })
 
-  ipcMain.handle('youtube:get-history', async () => {
+  ipcMain.handle(IPC_CHANNELS.youtube.getHistory, async () => {
     return getDownloadHistory()
   })
 
-  ipcMain.handle('youtube:clear-history', async () => {
+  ipcMain.handle(IPC_CHANNELS.youtube.clearHistory, async () => {
     clearDownloadHistory()
   })
 }
 
 function registerSettingsHandlers(): void {
-  ipcMain.handle('settings:get', async (_, key: string) => {
+  ipcMain.handle(IPC_CHANNELS.settings.get, async (_, key: string) => {
     return getSetting(key)
   })
 
-  ipcMain.handle('settings:set', async (_, key: string, value: string) => {
+  ipcMain.handle(IPC_CHANNELS.settings.set, async (_, key: string, value: string) => {
     setSetting(key, value)
   })
 
-  ipcMain.handle('settings:get-all', async () => {
+  ipcMain.handle(IPC_CHANNELS.settings.getAll, async () => {
     return getAllSettings()
   })
 
-  ipcMain.handle('settings:get-folders', async () => {
+  ipcMain.handle(IPC_CHANNELS.settings.getFolders, async () => {
     const raw = getSetting('music_folders')
     if (!raw) return []
     try { return JSON.parse(raw) } catch { return [] }
   })
 
-  ipcMain.handle('settings:add-folder', async (_, folderPath: string) => {
+  ipcMain.handle(IPC_CHANNELS.settings.addFolder, async (_, folderPath: string) => {
     const raw = getSetting('music_folders') || '[]'
     const folders = JSON.parse(raw)
     if (!folders.includes(folderPath)) {
@@ -289,13 +291,13 @@ function registerSettingsHandlers(): void {
     }
   })
 
-  ipcMain.handle('settings:remove-folder', async (_, folderPath: string) => {
+  ipcMain.handle(IPC_CHANNELS.settings.removeFolder, async (_, folderPath: string) => {
     const raw = getSetting('music_folders') || '[]'
     const folders = JSON.parse(raw).filter((f: string) => f !== folderPath)
     setSetting('music_folders', JSON.stringify(folders))
   })
 
-  ipcMain.handle('settings:open-folder-dialog', async () => {
+  ipcMain.handle(IPC_CHANNELS.settings.openFolderDialog, async () => {
     const { dialog } = await import('electron')
     const result = await dialog.showOpenDialog({ properties: ['openDirectory'] })
     return result.filePaths[0] || null
@@ -303,12 +305,12 @@ function registerSettingsHandlers(): void {
 }
 
 function registerEQHandlers(): void {
-  ipcMain.handle('eq:set-bands', async (_, bands: number[]) => {
+  ipcMain.handle(IPC_CHANNELS.eq.setBands, async (_, bands: number[]) => {
     setSetting('eq_bands', JSON.stringify(bands))
-    send('eq:bands-changed', bands)
+    send(IPC_CHANNELS.eq.bandsChanged, bands)
   })
 
-  ipcMain.handle('eq:set-preset', async (_, preset: string) => {
+  ipcMain.handle(IPC_CHANNELS.eq.setPreset, async (_, preset: string) => {
     const presets: Record<string, number[]> = {
       Flat: [0,0,0,0,0,0,0,0,0,0],
       Rock: [5,4,3,1,-1,-1,0,2,3,4],
@@ -323,49 +325,49 @@ function registerEQHandlers(): void {
     return presets[preset] || presets.Flat
   })
 
-  ipcMain.handle('eq:enable', async (_, enabled: boolean) => {
+  ipcMain.handle(IPC_CHANNELS.eq.enable, async (_, enabled: boolean) => {
     setSetting('eq_enabled', enabled.toString())
   })
 
-  ipcMain.handle('eq:get-enabled', async () => {
+  ipcMain.handle(IPC_CHANNELS.eq.getEnabled, async () => {
     const val = getSetting('eq_enabled')
     return val === 'true'
   })
 }
 
 function registerLastFMHandlers(): void {
-  ipcMain.handle('lastfm:auth', async (_, apiKey: string) => {
+  ipcMain.handle(IPC_CHANNELS.lastfm.auth, async (_, apiKey: string) => {
     setSetting('lastfm_api_key', apiKey)
     return ''
   })
 
-  ipcMain.handle('lastfm:is-authd', async () => {
+  ipcMain.handle(IPC_CHANNELS.lastfm.isAuthd, async () => {
     const key = getSetting('lastfm_api_key')
     return !!key && key.length > 0
   })
 
-  ipcMain.handle('lastfm:disconnect', async () => {
+  ipcMain.handle(IPC_CHANNELS.lastfm.disconnect, async () => {
     setSetting('lastfm_api_key', '')
     setSetting('lastfm_session_key', '')
   })
 
-  ipcMain.handle('lastfm:now-playing', async (_, artist: string, track: string, album?: string) => {
+  ipcMain.handle(IPC_CHANNELS.lastfm.nowPlaying, async (_, artist: string, track: string, album?: string) => {
     const { updateNowPlaying } = await import('./lastfm')
     return updateNowPlaying(artist, track, album)
   })
 
-  ipcMain.handle('lastfm:scrobble', async (_, artist: string, track: string, album?: string, timestamp?: number) => {
+  ipcMain.handle(IPC_CHANNELS.lastfm.scrobble, async (_, artist: string, track: string, album?: string, timestamp?: number) => {
     const { scrobble } = await import('./lastfm')
     return scrobble(artist, track, album, timestamp)
   })
 }
 
 function registerSystemHandlers(): void {
-  ipcMain.handle('system:check-ffmpeg', async () => {
+  ipcMain.handle(IPC_CHANNELS.system.checkFfmpeg, async () => {
     return isFFmpegAvailable()
   })
 
-  ipcMain.handle('system:check-yt-dlp', async () => {
+  ipcMain.handle(IPC_CHANNELS.system.checkYtDlp, async () => {
     const { spawnSync } = await import('child_process')
     try {
       const result = spawnSync('yt-dlp', ['--version'], { timeout: 5000 })
@@ -375,7 +377,7 @@ function registerSystemHandlers(): void {
     }
   })
 
-  ipcMain.on('system:log', (_event, ...args) => {
+  ipcMain.on(IPC_CHANNELS.system.log, (_event, ...args) => {
     console.log('[renderer]', ...args)
   })
 }
