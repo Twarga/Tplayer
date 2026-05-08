@@ -72,7 +72,12 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
   togglePlay: async () => { unlockAudio(); await api.player.togglePlay() },
   next: async () => { await api.player.next() },
   prev: async () => { await api.player.prev() },
-  seek: async (time) => { await api.player.seek(time) },
+  seek: async (time) => {
+    const { duration } = usePlayerStore.getState()
+    const nextTime = Math.max(0, Math.min(time, duration || time))
+    set({ currentTime: nextTime })
+    await api.player.seek(nextTime)
+  },
   setVolume: async (v) => { set({ volume: v }); await api.player.setVolume(v) },
   toggleShuffle: async () => { set(s => ({ isShuffled: !s.isShuffled })); await api.player.toggleShuffle() },
   toggleRepeat: async () => { 

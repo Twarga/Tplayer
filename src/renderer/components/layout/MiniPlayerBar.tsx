@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 import { animations, staggerItem, staggerParent } from '@/lib/animations'
 
 export function MiniPlayerBar({ onQueueClick }: { onQueueClick?: () => void }) {
-  const { currentTrack, isPlaying, volume, isShuffled, repeatMode, togglePlay, next, prev, toggleShuffle, toggleRepeat, setVolume } = usePlayerStore()
+  const { currentTrack, isPlaying, volume, isShuffled, repeatMode, play, togglePlay, next, prev, toggleShuffle, toggleRepeat, setVolume } = usePlayerStore()
   const { queue } = useQueueStore()
   const { toggleFavorite } = useLibraryStore()
   const [showVolume, setShowVolume] = useState(false)
@@ -40,6 +40,18 @@ export function MiniPlayerBar({ onQueueClick }: { onQueueClick?: () => void }) {
     if (!currentTrack) return
     await toggleFavorite(currentTrack.id)
     addToast(!isFav ? 'Added to favorites' : 'Removed from favorites', 'success')
+  }
+
+  const handlePrimaryPlay = async () => {
+    if (currentTrack) {
+      await togglePlay()
+      return
+    }
+
+    const firstQueuedTrack = queue[0]
+    if (firstQueuedTrack) {
+      await play(firstQueuedTrack.id)
+    }
   }
 
   useEffect(() => {
@@ -122,7 +134,8 @@ export function MiniPlayerBar({ onQueueClick }: { onQueueClick?: () => void }) {
             <TooltipTrigger asChild>
               <button
                 onClick={prev}
-                className={cn("w-8 h-8 flex items-center justify-center text-primary hover:text-accent", animations.controlButton)}
+                disabled={!currentTrack}
+                className={cn("w-8 h-8 flex items-center justify-center text-primary hover:text-accent disabled:opacity-35 disabled:hover:text-primary disabled:cursor-not-allowed", animations.controlButton)}
               >
                 <SkipBack size={20} />
               </button>
@@ -133,8 +146,9 @@ export function MiniPlayerBar({ onQueueClick }: { onQueueClick?: () => void }) {
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={togglePlay}
-                className={cn("w-11 h-11 rounded-full bg-accent text-background flex items-center justify-center shadow-accent-glow", animations.controlButton)}
+                onClick={handlePrimaryPlay}
+                disabled={!currentTrack && queue.length === 0}
+                className={cn("w-11 h-11 rounded-full bg-accent text-background flex items-center justify-center shadow-accent-glow disabled:opacity-40 disabled:cursor-not-allowed", animations.controlButton)}
               >
                 {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
               </button>
@@ -146,7 +160,8 @@ export function MiniPlayerBar({ onQueueClick }: { onQueueClick?: () => void }) {
             <TooltipTrigger asChild>
               <button
                 onClick={next}
-                className={cn("w-8 h-8 flex items-center justify-center text-primary hover:text-accent", animations.controlButton)}
+                disabled={!currentTrack && queue.length === 0}
+                className={cn("w-8 h-8 flex items-center justify-center text-primary hover:text-accent disabled:opacity-35 disabled:hover:text-primary disabled:cursor-not-allowed", animations.controlButton)}
               >
                 <SkipForward size={20} />
               </button>

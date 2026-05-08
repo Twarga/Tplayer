@@ -18,7 +18,7 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
         "flex items-center gap-3 w-full h-10 px-2.5 text-sm font-medium interactive-soft relative",
         active
           ? 'text-primary'
-          : 'text-secondary hover:bg-white/[0.035] hover:text-primary'
+          : 'text-secondary hover:text-primary'
       )}
     >
       <div 
@@ -54,9 +54,9 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
   }
 
   return (
-    <aside className="w-[188px] min-w-[188px] h-full bg-[#21190e] border-r border-black/20 flex flex-col select-none overflow-hidden">
+    <aside className="w-[188px] min-w-[188px] h-full bg-[#120d14] border-r border-white/[0.055] flex flex-col select-none overflow-hidden">
       <div className="px-4 pb-5 pt-5 flex items-center gap-3 shrink-0">
-        <div className="w-10 h-10 rounded-full border border-accent/35 bg-accent/10 flex items-center justify-center text-accent font-bold text-sm">
+        <div className="w-10 h-10 rounded-full border border-white/[0.08] flex items-center justify-center text-accent font-bold text-sm">
           T
         </div>
         <div className="min-w-0">
@@ -73,7 +73,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
         <NavItem icon={<Music4 size={18} />} label="Playlists" active={activeView === 'playlists'} onClick={() => onViewChange('playlists')} />
         <NavItem icon={<Inbox size={18} />} label="Queue" active={activeView === 'queue'} onClick={() => onViewChange('queue')} />
 
-        <div className="mt-4 border-t border-white/[0.06] pt-4" />
+        <div className="mt-4 border-t border-white/[0.055] pt-4" />
         <NavItem
           icon={<span className="text-red-500"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></span>}
           label="YouTube Import"
@@ -87,7 +87,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-tertiary">Playlists</p>
           <button
             onClick={() => setShowCreateDialog(true)}
-            className="w-7 h-7 rounded-full hover:bg-white/[0.05] flex items-center justify-center text-tertiary hover:text-primary interactive-soft"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-tertiary hover:text-primary interactive-soft"
             title="Create playlist"
           >
             <Plus size={14} />
@@ -106,7 +106,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="px-3 pb-4 pt-3 flex flex-col gap-1 shrink-0 border-t border-white/[0.06] bg-black/10">
+      <div className="px-3 pb-4 pt-3 flex flex-col gap-1 shrink-0 border-t border-white/[0.055]">
         <NavItem icon={<Settings size={20} />} label="Settings" active={activeView === 'settings'} onClick={() => onViewChange('settings')} />
       </div>
 
