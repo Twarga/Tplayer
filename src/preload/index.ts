@@ -1,16 +1,25 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
+import type { TplayerAPI } from '../shared/ipc/contracts'
 
 type CleanupFn = () => void
 
-function createListener(channel: string) {
-  return (callback: (...args: unknown[]) => void): CleanupFn => {
-    const listener = (_event: IpcRendererEvent, ...args: unknown[]) => callback(...args)
+function createListener<T>(channel: string) {
+  return (callback: (payload: T) => void): CleanupFn => {
+    const listener = (_event: IpcRendererEvent, payload: T) => callback(payload)
     ipcRenderer.on(channel, listener)
     return () => ipcRenderer.removeListener(channel, listener)
   }
 }
 
-contextBridge.exposeInMainWorld('tplayerAPI', {
+function createVoidListener(channel: string) {
+  return (callback: () => void): CleanupFn => {
+    const listener = (_event: IpcRendererEvent) => callback()
+    ipcRenderer.on(channel, listener)
+    return () => ipcRenderer.removeListener(channel, listener)
+  }
+}
+
+const tplayerAPI: TplayerAPI = {
   library: {
     scan: (folders: string[]) => ipcRenderer.invoke('library:scan', folders),
     getTracks: (opts?: { query?: string; sort?: string; dir?: string; limit?: number; offset?: number }) =>
@@ -18,6 +27,7 @@ contextBridge.exposeInMainWorld('tplayerAPI', {
     getTrack: (id: number) => ipcRenderer.invoke('library:get-track', id),
     toggleFavorite: (id: number) => ipcRenderer.invoke('library:toggle-favorite', id),
     getCovers: (albums: string[]) => ipcRenderer.invoke('library:get-covers', albums),
+    getDownloads: () => ipcRenderer.invoke('library:get-downloads'),
     onFileAdded: createListener('library:file-added'),
     onFileRemoved: createListener('library:file-removed'),
     onScanProgress: createListener('library:scan-progress'),
@@ -31,6 +41,8 @@ contextBridge.exposeInMainWorld('tplayerAPI', {
     togglePlay: () => ipcRenderer.invoke('player:toggle-play'),
     next: () => ipcRenderer.invoke('player:next'),
     prev: () => ipcRenderer.invoke('player:prev'),
+    trackEnded: () => ipcRenderer.invoke('player:track-ended'),
+    recordPlay: (trackId: number) => ipcRenderer.invoke('player:record-play', trackId),
     seek: (time: number) => ipcRenderer.invoke('player:seek', time),
     setVolume: (volume: number) => ipcRenderer.invoke('player:set-volume', volume),
     toggleShuffle: () => ipcRenderer.invoke('player:toggle-shuffle'),
@@ -38,12 +50,14 @@ contextBridge.exposeInMainWorld('tplayerAPI', {
     onPlaybackState: createListener('player:playback-state'),
     onTimeUpdate: createListener('player:time-update'),
     onLoad: createListener('player:load'),
-    onEnded: createListener('player:ended'),
+    onEnded: createVoidListener('player:ended'),
+    onSeekTo: createListener('player:seek-to'),
   },
 
   queue: {
     add: (trackId: number) => ipcRenderer.invoke('queue:add', trackId),
     addNext: (trackId: number) => ipcRenderer.invoke('queue:add-next', trackId),
+    set: (trackIds: number[]) => ipcRenderer.invoke('queue:set', trackIds),
     remove: (index: number) => ipcRenderer.invoke('queue:remove', index),
     reorder: (from: number, to: number) => ipcRenderer.invoke('queue:reorder', from, to),
     clear: () => ipcRenderer.invoke('queue:clear'),
@@ -75,6 +89,8 @@ contextBridge.exposeInMainWorld('tplayerAPI', {
     onDownloadDone: createListener('youtube:download-done'),
     onDownloadError: createListener('youtube:download-error'),
     onDownloadStarted: createListener('youtube:download-started'),
+    onDownloadCancelled: createListener('youtube:download-cancelled'),
+    onHistoryCleared: createVoidListener('youtube:history-cleared'),
   },
 
   settings: {
@@ -92,6 +108,7 @@ contextBridge.exposeInMainWorld('tplayerAPI', {
     setPreset: (preset: string) => ipcRenderer.invoke('eq:set-preset', preset),
     enable: (enabled: boolean) => ipcRenderer.invoke('eq:enable', enabled),
     getEnabled: () => ipcRenderer.invoke('eq:get-enabled'),
+    onBandsChanged: createListener('eq:bands-changed'),
   },
 
   lastfm: {
@@ -103,4 +120,12 @@ contextBridge.exposeInMainWorld('tplayerAPI', {
     scrobble: (artist: string, track: string, album?: string, timestamp?: number) =>
       ipcRenderer.invoke('lastfm:scrobble', artist, track, album, timestamp),
   },
-})
+
+  system: {
+    checkFfmpeg: () => ipcRenderer.invoke('system:check-ffmpeg'),
+    checkYtDlp: () => ipcRenderer.invoke('system:check-yt-dlp'),
+    log: (...args: any[]) => ipcRenderer.send('system:log', ...args),
+  },
+}
+
+contextBridge.exposeInMainWorld('tplayerAPI', tplayerAPI)

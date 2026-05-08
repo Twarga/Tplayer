@@ -1,23 +1,17 @@
 import { create } from 'zustand'
 import { api } from '@/lib/ipc'
-
-interface Track {
-  id: number
-  title: string
-  artist: string
-  album: string
-  duration: number
-}
+import { unlockAudio } from '@/lib/audioContext'
+import type { PlaybackState, RepeatMode, TrackLoadPayload } from '../../shared/types/playback'
 
 interface PlayerState {
-  currentTrack: Track | null
+  currentTrack: TrackLoadPayload | null
   isPlaying: boolean
   currentTime: number
   duration: number
   volume: number
   isShuffled: boolean
-  repeatMode: 'off' | 'all' | 'one'
-  playbackState: 'idle' | 'loading' | 'playing' | 'paused' | 'error'
+  repeatMode: RepeatMode
+  playbackState: PlaybackState
 }
 
 interface PlayerStore extends PlayerState {
@@ -31,10 +25,10 @@ interface PlayerStore extends PlayerState {
   setVolume: (v: number) => Promise<void>
   toggleShuffle: () => Promise<void>
   toggleRepeat: () => Promise<void>
-  init: () => void
+  init: () => () => void
 }
 
-export const usePlayerStore = create<PlayerStore>((set, get) => ({
+export const usePlayerStore = create<PlayerStore>((set) => ({
   currentTrack: null,
   isPlaying: false,
   currentTime: 0,
@@ -45,48 +39,44 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   playbackState: 'idle',
 
   init() {
-    api.player.onPlaybackState((data) => {
-      set({
-        playbackState: data.state,
-        currentTime: data.currentTime,
-        duration: data.duration,
-        volume: data.volume,
-        isShuffled: data.isShuffled,
-        repeatMode: data.repeatMode,
-      })
-    })
-
-    api.player.onTimeUpdate((data) => {
-      set({ currentTime: data.current, duration: data.duration })
-    })
-
-    api.player.onLoad((data) => {
-      set({
-        currentTrack: {
-          id: data.trackId,
-          title: data.title,
-          artist: data.artist,
-          album: data.album,
+    const cleanups = [
+      api.player.onPlaybackState((data) => {
+        set({
+          playbackState: data.state,
+          isPlaying: data.state === 'playing',
+          currentTime: data.currentTime,
           duration: data.duration,
-        },
-        duration: data.duration,
-        currentTime: 0,
-      })
-    })
+          volume: data.volume,
+          isShuffled: data.isShuffled,
+          repeatMode: data.repeatMode,
+        })
+      }),
+      api.player.onTimeUpdate((data) => {
+        set({ currentTime: data.current, duration: data.duration })
+      }),
+      api.player.onLoad((data) => {
+        set({
+          currentTrack: data,
+          duration: data.duration,
+          currentTime: data.startTime || 0,
+        })
+      }),
+    ]
 
-    api.player.onEnded(() => {
-      get().next()
-    })
+    return () => cleanups.forEach((c) => c())
   },
 
-  play: async (trackId) => { await api.player.play(trackId) },
+  play: async (trackId) => { unlockAudio(); await api.player.play(trackId) },
   pause: async () => { await api.player.pause() },
-  resume: async () => { await api.player.resume() },
-  togglePlay: async () => { await api.player.togglePlay() },
+  resume: async () => { unlockAudio(); await api.player.resume() },
+  togglePlay: async () => { unlockAudio(); await api.player.togglePlay() },
   next: async () => { await api.player.next() },
   prev: async () => { await api.player.prev() },
   seek: async (time) => { await api.player.seek(time) },
-  setVolume: async (v) => { await api.player.setVolume(v) },
-  toggleShuffle: async () => { await api.player.toggleShuffle() },
-  toggleRepeat: async () => { await api.player.toggleRepeat() },
+  setVolume: async (v) => { set({ volume: v }); await api.player.setVolume(v) },
+  toggleShuffle: async () => { set(s => ({ isShuffled: !s.isShuffled })); await api.player.toggleShuffle() },
+  toggleRepeat: async () => { 
+    set(s => ({ repeatMode: s.repeatMode === 'off' ? 'all' : s.repeatMode === 'all' ? 'one' : 'off' }));
+    await api.player.toggleRepeat() 
+  },
 }))

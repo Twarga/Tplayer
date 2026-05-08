@@ -1,9 +1,10 @@
 import { getDb } from './database'
-import { decodeAudioFile } from './audio-decoder'
-import { send } from './ipc-registry'
 
-export type RepeatMode = 'off' | 'all' | 'one'
-export type PlaybackState = 'idle' | 'loading' | 'playing' | 'paused' | 'error'
+import { send } from './ipc-registry'
+import { updateMprisPlayingState, updateMprisMeta } from './mpris'
+import { updateNowPlaying, scrobble } from './lastfm'
+import type { PlaybackState, RepeatMode, TrackLoadPayload } from '../shared/types/playback'
+import type { Track } from '../shared/types/domain'
 
 interface PlayerState {
   currentTrackId: number | null
@@ -14,15 +15,6 @@ interface PlayerState {
   isShuffled: boolean
   repeatMode: RepeatMode
   playbackState: PlaybackState
-}
-
-interface Track {
-  id: number
-  file_path: string
-  title: string
-  artist: string
-  album: string
-  duration: number
 }
 
 let _state: PlayerState = {
@@ -37,11 +29,32 @@ let _state: PlayerState = {
 }
 
 let _queue: number[] = []
+let _unshuffledQueue: number[] = []
 let _history: number[] = []
 const MAX_HISTORY = 50
 
+
+
 function getTrack(id: number): Track | undefined {
   return getDb().prepare('SELECT * FROM tracks WHERE id = ?').get(id) as Track | undefined
+}
+
+interface QueueTrack {
+  id: number
+  title: string
+  artist: string
+  album: string
+  duration: number
+}
+
+function emitQueueUpdated(): void {
+  const db = getDb()
+  const list: QueueTrack[] = []
+  for (const id of _queue) {
+    const t = db.prepare('SELECT id, title, artist, album, duration FROM tracks WHERE id = ?').get(id) as QueueTrack | undefined
+    if (t) list.push(t)
+  }
+  send('queue:updated', list)
 }
 
 function emitPlaybackState(): void {
@@ -75,35 +88,42 @@ export async function playTrack(trackId: number): Promise<void> {
   }
 
   try {
-    const decoded = await decodeAudioFile(track.file_path)
-
     _state.currentTrackId = trackId
-    _state.duration = decoded.duration
+    _state.duration = track.duration
     _state.currentTime = 0
     _state.isPlaying = true
     _state.playbackState = 'playing'
-
-    getDb().prepare('UPDATE tracks SET play_count = play_count + 1, last_played = datetime("now") WHERE id = ?').run(trackId)
 
     if (_history[_history.length - 1] !== trackId) {
       _history.push(trackId)
       if (_history.length > MAX_HISTORY) _history.shift()
     }
 
-    send('player:load', {
+    const payload: TrackLoadPayload = {
+      id: trackId,
       trackId,
       title: track.title,
       artist: track.artist,
       album: track.album,
-      duration: decoded.duration,
-      pcmData: decoded.pcmData,
-      sampleRate: decoded.sampleRate,
-      channels: decoded.channels,
-    })
+      duration: track.duration,
+      url: 'tplayer-audio://media/' + encodeURIComponent(track.file_path),
+      cover_path: track.cover_path,
+      file_format: track.file_format,
+      bitrate: track.bitrate,
+      sample_rate: track.sample_rate,
+      startTime: 0,
+    }
 
+    send('player:load', payload)
+
+    updateMprisMeta(track.title, [track.artist], track.album, undefined, track.duration)
+    updateMprisPlayingState('playing')
+    updateNowPlaying(track.artist, track.title, track.album).catch(() => {})
     emitPlaybackState()
-  } catch {
+  } catch (err) {
+    console.error('[audio-engine] playTrack failed:', err)
     _state.playbackState = 'error'
+    updateMprisPlayingState('error')
     emitPlaybackState()
   }
 }
@@ -112,6 +132,7 @@ export function pause(): void {
   _state.isPlaying = false
   _state.playbackState = 'paused'
   send('player:pause')
+  updateMprisPlayingState('paused')
   emitPlaybackState()
 }
 
@@ -119,6 +140,7 @@ export function resume(): void {
   _state.isPlaying = true
   _state.playbackState = 'playing'
   send('player:resume')
+  updateMprisPlayingState('playing')
   emitPlaybackState()
 }
 
@@ -128,9 +150,12 @@ export function togglePlay(): void {
 }
 
 export function seek(time: number): void {
-  _state.currentTime = Math.max(0, Math.min(time, _state.duration))
-  send('player:seek', time)
-  emitTimeUpdate()
+  time = Math.max(0, Math.min(time, _state.duration))
+  _state.currentTime = time
+
+  if (_state.currentTrackId !== null) {
+    send('player:seek-to', { time })
+  }
 }
 
 export function setVolume(volume: number): void {
@@ -139,28 +164,67 @@ export function setVolume(volume: number): void {
 }
 
 export function nextTrack(): void {
-  if (_queue.length === 0) return
-
-  const next = _queue.shift()!
-  if (_state.currentTrackId !== null) {
-    _queue.push(_state.currentTrackId)
+  if (_queue.length === 0) {
+    if (_state.repeatMode === 'all' && _history.length > 0) {
+      _queue = [..._history]
+      if (_state.isShuffled) {
+        _unshuffledQueue = [..._queue]
+        for (let i = _queue.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1))
+          ;[_queue[i], _queue[j]] = [_queue[j], _queue[i]]
+        }
+      }
+      emitQueueUpdated()
+    } else {
+      return
+    }
   }
 
+  const next = _queue.shift()!
+  if (_state.isShuffled) {
+    _unshuffledQueue = _unshuffledQueue.filter(id => id !== next)
+  }
+  emitQueueUpdated()
   playTrack(next)
 }
 
 export function prevTrack(): void {
-  if (_history.length === 0) {
+  if (_state.currentTime > 3) {
     seek(0)
     return
   }
 
+  if (_history.length <= 1) {
+    seek(0)
+    return
+  }
+
+  // Pop current track
+  const current = _history.pop()!
+  _queue.unshift(current)
+  if (_state.isShuffled) {
+    _unshuffledQueue.unshift(current)
+  }
+
+  // Pop and play previous track
   const prev = _history.pop()!
+  emitQueueUpdated()
   playTrack(prev)
 }
 
 export function toggleShuffle(): void {
   _state.isShuffled = !_state.isShuffled
+  if (_state.isShuffled) {
+    _unshuffledQueue = [..._queue]
+    for (let i = _queue.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[_queue[i], _queue[j]] = [_queue[j], _queue[i]]
+    }
+  } else {
+    _queue = [..._unshuffledQueue]
+    _unshuffledQueue = []
+  }
+  emitQueueUpdated()
   emitPlaybackState()
 }
 
@@ -173,28 +237,60 @@ export function cycleRepeat(): void {
 
 export function addToQueue(trackId: number): void {
   _queue.push(trackId)
-  send('queue:updated', _queue)
+  if (_state.isShuffled) {
+    _unshuffledQueue.push(trackId)
+  }
+  emitQueueUpdated()
 }
 
 export function addNext(trackId: number): void {
   _queue.unshift(trackId)
-  send('queue:updated', _queue)
+  if (_state.isShuffled) {
+    _unshuffledQueue.unshift(trackId)
+  }
+  emitQueueUpdated()
 }
 
 export function removeFromQueue(index: number): void {
-  _queue.splice(index, 1)
-  send('queue:updated', _queue)
+  const [removed] = _queue.splice(index, 1)
+  if (_state.isShuffled) {
+    const unIndex = _unshuffledQueue.indexOf(removed)
+    if (unIndex !== -1) _unshuffledQueue.splice(unIndex, 1)
+  }
+  emitQueueUpdated()
 }
 
 export function clearQueue(): void {
   _queue = []
-  send('queue:updated', _queue)
+  _unshuffledQueue = []
+  emitQueueUpdated()
+}
+
+export function setQueue(trackIds: number[]): void {
+  _queue = [...trackIds]
+  if (_state.isShuffled) {
+    _unshuffledQueue = [...trackIds]
+    for (let i = _queue.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[_queue[i], _queue[j]] = [_queue[j], _queue[i]]
+    }
+  }
+  emitQueueUpdated()
 }
 
 export function reorderQueue(from: number, to: number): void {
   const [item] = _queue.splice(from, 1)
   _queue.splice(to, 0, item)
-  send('queue:updated', _queue)
+  if (_state.isShuffled) {
+    // reordering while shuffled only affects shuffled queue,
+    // we can leave unshuffled alone or move it there too?
+    // Usually, dragging in a shuffled queue means you want it to play next in the current order.
+    // unshuffled queue doesn't need to be reordered.
+  } else {
+    // Wait, if we are NOT shuffled, reorderQueue changes _queue, which is the unshuffled queue.
+    // That's fine.
+  }
+  emitQueueUpdated()
 }
 
 export function getQueue(): number[] {
@@ -206,21 +302,28 @@ export function getState(): PlayerState {
 }
 
 export function onTrackEnded(): void {
+  if (_state.currentTrackId !== null) {
+    const track = getTrack(_state.currentTrackId)
+    if (track) {
+      scrobble(track.artist, track.title, track.album).catch(() => {})
+    }
+  }
+
   if (_state.repeatMode === 'one') {
-    seek(0)
-    resume()
+    if (_state.currentTrackId !== null) {
+      playTrack(_state.currentTrackId)
+    }
     return
   }
 
   if (_queue.length === 0) {
-    if (_state.repeatMode === 'all') {
-      const lastTrackId = _history[_history.length - 1]
-      if (lastTrackId !== undefined) {
-        playTrack(lastTrackId)
-      }
+    if (_state.repeatMode === 'all' && _history.length > 0) {
+      nextTrack()
     } else {
       _state.isPlaying = false
       _state.playbackState = 'idle'
+      _state.currentTime = 0
+      updateMprisPlayingState('idle')
       emitPlaybackState()
     }
     return

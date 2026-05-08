@@ -49,7 +49,7 @@ async function extractMetadata(filePath: string): Promise<TrackMeta> {
       common.title ||
       path.basename(filePath, path.extname(filePath))
 
-    return {
+    const trackMeta: TrackMeta = {
       file_path: filePath,
       title,
       artist: common.artist || 'Unknown Artist',
@@ -73,6 +73,17 @@ async function extractMetadata(filePath: string): Promise<TrackMeta> {
       bpm: common.bpm ?? null,
       color_palette: null,
     }
+
+    if (common.picture && common.picture.length > 0) {
+      const pic = common.picture[0]
+      const savedPath = saveCover(trackMeta.album, trackMeta.artist, pic.data, pic.format)
+      if (savedPath) {
+        trackMeta.has_cover = 1
+        trackMeta.cover_path = savedPath
+      }
+    }
+
+    return trackMeta
   } catch {
     let stats: fs.Stats | null = null
     try { stats = fs.statSync(filePath) } catch { /* ignore */ }
@@ -106,7 +117,7 @@ async function extractMetadata(filePath: string): Promise<TrackMeta> {
 function insertOrReplaceTrack(track: TrackMeta): void {
   const db = getDb()
   db.prepare(`
-    INSERT OR REPLACE INTO tracks (
+    INSERT INTO tracks (
       file_path, title, artist, album, album_artist, track_number, disc_number,
       year, genre, duration, bitrate, sample_rate, file_size, file_format,
       has_cover, cover_path, play_count, skip_count, is_favorite, rating, bpm, color_palette
@@ -115,6 +126,24 @@ function insertOrReplaceTrack(track: TrackMeta): void {
       @year, @genre, @duration, @bitrate, @sample_rate, @file_size, @file_format,
       @has_cover, @cover_path, @play_count, @skip_count, @is_favorite, @rating, @bpm, @color_palette
     )
+    ON CONFLICT(file_path) DO UPDATE SET
+      title = @title,
+      artist = @artist,
+      album = @album,
+      album_artist = @album_artist,
+      track_number = @track_number,
+      disc_number = @disc_number,
+      year = @year,
+      genre = @genre,
+      duration = @duration,
+      bitrate = @bitrate,
+      sample_rate = @sample_rate,
+      file_size = @file_size,
+      file_format = @file_format,
+      has_cover = @has_cover,
+      cover_path = @cover_path,
+      bpm = @bpm,
+      color_palette = @color_palette
   `).run(track)
 }
 
@@ -159,9 +188,16 @@ export async function scanFolders(folders: string[]): Promise<{ added: number; u
 
     for (let i = 0; i < files.length; i++) {
       const filePath = files[i]
+      const current = i + 1
 
       if (_scanCount > 0 && _scanCount % 10 === 0) {
-        send('library:scan-progress', { current: i + 1, total, file: path.basename(filePath) })
+        send('library:scan-progress', {
+          current,
+          processed: current,
+          total,
+          file: path.basename(filePath),
+          path: filePath,
+        })
       }
 
       const existing = getDb()
@@ -201,6 +237,20 @@ export function saveCover(album: string, artist: string, imageBuffer: Buffer, mi
 
     return coverPath
   } catch {
+    return null
+  }
+}
+
+export async function scanFile(filePath: string): Promise<{ id: number; title: string; artist: string; album: string; duration: number } | null> {
+  if (!SUPPORTED_EXTENSIONS.has(path.extname(filePath).toLowerCase())) return null
+  try {
+    const track = await extractMetadata(filePath)
+    insertOrReplaceTrack(track)
+    const row = getDb().prepare('SELECT id, title, artist, album, duration FROM tracks WHERE file_path = ?').get(filePath) as
+      { id: number; title: string; artist: string; album: string; duration: number } | undefined
+    return row || null
+  } catch (err) {
+    console.error('[scanner] scanFile failed:', err)
     return null
   }
 }
