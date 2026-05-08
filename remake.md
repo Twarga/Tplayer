@@ -390,6 +390,153 @@ Dependencies:
 Acceptance criteria:
 - Core components have a consistent polish direction before implementation work expands.
 
+R1C status:
+- Completed as the component polish baseline for the remake.
+
+R1C core component philosophy:
+
+- Tplayer should feel dense enough for serious daily use, but never cramped.
+- Components should look intentional, mature, and musically themed rather than generic dashboard UI.
+- The visual language should reward close use: spacing, alignment, type, and state changes should all feel precise.
+- Primary controls should feel richer and more tactile than passive surfaces.
+
+R1C definition of "premium but compact":
+
+- Controls are space-efficient without feeling compressed.
+- Surfaces use visual hierarchy instead of oversized padding to feel premium.
+- Typography carries structure more than excessive container size.
+- Interactions feel precise and well-finished rather than merely large and obvious.
+- Repeated-use components should reduce friction, not increase spectacle.
+
+R1C global component rules:
+
+1. Alignment must feel exact.
+   - Icons, labels, metadata, controls, and badges should visually lock together.
+
+2. Padding should be deliberate.
+   - Do not make components large just to make them feel premium.
+
+3. Contrast should serve hierarchy.
+   - Primary content, supporting metadata, and utility actions must be easy to separate at a glance.
+
+4. Surface treatment should be consistent.
+   - Cards, rows, panels, and overlays should feel like members of the same family.
+
+5. States must be obvious.
+   - Hover, active, selected, playing, disabled, and loading states should all be clear and consistent.
+
+6. Secondary actions should not dominate.
+   - Favorite, overflow, badge, and utility actions must stay legible without stealing the screen.
+
+R1C typography quality bar:
+
+- Section titles should feel confident and restrained, not oversized for drama.
+- Row titles should remain readable in dense layouts.
+- Secondary metadata should be clearly quieter without becoming washed out.
+- Tiny labels should be used sparingly and consistently.
+- Type hierarchy should be strong enough that users can scan without relying on borders everywhere.
+
+R1C buttons:
+
+- Primary buttons:
+  - warm, tactile, confident
+  - slightly stronger depth and contrast
+  - used sparingly so they retain meaning
+
+- Secondary buttons:
+  - quieter, integrated into panel surfaces
+  - should not visually compete with transport controls
+
+- Ghost buttons:
+  - useful in dense toolbars and rows
+  - rely on strong hover and active states to feel intentional
+
+- Icon buttons:
+  - must have excellent centering, hit area, and state contrast
+  - should feel precise, not loose or generic
+
+R1C player controls:
+
+- Transport controls are the emotional center of the product and deserve the highest polish.
+- The play button should feel the most intentional control in the app.
+- Secondary playback controls should be lighter, but still aligned and tactile.
+- Control groups should read as one system, not isolated buttons.
+
+R1C inputs and search:
+
+- Search should feel like a serious tool, not decorative chrome.
+- Inputs should be calm and readable with strong focus states.
+- Placeholder text should guide, not dominate.
+- Keyboard shortcut hints should feel helpful but visually subordinate.
+
+R1C sliders and progress controls:
+
+- Seek and volume controls must feel precise.
+- Track, fill, thumb, and hover states should be visually balanced.
+- Sliders should never look like default browser controls dropped into the UI.
+- Progress components should feel smooth, clean, and trustworthy.
+
+R1C library rows:
+
+- Rows are one of the most important product surfaces and should receive very high polish.
+- Title, artist, album, duration, and actions should scan quickly.
+- Playing state should be elegant and obvious.
+- Hover reveals should stay controlled and not cause layout chaos.
+- Dense rows should still feel breathable.
+
+R1C cards:
+
+- Cards should be used when artwork or grouping truly benefits from them.
+- They should not become the default answer for every surface.
+- Card styling should avoid a generic “streaming app clone” feel.
+- Artwork-led cards can be richer, but must stay consistent with the rest of the shell.
+
+R1C panels:
+
+- Sidebar:
+  - stable, quiet, anchor-like
+  - high utility, low drama
+
+- Main content panel:
+  - flexible and breathable
+  - strongest information hierarchy
+
+- Now-playing panel:
+  - premium detail space
+  - slightly richer than utility surfaces, but still disciplined
+
+R1C dialogs and overlays:
+
+- Dialogs should feel integrated with the product, not like a separate theme.
+- Overlays should direct focus without becoming muddy or heavy.
+- Form actions should be obvious and uncluttered.
+
+R1C badges and metadata chips:
+
+- Use badges only when they help users evaluate a track or state quickly.
+- Keep badge styling compact and readable.
+- Avoid turning metadata into decorative sticker collections.
+
+R1C empty, loading, and error states:
+
+- Empty states should feel designed, not abandoned.
+- Loading states should suggest structure, not uncertainty.
+- Error states should feel recoverable and clear.
+- These states should preserve product tone rather than becoming generic system messages.
+
+R1C consistency expectations for implementation:
+
+- If two components serve a similar purpose, they should not feel like they came from different apps.
+- Shape language, spacing, hover logic, and typography choices should repeat coherently.
+- A user moving from Library to Queue to Downloads to Settings should still feel the same product.
+
+R1C success criteria for later implementation:
+
+- The app feels tighter, more expensive, and easier to scan.
+- Dense surfaces remain calm and readable.
+- Core controls feel refined without becoming oversized.
+- The product looks custom-built rather than assembled from generic UI parts.
+
 ## Phase 0B: Stabilize The Base
 
 ### R1. Create canonical remake architecture map
