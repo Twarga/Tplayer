@@ -29,6 +29,15 @@ export interface TimeUpdatePayload {
   duration: number
 }
 
+export interface PlaybackProgressPayload {
+  currentTime: number
+  duration: number
+}
+
+export interface SeekPayload {
+  time: number
+}
+
 export interface TrackLoadPayload {
   id: number
   trackId: number

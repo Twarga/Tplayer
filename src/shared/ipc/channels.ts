@@ -20,6 +20,7 @@ export const IPC_CHANNELS = {
     prev: 'player:prev',
     trackEnded: 'player:track-ended',
     recordPlay: 'player:record-play',
+    syncProgress: 'player:sync-progress',
     seek: 'player:seek',
     setVolume: 'player:set-volume',
     toggleShuffle: 'player:toggle-shuffle',

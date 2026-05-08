@@ -3,7 +3,16 @@ import { getDb } from './database'
 import { send } from './ipc-registry'
 import { updateMprisPlayingState, updateMprisMeta } from './mpris'
 import { updateNowPlaying, scrobble } from './lastfm'
-import type { PlaybackState, RepeatMode, TrackLoadPayload } from '../shared/types/playback'
+import { IPC_CHANNELS } from '../shared/ipc/channels'
+import type {
+  PlaybackProgressPayload,
+  PlaybackState,
+  PlaybackStatePayload,
+  QueueEntry,
+  RepeatMode,
+  TimeUpdatePayload,
+  TrackLoadPayload,
+} from '../shared/types/playback'
 import type { Track } from '../shared/types/domain'
 
 interface PlayerState {
@@ -39,26 +48,18 @@ function getTrack(id: number): Track | undefined {
   return getDb().prepare('SELECT * FROM tracks WHERE id = ?').get(id) as Track | undefined
 }
 
-interface QueueTrack {
-  id: number
-  title: string
-  artist: string
-  album: string
-  duration: number
-}
-
 function emitQueueUpdated(): void {
   const db = getDb()
-  const list: QueueTrack[] = []
+  const list: QueueEntry[] = []
   for (const id of _queue) {
-    const t = db.prepare('SELECT id, title, artist, album, duration FROM tracks WHERE id = ?').get(id) as QueueTrack | undefined
+    const t = db.prepare('SELECT id, title, artist, album, duration FROM tracks WHERE id = ?').get(id) as QueueEntry | undefined
     if (t) list.push(t)
   }
-  send('queue:updated', list)
+  send(IPC_CHANNELS.queue.updated, list)
 }
 
 function emitPlaybackState(): void {
-  send('player:playback-state', {
+  const payload: PlaybackStatePayload = {
     state: _state.playbackState,
     trackId: _state.currentTrackId,
     currentTime: _state.currentTime,
@@ -66,7 +67,16 @@ function emitPlaybackState(): void {
     volume: _state.volume,
     isShuffled: _state.isShuffled,
     repeatMode: _state.repeatMode,
-  })
+  }
+  send(IPC_CHANNELS.player.playbackState, payload)
+}
+
+function emitTimeUpdate(): void {
+  const payload: TimeUpdatePayload = {
+    current: _state.currentTime,
+    duration: _state.duration,
+  }
+  send(IPC_CHANNELS.player.timeUpdate, payload)
 }
 
 export async function playTrack(trackId: number): Promise<void> {
@@ -107,11 +117,12 @@ export async function playTrack(trackId: number): Promise<void> {
       startTime: 0,
     }
 
-    send('player:load', payload)
+    send(IPC_CHANNELS.player.load, payload)
 
     updateMprisMeta(track.title, [track.artist], track.album, undefined, track.duration)
     updateMprisPlayingState('playing')
     updateNowPlaying(track.artist, track.title, track.album).catch(() => {})
+    emitTimeUpdate()
     emitPlaybackState()
   } catch (err) {
     console.error('[audio-engine] playTrack failed:', err)
@@ -124,7 +135,7 @@ export async function playTrack(trackId: number): Promise<void> {
 export function pause(): void {
   _state.isPlaying = false
   _state.playbackState = 'paused'
-  send('player:pause')
+  send(IPC_CHANNELS.player.pause)
   updateMprisPlayingState('paused')
   emitPlaybackState()
 }
@@ -132,7 +143,7 @@ export function pause(): void {
 export function resume(): void {
   _state.isPlaying = true
   _state.playbackState = 'playing'
-  send('player:resume')
+  send(IPC_CHANNELS.player.resume)
   updateMprisPlayingState('playing')
   emitPlaybackState()
 }
@@ -147,13 +158,30 @@ export function seek(time: number): void {
   _state.currentTime = time
 
   if (_state.currentTrackId !== null) {
-    send('player:seek-to', { time })
+    send(IPC_CHANNELS.player.seekTo, { time })
+    emitTimeUpdate()
   }
 }
 
 export function setVolume(volume: number): void {
   _state.volume = Math.max(0, Math.min(1, volume))
-  send('player:set-volume', _state.volume)
+  send(IPC_CHANNELS.player.setVolume, _state.volume)
+  emitPlaybackState()
+}
+
+export function syncPlaybackProgress(payload: PlaybackProgressPayload): void {
+  if (_state.currentTrackId === null) return
+
+  const duration = Number.isFinite(payload.duration) && payload.duration > 0
+    ? payload.duration
+    : _state.duration
+  const currentTime = Number.isFinite(payload.currentTime)
+    ? Math.max(0, Math.min(payload.currentTime, duration || payload.currentTime))
+    : _state.currentTime
+
+  _state.currentTime = currentTime
+  _state.duration = duration
+  emitTimeUpdate()
 }
 
 export function nextTrack(): void {
@@ -316,6 +344,7 @@ export function onTrackEnded(): void {
       _state.isPlaying = false
       _state.playbackState = 'idle'
       _state.currentTime = 0
+      emitTimeUpdate()
       updateMprisPlayingState('idle')
       emitPlaybackState()
     }

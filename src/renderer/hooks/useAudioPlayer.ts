@@ -3,6 +3,12 @@ import { usePlayerStore } from '@/stores/playerStore'
 import { useEqStore } from '@/stores/eqStore'
 import { getToastStore } from '@/stores/toastStore'
 import { getAudioContext } from '@/lib/audioContext'
+import type {
+  PlaybackProgressPayload,
+  PlaybackStatePayload,
+  SeekPayload,
+  TrackLoadPayload,
+} from '../../shared/types/playback'
 
 const EQ_FREQS = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 
@@ -10,11 +16,21 @@ let audioElement: HTMLAudioElement | null = null
 let mediaSourceNode: MediaElementAudioSourceNode | null = null
 let gainNode: GainNode | null = null
 let eqNodes: BiquadFilterNode[] | null = null
+let lastProgressSyncAt = 0
+
+function syncPlaybackProgress(payload: PlaybackProgressPayload): void {
+  const now = Date.now()
+  if (now - lastProgressSyncAt < 250) return
+
+  lastProgressSyncAt = now
+  window.tplayerAPI.player.syncProgress(payload).catch(() => {})
+}
 
 function ensureAudioGraph() {
   if (!audioElement) {
     audioElement = new Audio()
     audioElement.crossOrigin = 'anonymous'
+    audioElement.preload = 'auto'
     
     const ctx = getAudioContext()
     mediaSourceNode = ctx.createMediaElementSource(audioElement)
@@ -54,6 +70,7 @@ function ensureAudioGraph() {
       const duration = audioElement.duration
       
       usePlayerStore.setState({ currentTime })
+      syncPlaybackProgress({ currentTime, duration })
 
       if (!playRecorded && duration > 0) {
         if (currentTime > 30 || currentTime > duration * 0.5) {
@@ -67,6 +84,12 @@ function ensureAudioGraph() {
     })
     
     audioElement.addEventListener('ended', () => {
+      if (audioElement) {
+        syncPlaybackProgress({
+          currentTime: audioElement.duration || audioElement.currentTime,
+          duration: audioElement.duration,
+        })
+      }
       window.tplayerAPI.player.trackEnded()
     })
 
@@ -105,7 +128,7 @@ export function useAudioPlayer() {
   useEffect(() => {
     ensureAudioGraph()
 
-    const cleanupLoad = window.tplayerAPI.player.onLoad((data: { url?: string; duration: number; startTime?: number }) => {
+    const cleanupLoad = window.tplayerAPI.player.onLoad((data: TrackLoadPayload) => {
       window.tplayerAPI.system.log?.('onLoad triggered', data)
       if (data.url && audioElement) {
         window.tplayerAPI.system.log?.('setting src and playing')
@@ -122,7 +145,7 @@ export function useAudioPlayer() {
       }
     })
 
-    const cleanupState = window.tplayerAPI.player.onPlaybackState((state: { state: string }) => {
+    const cleanupState = window.tplayerAPI.player.onPlaybackState((state: PlaybackStatePayload) => {
       if (state.state === 'paused') {
         audioElement?.pause()
       } else if (state.state === 'playing') {
@@ -133,7 +156,7 @@ export function useAudioPlayer() {
       }
     })
     
-    const cleanupSeekTo = window.tplayerAPI.player.onSeekTo?.((data: { time: number }) => {
+    const cleanupSeekTo = window.tplayerAPI.player.onSeekTo?.((data: SeekPayload) => {
        if (audioElement) {
          audioElement.currentTime = data.time
        }

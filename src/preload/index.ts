@@ -44,6 +44,7 @@ const tplayerAPI: TplayerAPI = {
     prev: () => ipcRenderer.invoke(IPC_CHANNELS.player.prev),
     trackEnded: () => ipcRenderer.invoke(IPC_CHANNELS.player.trackEnded),
     recordPlay: (trackId: number) => ipcRenderer.invoke(IPC_CHANNELS.player.recordPlay, trackId),
+    syncProgress: (payload) => ipcRenderer.invoke(IPC_CHANNELS.player.syncProgress, payload),
     seek: (time: number) => ipcRenderer.invoke(IPC_CHANNELS.player.seek, time),
     setVolume: (volume: number) => ipcRenderer.invoke(IPC_CHANNELS.player.setVolume, volume),
     toggleShuffle: () => ipcRenderer.invoke(IPC_CHANNELS.player.toggleShuffle),

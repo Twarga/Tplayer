@@ -24,7 +24,7 @@ import {
   toggleFavoriteTrack,
 } from './database'
 import { scanFolders } from './library-scanner'
-import { playTrack, pause, resume, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleShuffle, cycleRepeat, addToQueue, addNext, removeFromQueue, clearQueue, reorderQueue, getQueue, onTrackEnded, setQueue } from './audio-engine'
+import { playTrack, pause, resume, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleShuffle, cycleRepeat, addToQueue, addNext, removeFromQueue, clearQueue, reorderQueue, getQueue, onTrackEnded, setQueue, syncPlaybackProgress } from './audio-engine'
 import { isFFmpegAvailable } from './audio-decoder'
 import { clearDownloadHistory } from './yt-dlp'
 import { updateWatchedFolders } from './file-watcher'
@@ -111,6 +111,10 @@ function registerPlayerHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.player.recordPlay, async (_, trackId: number) => {
     recordTrackPlay(trackId)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.player.syncProgress, async (_, payload) => {
+    syncPlaybackProgress(payload)
   })
 
   ipcMain.handle(IPC_CHANNELS.player.seek, async (_, time: number) => {

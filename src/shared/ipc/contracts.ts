@@ -8,8 +8,10 @@ import type {
   YtSearchResult,
 } from '../types/domain'
 import type {
+  PlaybackProgressPayload,
   PlaybackStatePayload,
   QueueEntry,
+  SeekPayload,
   TimeUpdatePayload,
   TrackLoadPayload,
 } from '../types/playback'
@@ -81,6 +83,7 @@ export interface TplayerAPI {
     prev: () => Promise<void>
     trackEnded: () => Promise<void>
     recordPlay: (trackId: number) => Promise<void>
+    syncProgress: (payload: PlaybackProgressPayload) => Promise<void>
     seek: (time: number) => Promise<void>
     setVolume: (volume: number) => Promise<void>
     toggleShuffle: () => Promise<void>
@@ -88,7 +91,7 @@ export interface TplayerAPI {
     onPlaybackState: (callback: (data: PlaybackStatePayload) => void) => () => void
     onTimeUpdate: (callback: (data: TimeUpdatePayload) => void) => () => void
     onLoad: (callback: (data: TrackLoadPayload) => void) => () => void
-    onSeekTo: (callback: (data: { time: number }) => void) => () => void
+    onSeekTo: (callback: (data: SeekPayload) => void) => () => void
   }
   queue: {
     add: (trackId: number) => Promise<void>
