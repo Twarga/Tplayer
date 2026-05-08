@@ -69,13 +69,6 @@ function emitPlaybackState(): void {
   })
 }
 
-function emitTimeUpdate(): void {
-  send('player:time-update', {
-    current: _state.currentTime,
-    duration: _state.duration,
-  })
-}
-
 export async function playTrack(trackId: number): Promise<void> {
   _state.playbackState = 'loading'
   emitPlaybackState()

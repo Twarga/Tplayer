@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, BarChart3, Bell, ChevronDown, User } from 'lucide-react'
+import { Search, ChevronDown } from 'lucide-react'
 import { useLibraryStore } from '@/stores/libraryStore'
 import { Input } from '@/components/ui/input'
 
@@ -10,7 +10,8 @@ interface TopBarProps {
 export function TopBar({ onSearch }: TopBarProps) {
   const [searchValue, setSearchValue] = useState('')
   const { search } = useLibraryStore()
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -25,7 +26,17 @@ export function TopBar({ onSearch }: TopBarProps) {
   }
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        inputRef.current?.focus()
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    
     return () => {
+      window.removeEventListener('keydown', handleKeyDown)
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
   }, [])
@@ -35,6 +46,7 @@ export function TopBar({ onSearch }: TopBarProps) {
       <div className="relative flex-1 max-w-[500px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-tertiary pointer-events-none" />
         <Input
+          ref={inputRef}
           value={searchValue}
           onChange={handleSearch}
           placeholder="Search songs, artists, albums..."
@@ -46,21 +58,13 @@ export function TopBar({ onSearch }: TopBarProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="w-8 h-8 flex items-center justify-center text-tertiary hover:text-primary transition-colors">
-          <BarChart3 size={20} />
-        </button>
 
-        <button className="w-8 h-8 flex items-center justify-center text-tertiary hover:text-primary transition-colors relative">
-          <Bell size={20} />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-        </button>
-
-        <button className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-surface-2 transition-colors">
-          <div className="w-8 h-8 rounded-full bg-surface-3 flex items-center justify-center">
-            <User size={16} className="text-secondary" />
+        <button className="h-8 pl-1 pr-3 rounded-full bg-black/40 hover:bg-black/60 border border-border-default flex items-center gap-2 transition-colors group">
+          <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-background text-xs font-bold">
+            U
           </div>
-          <span className="text-sm font-medium text-primary">Younes</span>
-          <ChevronDown size={16} className="text-tertiary" />
+          <span className="text-sm font-medium text-primary">Local User</span>
+          <ChevronDown size={14} className="text-tertiary group-hover:text-primary transition-colors" />
         </button>
       </div>
     </div>

@@ -1,4 +1,3 @@
-import React from 'react'
 import { Shuffle, SkipBack, SkipForward, Repeat, Repeat1 } from 'lucide-react'
 import { usePlayerStore } from '@/stores/playerStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Home, Library, Music, Disc, Users, ListMusic, Folder, Compass, Settings, ChevronDown, Plus, ListOrdered } from 'lucide-react'
+import { Home, Library, ListMusic, Settings, ChevronDown, Plus, Download } from 'lucide-react'
 import { usePlaylistStore } from '@/stores/playlistStore'
 import { cn } from '@/lib/utils'
 
@@ -15,12 +15,18 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 w-full h-9 px-3 rounded-md text-sm font-medium transition-all duration-200",
+        "flex items-center gap-3 w-full h-9 px-3 rounded-md text-sm font-medium transition-all duration-200 relative",
         active
           ? 'bg-surface-3 text-primary'
           : 'text-secondary hover:bg-surface-2 hover:text-primary'
       )}
     >
+      <div 
+        className={cn(
+          "absolute left-0 top-1.5 bottom-1.5 w-1 bg-accent rounded-r-full transition-transform duration-300 origin-center",
+          active ? "scale-y-100" : "scale-y-0"
+        )} 
+      />
       <span className="w-5 h-5 flex items-center justify-center">{icon}</span>
       <span className="flex-1 text-left truncate">{label}</span>
     </button>
@@ -59,27 +65,15 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-0.5 px-2 flex-1 overflow-y-auto">
+      <nav className="flex flex-col gap-0.5 px-2 flex-1 overflow-y-auto mt-2">
         <NavItem icon={<Home size={20} />} label="Home" active={activeView === 'home'} onClick={() => onViewChange('home')} />
         <NavItem icon={<Library size={20} />} label="Library" active={activeView === 'library'} onClick={() => onViewChange('library')} />
-
-        <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-tertiary pt-4 px-3 pb-1.5">Your Music</p>
-
-        <NavItem icon={<Music size={20} />} label="Songs" onClick={() => onViewChange('library')} />
-        <NavItem icon={<Disc size={20} />} label="Albums" onClick={() => onViewChange('library')} />
-        <NavItem icon={<Users size={20} />} label="Artists" onClick={() => onViewChange('library')} />
-        <NavItem icon={<ListMusic size={20} />} label="Playlists" active={activeView === 'playlists'} onClick={() => onViewChange('playlists')} />
-        <NavItem icon={<Folder size={20} />} label="Folders" onClick={() => onViewChange('settings')} />
-
-        <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-tertiary pt-4 px-3 pb-1.5">Import & Discover</p>
-
         <NavItem
           icon={<span className="text-red-500"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></span>}
           label="YouTube Import"
           active={activeView === 'youtube'}
           onClick={() => onViewChange('youtube')}
         />
-        <NavItem icon={<Compass size={20} />} label="Discover" onClick={() => onViewChange('home')} />
 
         {/* Playlists Section */}
         <div className="flex items-center justify-between px-3 pt-4 pb-1.5">
@@ -106,7 +100,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
 
       {/* Bottom Actions */}
       <div className="px-2 pb-4 pt-2 flex flex-col gap-0.5 shrink-0 border-t border-border-subtle mt-2">
-        <NavItem icon={<ListOrdered size={20} />} label="Queue" onClick={() => onViewChange('queue')} />
+        <NavItem icon={<Download size={20} />} label="Downloads" active={activeView === 'downloads'} onClick={() => onViewChange('downloads')} />
         <NavItem icon={<Settings size={20} />} label="Settings" active={activeView === 'settings'} onClick={() => onViewChange('settings')} />
       </div>
 
@@ -127,13 +121,13 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowCreateDialog(false)}
-                className="px-4 py-2 rounded-md text-sm text-secondary hover:text-primary hover:bg-surface-2 transition-colors"
+                className="px-4 py-2 rounded-md text-sm text-secondary hover:text-primary hover:bg-surface-2 transition-all active:scale-95"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreatePlaylist}
-                className="px-4 py-2 rounded-md text-sm bg-accent text-background hover:bg-accent-hover transition-colors"
+                className="px-4 py-2 rounded-md text-sm bg-accent text-background hover:bg-accent-hover transition-all active:scale-95"
               >
                 Create
               </button>

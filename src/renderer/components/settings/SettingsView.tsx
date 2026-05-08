@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { FolderOpen, Plus, Trash2, RefreshCw } from 'lucide-react'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useLibraryStore } from '@/stores/libraryStore'
 import { Button } from '@/components/ui/button'
 import { useTheme } from '@/components/ThemeProvider'
+import { cn } from '@/lib/utils'
 
 const ACCENT_COLORS = [
   { name: 'Amber', value: 'amber', color: '#E8A87C' },
@@ -15,8 +16,8 @@ const ACCENT_COLORS = [
 ]
 
 export function SettingsView() {
-  const { musicFolders, settings, load, addFolder, removeFolder } = useSettingsStore()
-  const { loadTracks } = useLibraryStore()
+  const { musicFolders, load, addFolder, removeFolder } = useSettingsStore()
+  const { loadTracks, scanProgress } = useLibraryStore()
   const { theme, accent, setTheme, setAccent } = useTheme()
 
   useEffect(() => { load() }, [])
@@ -54,11 +55,34 @@ export function SettingsView() {
             <Plus size={16} className="mr-2" /> Add Folder
           </Button>
           {musicFolders.length > 0 && (
-            <Button onClick={() => loadTracks()} variant="ghost" size="sm">
-              <RefreshCw size={16} className="mr-2" /> Rescan All
+            <Button onClick={() => loadTracks()} variant="ghost" size="sm" disabled={!!scanProgress}>
+              <RefreshCw size={16} className={cn("mr-2", scanProgress ? "animate-spin" : "")} /> 
+              {scanProgress ? 'Scanning...' : 'Rescan All'}
             </Button>
           )}
         </div>
+
+        {scanProgress && (
+          <div className="mt-4 p-4 bg-surface-1 rounded-md border border-border-subtle">
+            <div className="flex justify-between items-end mb-2">
+              <div>
+                <p className="text-sm font-medium text-primary mb-1">Scanning Library</p>
+                <p className="text-xs text-tertiary truncate max-w-[400px]" title={scanProgress.path}>
+                  {scanProgress.path}
+                </p>
+              </div>
+              <span className="text-xs font-semibold text-accent">
+                {scanProgress.processed} / {scanProgress.total}
+              </span>
+            </div>
+            <div className="w-full h-1.5 bg-surface-3 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-accent transition-all duration-300"
+                style={{ width: `${scanProgress.total > 0 ? (scanProgress.processed / scanProgress.total) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="mb-8">

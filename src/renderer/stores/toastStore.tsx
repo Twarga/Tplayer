@@ -14,14 +14,22 @@ interface ToastStore {
   remove: (id: string) => void
 }
 
-const ToastContext = createContext<ToastStore>({
+const defaultToastStore: ToastStore = {
   toasts: [],
   add: () => {},
   remove: () => {},
-})
+}
+
+let toastStoreRef: ToastStore = defaultToastStore
+
+const ToastContext = createContext<ToastStore>(defaultToastStore)
 
 export function useToast() {
   return useContext(ToastContext)
+}
+
+export function getToastStore(): ToastStore {
+  return toastStoreRef
 }
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
@@ -39,8 +47,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }
 
+  toastStoreRef = { toasts, add, remove }
+
   return (
-    <ToastContext.Provider value={{ toasts, add, remove }}>
+    <ToastContext.Provider value={toastStoreRef}>
       {children}
       <ToastContainer toasts={toasts} onRemove={remove} />
     </ToastContext.Provider>

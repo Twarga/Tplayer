@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { usePlayerStore } from '@/stores/playerStore'
 import { useLibraryStore } from '@/stores/libraryStore'
-import { useQueueStore } from '@/stores/queueStore'
-import { Play, Clock, ChevronRight } from 'lucide-react'
-import { cn, formatDuration } from '@/lib/utils'
+import { Play, Pause, ChevronRight } from 'lucide-react'
+import { PlayingBars } from '@/components/ui/PlayingBars'
 
-export function HomeView() {
+interface HomeViewProps {
+  onViewChange?: (view: string) => void
+}
+
+export function HomeView({ onViewChange }: HomeViewProps) {
   const { tracks, loadTracks } = useLibraryStore()
-  const { play } = usePlayerStore()
-  const { add: addToQueue } = useQueueStore()
+  const { play, isPlaying, currentTrack } = usePlayerStore()
   const [greeting, setGreeting] = useState('Good evening')
 
   useEffect(() => {
@@ -16,7 +18,10 @@ export function HomeView() {
     if (hour < 12) setGreeting('Good morning')
     else if (hour < 18) setGreeting('Good afternoon')
     else setGreeting('Good evening')
-    loadTracks()
+    
+    if (tracks.length === 0) {
+      loadTracks()
+    }
   }, [])
 
   const recentTracks = tracks.slice(0, 6)
@@ -24,10 +29,6 @@ export function HomeView() {
   const handlePlay = useCallback((trackId: number) => {
     play(trackId)
   }, [play])
-
-  const handleAddToQueue = useCallback((trackId: number) => {
-    addToQueue(trackId)
-  }, [addToQueue])
 
   return (
     <div className="p-6 overflow-y-auto h-full animate-fade-in">
@@ -53,12 +54,19 @@ export function HomeView() {
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); handlePlay(track.id) }}
-                    className="absolute bottom-3 right-3 w-12 h-12 rounded-full bg-accent text-background flex items-center justify-center shadow-play-button opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-spring hover:scale-105"
+                    className="absolute bottom-3 right-3 w-12 h-12 rounded-full bg-accent text-background flex items-center justify-center shadow-play-button opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-spring hover:scale-105 active:scale-95"
                   >
-                    <Play size={20} fill="currentColor" className="ml-0.5" />
+                    {isPlaying && currentTrack?.id === track.id ? (
+                      <Pause size={20} fill="currentColor" />
+                    ) : (
+                      <Play size={20} fill="currentColor" className="ml-0.5" />
+                    )}
                   </button>
                 </div>
-                <p className="text-sm font-semibold text-primary truncate mb-0.5">{track.title}</p>
+                <p className="text-sm font-semibold text-primary truncate mb-0.5 flex items-center gap-2">
+                  {track.title}
+                  {isPlaying && currentTrack?.id === track.id && <PlayingBars />}
+                </p>
                 <p className="text-[13px] text-secondary truncate">{track.artist}</p>
               </div>
             ))}
@@ -71,7 +79,10 @@ export function HomeView() {
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-h2 text-primary">Recently added</h2>
-            <button className="text-caption text-tertiary hover:text-primary flex items-center gap-1 transition-colors">
+            <button 
+              className="text-caption text-tertiary hover:text-primary flex items-center gap-1 transition-colors"
+              onClick={() => onViewChange?.('library')}
+            >
               See all <ChevronRight size={14} />
             </button>
           </div>
@@ -87,7 +98,10 @@ export function HomeView() {
                     {track.title?.[0] || '♪'}
                   </div>
                 </div>
-                <p className="text-[13px] font-medium text-primary truncate">{track.title}</p>
+                <p className="text-[13px] font-medium text-primary truncate flex items-center gap-2">
+                  {track.title}
+                  {isPlaying && currentTrack?.id === track.id && <PlayingBars />}
+                </p>
                 <p className="text-xs text-secondary truncate">{track.artist}</p>
               </div>
             ))}

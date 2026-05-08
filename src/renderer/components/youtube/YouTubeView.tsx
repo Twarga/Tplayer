@@ -1,21 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useYouTubeStore } from '@/stores/youtubeStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Download, X, FolderOpen, Clock, Zap, HardDrive } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export function YouTubeView() {
-  const { searchResults, isSearching, downloads, search, download, init, clearHistory } = useYouTubeStore()
+  const { searchResults, isSearching, downloads, search, download, cancelDownload, clearHistory } = useYouTubeStore()
   const [query, setQuery] = useState('')
   const [urlInput, setUrlInput] = useState('')
-
-  useEffect(() => { init() }, [])
 
   const handleSearch = async () => {
     if (!query.trim()) return
     await search(query.trim())
   }
 
-  const handleDownload = async () => {
+  const handleDownloadUrl = async () => {
     if (!urlInput.trim()) return
     const url = urlInput.trim()
     const videoId = extractVideoId(url)
@@ -31,7 +31,7 @@ export function YouTubeView() {
   }
 
   return (
-    <div className="p-6 overflow-y-auto h-full">
+    <div className="p-6 overflow-y-auto h-full animate-fade-in">
       <h1 className="text-2xl font-bold text-primary mb-6">YouTube Import</h1>
 
       <div className="flex gap-3 mb-6">
@@ -52,10 +52,11 @@ export function YouTubeView() {
           placeholder="Paste YouTube URL to download..."
           value={urlInput}
           onChange={(e) => setUrlInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleDownload()}
+          onKeyDown={(e) => e.key === 'Enter' && handleDownloadUrl()}
           className="flex-1"
         />
-        <Button onClick={handleDownload} variant="outline">
+        <Button onClick={handleDownloadUrl} variant="outline">
+          <Download size={16} className="mr-2" />
           Download
         </Button>
       </div>
@@ -63,7 +64,7 @@ export function YouTubeView() {
       {searchResults.length > 0 && (
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-primary mb-4">Search Results</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
             {searchResults.map((result) => (
               <div key={result.videoId} className="bg-surface-1 rounded-lg overflow-hidden hover:bg-surface-2 transition-colors group">
                 <div className="aspect-video bg-surface-2 relative">
@@ -85,8 +86,9 @@ export function YouTubeView() {
                     variant="default"
                     size="sm"
                     className="w-full"
-                    onClick={() => download(`https://youtube.com/watch?v=${result.videoId}`, result.videoId)}
+                    onClick={() => download(`https://youtube.com/watch?v=${result.videoId}`, result.videoId, result.title)}
                   >
+                    <Download size={14} className="mr-2" />
                     Download
                   </Button>
                 </div>
@@ -106,21 +108,79 @@ export function YouTubeView() {
           </div>
           <div className="space-y-2">
             {downloads.map((item) => (
-              <div key={item.id} className="bg-surface-1 rounded-md p-4 flex items-center gap-4">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-primary truncate">{item.title}</p>
-                  <p className="text-xs text-secondary capitalize">{item.status}</p>
-                </div>
-                {item.status === 'downloading' && (
-                  <div className="w-32">
-                    <div className="h-1 bg-surface-3 rounded-full overflow-hidden">
-                      <div className="h-full bg-accent transition-all" style={{ width: `${item.progress}%` }} />
+              <div key={item.id} className="bg-surface-1 rounded-md p-4">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-primary truncate">{item.title}</p>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className={cn(
+                        "text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider",
+                        item.status === 'done' ? "bg-green-500/20 text-green-400" :
+                        item.status === 'failed' ? "bg-red-500/20 text-red-400" :
+                        "bg-accent/20 text-accent"
+                      )}>
+                        {item.status}
+                      </span>
+                      {item.size && (
+                        <span className="text-[10px] text-tertiary flex items-center gap-1">
+                          <HardDrive size={10} />
+                          {item.size}
+                        </span>
+                      )}
+                      {item.speed && (
+                        <span className="text-[10px] text-tertiary flex items-center gap-1">
+                          <Zap size={10} />
+                          {item.speed}
+                        </span>
+                      )}
+                      {item.eta && (
+                        <span className="text-[10px] text-tertiary flex items-center gap-1">
+                          <Clock size={10} />
+                          {item.eta}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-[10px] text-tertiary text-right mt-1">{Math.round(item.progress)}%</p>
+                    {item.folder && (
+                      <p className="text-[10px] text-tertiary mt-1 flex items-center gap-1">
+                        <FolderOpen size={10} />
+                        {item.folder}
+                      </p>
+                    )}
+                  </div>
+
+                  {item.status === 'downloading' && (
+                    <button
+                      onClick={() => cancelDownload(item.videoId)}
+                      className="text-tertiary hover:text-red-400 transition-colors"
+                      title="Cancel"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+
+                {(item.status === 'downloading' || item.status === 'pending') && (
+                  <div className="w-full">
+                    <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-accent transition-all duration-300 rounded-full"
+                        style={{ width: `${item.progress}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span className="text-[10px] text-tertiary">{Math.round(item.progress)}%</span>
+                      {item.speed && <span className="text-[10px] text-tertiary">{item.speed}</span>}
+                    </div>
                   </div>
                 )}
-                {item.status === 'done' && <span className="text-xs text-accent">Done</span>}
-                {item.status === 'failed' && <span className="text-xs text-red-500">{item.error || 'Failed'}</span>}
+
+                {item.status === 'done' && item.path && (
+                  <p className="text-[10px] text-accent mt-2 truncate">{item.path}</p>
+                )}
+
+                {item.status === 'failed' && item.error && (
+                  <p className="text-[10px] text-red-400 mt-2">{item.error}</p>
+                )}
               </div>
             ))}
           </div>

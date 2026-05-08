@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { api } from '@/lib/ipc'
-import { useToast } from './toastStore'
+import { getToastStore } from './toastStore'
 import { useLibraryStore } from './libraryStore'
 import type {
   DownloadDonePayload,
@@ -65,7 +65,7 @@ export const useYouTubeStore = create<YouTubeStore>((set) => ({
             d.id === id ? { ...d, status: 'done' as const, progress: 100, title: title || d.title, path } : d
           ),
         }))
-        useToast.getState().add(`Download complete: ${title || 'Track'}`, 'success')
+        getToastStore().add(`Download complete: ${title || 'Track'}`, 'success')
         useLibraryStore.getState().loadTracks()
       }),
 
@@ -75,7 +75,7 @@ export const useYouTubeStore = create<YouTubeStore>((set) => ({
             d.id === id ? { ...d, status: 'failed' as const, error } : d
           ),
         }))
-        useToast.getState().add(`Download failed: ${error}`, 'error')
+        getToastStore().add(`Download failed: ${error}`, 'error')
       }),
 
       api.youtube.onDownloadCancelled(({ videoId }: { videoId: string }) => {

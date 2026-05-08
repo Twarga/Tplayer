@@ -34,7 +34,6 @@ export function useTheme() {
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('dark')
   const [accent, setAccentState] = useState('amber')
-  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     // Ensure dark class is set on mount
@@ -50,11 +49,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         document.documentElement.classList.add('light')
         document.documentElement.classList.remove('dark')
       }
-      setLoaded(true)
     }).catch(() => {
       // Default to dark on error
       document.documentElement.classList.add('dark')
-      setLoaded(true)
     })
     
     api.settings.get('accent_color').then((val) => {

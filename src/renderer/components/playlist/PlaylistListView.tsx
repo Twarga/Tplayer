@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Play, Plus, Trash2, Edit3 } from 'lucide-react'
 import { usePlaylistStore } from '@/stores/playlistStore'
-import { usePlayerStore } from '@/stores/playerStore'
-import { cn } from '@/lib/utils'
 
 export function PlaylistListView() {
   const { playlists, loadPlaylists, createPlaylist, deletePlaylist, isLoading } = usePlaylistStore()
-  const { play } = usePlayerStore()
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)

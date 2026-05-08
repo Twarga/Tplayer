@@ -1,10 +1,10 @@
-import React from 'react'
 import { cn } from '@/lib/utils'
 
 interface QualityBadgesProps {
   format?: string
-  bitDepth?: number
-  sampleRate?: number
+  bitDepth?: number | null
+  sampleRate?: number | null
+  bitrate?: number | null
   className?: string
 }
 
@@ -19,7 +19,7 @@ const BADGE_LABELS: Record<string, string> = {
   OPUS: 'OPUS',
 }
 
-export function QualityBadges({ format, bitDepth, sampleRate, className }: QualityBadgesProps) {
+export function QualityBadges({ format, bitDepth, sampleRate, bitrate, className }: QualityBadgesProps) {
   const badges: string[] = []
 
   if (format) {
@@ -34,6 +34,10 @@ export function QualityBadges({ format, bitDepth, sampleRate, className }: Quali
   if (sampleRate) {
     const kHz = sampleRate >= 1000 ? `${(sampleRate / 1000).toFixed(1)} kHz` : `${sampleRate} Hz`
     badges.push(kHz)
+  }
+
+  if (bitrate) {
+    badges.push(`${Math.round(bitrate / 1000)} kbps`)
   }
 
   const isLossless = format && ['FLAC', 'ALAC', 'WAV', 'AIFF'].includes(format.toUpperCase())
