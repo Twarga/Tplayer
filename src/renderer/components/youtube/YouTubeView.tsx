@@ -56,13 +56,27 @@ export function YouTubeView() {
   }
 
   const downloadByVideoId = new Map(downloads.map((item) => [item.videoId, item]))
+  const firstResult = searchResults[0]
+  const secondaryResults = searchResults.slice(1)
 
   return (
     <div className="h-full overflow-y-auto px-8 pb-28 animate-fade-in">
       <section className="mb-6 border-b border-white/[0.06] pb-5">
+        <div className="mb-3 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">YouTube Import</p>
+            <p className="mt-1 text-sm text-secondary">
+              Search by title, artist, or paste a YouTube link.
+            </p>
+          </div>
+          {downloads.length > 0 && (
+            <p className="text-xs uppercase tracking-[0.18em] text-tertiary">{downloads.length} imports</p>
+          )}
+        </div>
+
         <div className="flex gap-3">
           <Input
-            placeholder="Search YouTube or paste a URL..."
+            placeholder="Search YouTube or paste a URL"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value)
@@ -91,127 +105,52 @@ export function YouTubeView() {
       </section>
 
       <section className="mb-8">
-        <div className="flex items-end justify-between gap-4 mb-4">
-          <div>
-            <h2 className="text-lg font-semibold text-primary">Search Results</h2>
-            <p className="text-sm text-secondary">
-              {isSearching
-                ? 'Looking up tracks...'
-                : hasSearched && lastQuery
-                  ? `Results for "${lastQuery}"`
-                  : 'Start with a search to review tracks before downloading.'}
-            </p>
-          </div>
-        </div>
-
         {isSearching ? (
-          <div className="border-y border-white/[0.06] p-10">
-            <div className="flex flex-col items-center justify-center text-center">
-              <Loader2 size={24} className="animate-spin text-accent mb-3" />
-              <p className="text-sm font-medium text-primary">Searching YouTube</p>
-              <p className="text-xs text-tertiary mt-1">Fetching real results from `yt-dlp`.</p>
+          <div className="border-y border-white/[0.06] py-8">
+            <Loader2 size={22} className="animate-spin text-accent mb-3" />
+            <p className="text-sm font-medium text-primary">Searching YouTube</p>
+            <p className="text-xs text-tertiary mt-1">Fetching results from yt-dlp.</p>
+          </div>
+        ) : firstResult ? (
+          <>
+            <div className="mb-5">
+              <p className="text-xs uppercase tracking-[0.18em] text-tertiary">
+                {lastQuery ? `Results for "${lastQuery}"` : 'Search results'}
+              </p>
             </div>
-          </div>
-        ) : searchResults.length > 0 ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
-            {searchResults.map((result) => {
-              const downloadItem = downloadByVideoId.get(result.videoId)
-              const isActive = downloadItem?.status === 'downloading'
-              const isDone = downloadItem?.status === 'done'
 
-              return (
-                <div
-                  key={result.videoId}
-                  className="group overflow-hidden border-b border-white/[0.06] pb-4 interactive-soft"
-                >
-                  <div className="aspect-video bg-surface-2 relative overflow-hidden">
-                    {result.thumbnail ? (
-                      <img
-                        src={result.thumbnail}
-                        alt={result.title}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-[radial-gradient(circle_at_top_left,rgba(232,168,124,0.18),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.04),transparent)] flex items-center justify-center text-tertiary">
-                        No thumbnail
-                      </div>
-                    )}
+            <FeaturedResult
+              result={firstResult}
+              downloadItem={downloadByVideoId.get(firstResult.videoId)}
+              onDownload={() => download(`https://youtube.com/watch?v=${firstResult.videoId}`, firstResult.videoId, firstResult.title)}
+            />
 
-                    <div className="absolute inset-x-0 bottom-0 p-3 flex items-end justify-between bg-gradient-to-t from-black/55 to-transparent">
-                      <div className="bg-black/45 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80 max-w-[65%] truncate">
-                        {result.channel}
-                      </div>
-                      <div className="bg-black/70 px-2 py-1 text-[11px] font-medium text-white">
-                        {result.duration}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4">
-                    <p className="text-sm font-semibold text-primary line-clamp-2 min-h-[2.75rem]">{result.title}</p>
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <p className="text-xs text-tertiary truncate">{result.channel}</p>
-                      {downloadItem && (
-                        <span
-                          className={cn(
-                            'shrink-0 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]',
-                            isDone
-                              ? 'bg-green-500/15 text-green-300'
-                              : isActive
-                                ? 'bg-accent/15 text-accent'
-                                : downloadItem.status === 'cancelled'
-                                  ? 'bg-yellow-500/15 text-yellow-300'
-                                : downloadItem.status === 'failed'
-                                  ? 'bg-red-500/15 text-red-300'
-                                  : 'bg-surface-3 text-secondary'
-                          )}
-                        >
-                          {downloadItem.status}
-                        </span>
-                      )}
-                    </div>
-
-                    <Button
-                      variant={isDone ? 'outline' : 'default'}
-                      size="sm"
-                      className="w-full mt-4"
-                      disabled={isActive}
-                      onClick={() => download(`https://youtube.com/watch?v=${result.videoId}`, result.videoId, result.title)}
-                    >
-                      {isDone ? (
-                        <>
-                          <CheckCircle2 size={14} className="mr-2" />
-                          Downloaded
-                        </>
-                      ) : isActive ? (
-                        <>
-                          <Loader2 size={14} className="mr-2 animate-spin" />
-                          Downloading
-                        </>
-                      ) : (
-                        <>
-                          <Download size={14} className="mr-2" />
-                          Download
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+            {secondaryResults.length > 0 && (
+              <div className="mt-6 divide-y divide-white/[0.06] border-y border-white/[0.06]">
+                {secondaryResults.map((result) => {
+                  const downloadItem = downloadByVideoId.get(result.videoId)
+                  return (
+                    <ResultRow
+                      key={result.videoId}
+                      result={result}
+                      downloadItem={downloadItem}
+                      onDownload={() => download(`https://youtube.com/watch?v=${result.videoId}`, result.videoId, result.title)}
+                    />
+                  )
+                })}
+              </div>
+            )}
+          </>
         ) : (
-          <div className="border-y border-dashed border-white/[0.12] p-10">
-            <div className="max-w-md">
-              <p className="text-sm font-semibold text-primary">
-                {hasSearched ? 'No results matched that search.' : 'Search results will appear here.'}
-              </p>
-              <p className="text-sm text-secondary mt-2 leading-6">
-                {hasSearched
-                  ? 'Try a broader artist name, remove extra punctuation, or paste a direct URL if you already know the track.'
-                  : 'Search by song title, artist, or mix name to import a track with cleaner context and fewer mistakes.'}
-              </p>
-            </div>
+          <div className="border-y border-dashed border-white/[0.12] py-10">
+            <p className="text-sm font-semibold text-primary">
+              {hasSearched ? 'No results matched that search.' : 'Ready to import.'}
+            </p>
+            <p className="mt-2 max-w-md text-sm leading-6 text-secondary">
+              {hasSearched
+                ? 'Try a cleaner artist and title, or paste the exact YouTube URL.'
+                : 'Search for music or paste a direct URL to bring it into your local library.'}
+            </p>
           </div>
         )}
       </section>
@@ -219,10 +158,7 @@ export function YouTubeView() {
       {downloads.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-semibold text-primary">Download Activity</h2>
-              <p className="text-sm text-secondary">Recent imports, active transfers, and any failures that need attention.</p>
-            </div>
+            <p className="text-xs uppercase tracking-[0.18em] text-tertiary">Download Activity</p>
             <button onClick={clearHistory} className="text-xs text-tertiary hover:text-primary interactive-soft">
               Clear history
             </button>
@@ -237,14 +173,14 @@ export function YouTubeView() {
                     <div className="flex items-center gap-3 mt-1">
                       <span
                         className={cn(
-                          'text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider',
+                          'text-[10px] uppercase font-bold tracking-wider',
                           item.status === 'done'
-                            ? 'bg-green-500/20 text-green-400'
+                            ? 'text-green-400'
                             : item.status === 'cancelled'
-                              ? 'bg-yellow-500/20 text-yellow-300'
+                              ? 'text-yellow-300'
                             : item.status === 'failed'
-                              ? 'bg-red-500/20 text-red-400'
-                              : 'bg-accent/20 text-accent'
+                              ? 'text-red-400'
+                              : 'text-accent'
                         )}
                       >
                         {item.status}
@@ -293,9 +229,9 @@ export function YouTubeView() {
 
                 {(item.status === 'downloading' || item.status === 'pending') && (
                   <div className="w-full">
-                    <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
+                    <div className="h-[3px] bg-white/16 overflow-hidden">
                       <div
-                        className="h-full bg-accent transition-all duration-300 rounded-full"
+                        className="h-full bg-accent transition-all duration-300"
                         style={{ width: `${item.progress}%` }}
                       />
                     </div>
@@ -318,6 +254,106 @@ export function YouTubeView() {
           </div>
         </section>
       )}
+    </div>
+  )
+}
+
+function FeaturedResult({
+  result,
+  downloadItem,
+  onDownload,
+}: {
+  result: {
+    videoId: string
+    title: string
+    channel: string
+    duration: string
+    thumbnail?: string
+  }
+  downloadItem?: {
+    status: string
+  }
+  onDownload: () => void
+}) {
+  const isActive = downloadItem?.status === 'downloading'
+  const isDone = downloadItem?.status === 'done'
+
+  return (
+    <div className="grid gap-5 border-y border-white/[0.06] py-5 md:grid-cols-[minmax(220px,0.38fr)_minmax(0,1fr)]">
+      <div className="aspect-video overflow-hidden bg-white/[0.04]">
+        {result.thumbnail ? (
+          <img src={result.thumbnail} alt={result.title} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-tertiary">No thumbnail</div>
+        )}
+      </div>
+      <div className="flex min-w-0 flex-col justify-between">
+        <div>
+          <p className="mb-2 text-[11px] uppercase tracking-[0.18em] text-accent">Best match</p>
+          <h2 className="line-clamp-3 text-2xl font-bold leading-tight text-primary">{result.title}</h2>
+          <p className="mt-2 text-sm text-secondary">{result.channel}</p>
+          <p className="mt-1 text-xs text-tertiary">{result.duration}</p>
+        </div>
+        <button
+          onClick={onDownload}
+          disabled={isActive}
+          className={cn(
+            'mt-5 inline-flex w-fit items-center gap-2 border-b px-1 pb-1 text-sm font-semibold interactive-soft',
+            isDone ? 'border-green-400 text-green-300' : 'border-accent text-accent hover:text-primary',
+            isActive && 'cursor-wait opacity-60'
+          )}
+        >
+          {isDone ? <CheckCircle2 size={15} /> : isActive ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+          {isDone ? 'Downloaded' : isActive ? 'Downloading' : 'Import track'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ResultRow({
+  result,
+  downloadItem,
+  onDownload,
+}: {
+  result: {
+    videoId: string
+    title: string
+    channel: string
+    duration: string
+    thumbnail?: string
+  }
+  downloadItem?: {
+    status: string
+  }
+  onDownload: () => void
+}) {
+  const isActive = downloadItem?.status === 'downloading'
+  const isDone = downloadItem?.status === 'done'
+
+  return (
+    <div className="grid grid-cols-[78px_minmax(0,1fr)_auto] items-center gap-4 py-3">
+      <div className="aspect-video overflow-hidden bg-white/[0.04]">
+        {result.thumbnail ? (
+          <img src={result.thumbnail} alt="" className="h-full w-full object-cover" />
+        ) : null}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-primary">{result.title}</p>
+        <p className="mt-1 truncate text-xs text-secondary">{result.channel} • {result.duration}</p>
+      </div>
+      <button
+        onClick={onDownload}
+        disabled={isActive}
+        className={cn(
+          'flex items-center gap-2 border-b px-1 pb-1 text-xs font-semibold interactive-soft',
+          isDone ? 'border-green-400 text-green-300' : 'border-accent text-accent hover:text-primary',
+          isActive && 'cursor-wait opacity-60'
+        )}
+      >
+        {isDone ? <CheckCircle2 size={14} /> : isActive ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+        {isDone ? 'Done' : isActive ? 'Active' : 'Import'}
+      </button>
     </div>
   )
 }
