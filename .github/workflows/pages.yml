@@ -7,6 +7,7 @@ on:
     paths:
       - 'site/**'
       - 'assets/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 permissions:
