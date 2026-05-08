@@ -2,121 +2,139 @@
 
 A polished local-first desktop music player with YouTube import.
 
-Tplayer is built for focused listening: fast local playback, clean queue control, imported tracks beside your albums, Last.fm scrobbling, Linux media-key support, and a warm dark interface that puts the music first.
+Tplayer turns a local music folder into a refined daily player: fast playback, clean queue control, imported tracks beside your albums, Last.fm scrobbling, Linux media-key support, and a warm dark interface built around the music instead of filler dashboards.
 
-Brand direction for screenshots, release copy, and the upcoming landing page lives in [docs/brand.md](docs/brand.md).
+[Brand guide](docs/brand.md) · [Releases](https://github.com/Twarga/Tplayer/releases) · [Roadmap](remake.md)
+
+## Status
+
+Tplayer is in active MVP hardening. The app can be developed locally now; packaged public builds are the next release-track milestone.
+
+Planned release targets:
+
+- Linux AppImage
+- Windows installer or portable executable
+- GitHub Releases with versioned artifacts
+- GitHub Pages landing page
 
 ## Features
 
-- **Beautiful Dark UI** — Warm amber accent (#E8A87C), three-column layout with sidebar, main content, and now-playing panel
-- **Local Music Library** — Scan folders, extract metadata (artist, album, title, duration, etc.) using music-metadata
-- **YouTube Download** — Search and download audio from YouTube via yt-dlp
-- **Equalizer** — 10-band EQ with presets (Rock, Pop, Jazz, Classical, etc.)
-- **Playlist Management** — Create, rename, delete, reorder playlists
-- **Last.fm Scrobbling** — Track your listening history
-- **MPRIS Integration** — Control playback from Linux media keys (playerctl)
-- **Keyboard Shortcuts** — Space (play/pause), arrows (seek), Ctrl+K (search), Ctrl+\ (toggle panel)
-- **Dark/Light Themes** — Warm amber, green, blue, purple, orange, pink accent colors
-- **Real-time File Watching** — Auto-detect new music files using chokidar
+- Local-first library scanning for music folders.
+- Playback with queue, seek, shuffle, repeat, and volume control.
+- YouTube search and audio import for building a personal library.
+- Persistent download history.
+- Playlists, albums, artists, folders, and library browsing.
+- Last.fm now-playing and scrobbling support.
+- MPRIS integration for Linux media controls.
+- Equalizer support with presets and persistence.
+- Keyboard shortcuts for fast control.
+- Dark editorial interface with warm amber/gold accents.
 
-## Tech Stack
+## Screenshots
 
-- **Electron 33** + **electron-vite** for desktop shell and build
-- **React 18** + **TypeScript** for the UI
-- **Tailwind CSS** for styling
-- **Zustand 5** for state management
-- **better-sqlite3** for the music library database
-- **fluent-ffmpeg** for audio decoding
-- **chokidar** for file watching
-- **yt-dlp** for YouTube search and download
-- **shadcn/ui** (Radix primitives) for UI components
+Public screenshots are being prepared for the release and landing page pass. They should follow the visual rules in [docs/brand.md](docs/brand.md): real app screens, strong album-art focus, warm dark palette, and no generic nested-card marketing mockups.
 
-## Getting Started
+Recommended screenshot set:
 
-### Prerequisites
+- Home with active playback.
+- Library with real local tracks.
+- YouTube Import with search and import states.
+- Downloads with completed and active imports.
 
-- Node.js 18+
-- npm
-- FFmpeg
-- yt-dlp
+## Downloads
 
-### Install
+Packaged downloads will be published on the [GitHub Releases page](https://github.com/Twarga/Tplayer/releases).
+
+Until the first packaged release is available, run Tplayer from source using the development steps below.
+
+## Requirements
+
+- Node.js 18 or newer.
+- npm.
+- FFmpeg available on your system path.
+- `yt-dlp` available on your system path for YouTube import.
+- Linux is the primary supported desktop during development.
+
+Windows packaging is planned, but daily development and MPRIS support are Linux-first.
+
+## Development
+
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-### Development
+Run the app in development:
 
 ```bash
 npm run dev
 ```
 
-### Build
-
-```bash
-npm run build
-```
-
-Output in `out/` directory:
-- `out/main/` — Electron main process
-- `out/preload/` — Preload script
-- `out/renderer/` — React app (HTML + JS + CSS)
-
-### Type Check
+Typecheck:
 
 ```bash
 npm run typecheck
 ```
 
-## Architecture
+Compile the Electron/Vite app:
 
+```bash
+npm run build
 ```
-src/
-├── main/           # Electron main process
-│   ├── index.ts         # App entry, window creation
-│   ├── database.ts      # better-sqlite3 DB (6 tables)
-│   ├── ipc-registry.ts  # All IPC handlers
-│   ├── library-scanner.ts
-│   ├── file-watcher.ts
-│   ├── audio-decoder.ts  # FFmpeg → PCM f32le
-│   ├── audio-engine.ts  # Playback controller
-│   ├── yt-dlp.ts        # YouTube search/download
-│   ├── lastfm.ts        # Last.fm scrobbling
-│   └── mpris.ts        # Linux MPRIS integration
-├── preload/        # contextBridge API
-└── renderer/       # React app
-    ├── components/
-    │   ├── layout/      # Sidebar, TopBar, NowPlayingPanel, MiniPlayerBar
-    │   ├── player/      # AudioVisualizer, QualityBadges, PlayerControls, SeekBar, VolumeControl
-    │   ├── home/        # HomeView
-    │   ├── library/     # LibraryView
-    │   ├── playlist/    # PlaylistListView
-    │   ├── youtube/     # YouTubeView
-    │   ├── equalizer/   # EqualizerView
-    │   ├── settings/    # SettingsView
-    │   └── ui/          # Button, Input, Slider, Dialog, etc.
-    ├── stores/          # Zustand stores (player, library, playlist, queue, youtube, eq, settings)
-    └── lib/             # types, utils, ipc, animations
-```
+
+`npm run build` outputs compiled files to `out/`. Installable desktop packages will be added in the packaging phase.
 
 ## Keyboard Shortcuts
 
 | Shortcut | Action |
-|----------|--------|
-| Space | Play/Pause |
-| ← / → | Seek ±5s |
-| Ctrl+← / Ctrl+→ | Previous/Next track |
-| Ctrl+K | Focus search |
-| Ctrl+\ | Toggle Now Playing panel |
+| --- | --- |
+| `Space` | Play or pause |
+| `Left` / `Right` | Seek backward or forward |
+| `Ctrl+Left` / `Ctrl+Right` | Previous or next track |
+| `Ctrl+K` | Focus search |
+| `Ctrl+\` | Toggle the now-playing panel |
 
-## Database Schema
+## Tech Stack
 
-6 tables: `tracks`, `covers`, `playlists`, `playlist_tracks`, `downloads`, `settings`
+- Electron 33 with electron-vite.
+- React 19 and TypeScript.
+- Tailwind CSS.
+- Zustand for client state.
+- better-sqlite3 for the local library database.
+- music-metadata for audio metadata.
+- fluent-ffmpeg for audio decoding support.
+- chokidar for library file watching.
+- dbus-next for MPRIS integration.
 
-## IPC Channels
+## Project Structure
 
-40+ IPC channels across: library, player, queue, playlist, youtube, settings, eq, lastfm
+```text
+src/
+├── main/       Electron main process, database, playback, integrations
+├── preload/    Safe renderer bridge
+├── renderer/   React interface, stores, views, player UI
+└── shared/     Shared types and utilities
+```
+
+Key docs:
+
+- [Brand guide](docs/brand.md): public identity, voice, colors, screenshot direction.
+- [Remake plan](remake.md): completed MVP work and post-MVP release plan.
+
+## Release Plan
+
+The release track is split into small tasks:
+
+- `B1`: brand direction.
+- `B2`: README remake.
+- `B3`: repo hygiene.
+- `B4`: metadata and icons.
+- `B5`: Linux and Windows packaging.
+- `B6`: GitHub release workflow.
+- `B7`: manual release checklist.
+- `B8` to `B10`: GitHub Pages landing page.
+- `B11`: public launch pass.
 
 ## License
 
