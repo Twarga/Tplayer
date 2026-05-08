@@ -1358,6 +1358,11 @@ Acceptance criteria:
 - No major subsystem is still relying on fake plumbing.
 - The final result meets both functional and polish expectations.
 
+Completion notes:
+- `typecheck` and production `build` pass.
+- `dev` reaches Electron runtime and `Window ready`.
+- Dev/preview scripts explicitly unset `ELECTRON_RUN_AS_NODE` so local shells that export it do not start Electron as plain Node.
+
 ## Execution Order Summary
 
 Recommended order:
