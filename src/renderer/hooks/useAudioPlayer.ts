@@ -27,6 +27,12 @@ let currentLoadToken = 0
 let endedToken = -1
 let playbackErrorToken = -1
 
+interface LocalSeekEvent extends Event {
+  detail?: {
+    time?: number
+  }
+}
+
 function updatePlaybackStore(currentTime: number, duration: number): void {
   usePlayerStore.setState((state) => ({
     currentTime: Number.isFinite(currentTime) ? currentTime : state.currentTime,
@@ -244,10 +250,27 @@ export function useAudioPlayer() {
       updatePlaybackStore(data.time, graph.element.duration)
     })
 
+    const handleLocalSeek = (event: LocalSeekEvent) => {
+      const time = event.detail?.time
+      if (!Number.isFinite(time)) return
+
+      const graph = ensureAudioGraph()
+      try {
+        graph.element.currentTime = Math.max(0, time as number)
+        updatePlaybackStore(graph.element.currentTime, graph.element.duration)
+        syncPlaybackRuntime(true)
+      } catch (err) {
+        window.tplayerAPI.system.log?.('[audio] Local seek failed:', err)
+      }
+    }
+
+    window.addEventListener('tplayer:local-seek', handleLocalSeek)
+
     return () => {
       cleanupLoad()
       cleanupState()
       cleanupSeekTo?.()
+      window.removeEventListener('tplayer:local-seek', handleLocalSeek)
     }
   }, [])
 

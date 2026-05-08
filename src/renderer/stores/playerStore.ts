@@ -76,6 +76,7 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
     const { duration } = usePlayerStore.getState()
     const nextTime = Math.max(0, Math.min(time, duration || time))
     set({ currentTime: nextTime })
+    window.dispatchEvent(new CustomEvent('tplayer:local-seek', { detail: { time: nextTime } }))
     await api.player.seek(nextTime)
   },
   setVolume: async (v) => { set({ volume: v }); await api.player.setVolume(v) },
