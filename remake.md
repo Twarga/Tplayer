@@ -254,6 +254,126 @@ Acceptance criteria:
 - Motion has a clear product role.
 - Future UI work can apply consistent animation rules instead of ad hoc effects.
 
+R1B status:
+- Completed as the motion and interaction baseline for the remake.
+
+R1B motion role in Tplayer:
+
+- Motion should support confidence, tactility, and orientation.
+- Motion should help the user understand what changed, where it changed, and what is now interactive.
+- Motion should never be added just to make the app feel "more alive."
+- The app should feel premium and smooth, but still fast and calm during long listening sessions.
+
+R1B interaction personality:
+
+- calm, not hyperactive
+- premium, not flashy
+- responsive, not abrupt
+- tactile, not toy-like
+- smooth, not floaty
+
+R1B motion principles:
+
+1. Motion should clarify structure.
+   - Route changes, queue updates, and panel toggles should explain spatial relationships.
+
+2. Motion should reinforce hierarchy.
+   - Primary controls deserve clearer feedback than secondary chrome.
+
+3. Motion should be short by default.
+   - Most interactions should complete quickly enough that the app still feels efficient.
+
+4. Motion should be restrained.
+   - Avoid stacking scale, blur, fade, slide, and glow unless there is a clear reason.
+
+5. Playback interactions must feel immediate.
+   - Seek, play, pause, next, previous, and volume changes should prioritize responsiveness over flourish.
+
+6. Repeated actions must remain comfortable.
+   - Since this is a daily-use music player, no frequent action should feel tiring or theatrical.
+
+R1B timing guidance:
+
+- micro feedback: `90ms` to `140ms`
+- standard hover and press transitions: `140ms` to `180ms`
+- panel and route transitions: `180ms` to `260ms`
+- larger contextual reveals: `220ms` to `320ms`
+
+R1B easing guidance:
+
+- default UI transitions: soft ease-out
+- press feedback: short ease-in-out
+- panel reveals: controlled ease-out with slight softness
+- avoid exaggerated bounce for core navigation and playback interactions
+- spring-like motion may be used sparingly for premium emphasis, not as the default language
+
+R1B hover behavior:
+
+- Hover should mainly communicate readiness, not spectacle.
+- Common hover response should be a small background shift, contrast lift, or subtle elevation.
+- Scale effects should be small and limited to controls that benefit from tactile emphasis.
+- Rows and cards should feel more "activated" than "animated."
+
+R1B press behavior:
+
+- Press states should feel immediate and confident.
+- Small scale-down or slight visual compression is acceptable on key controls.
+- The play button can have stronger tactile feedback than surrounding controls.
+- Press feedback should always be shorter than hover feedback.
+
+R1B route and panel behavior:
+
+- Main route changes should feel clean and directional, not dramatic.
+- Sidebar should feel stable; it is an anchor surface.
+- The now-playing panel should feel like a detail surface expanding from the main shell, not a separate app.
+- Queue updates should feel ordered and readable, especially when items are added next, reordered, or removed.
+
+R1B playback interaction behavior:
+
+- Play and pause should feel immediate, with motion used only as confirmation.
+- Seek behavior should prioritize precision and continuity over decorative effects.
+- Track changes should gently update metadata, art, and progress state without jarring resets.
+- Now-playing changes should feel smoother and more premium than ordinary list changes.
+
+R1B recommended motion by surface:
+
+- Sidebar:
+  - minimal motion
+  - active-state movement should be subtle and anchored
+
+- Library rows:
+  - fast hover response
+  - soft highlight or reveal of secondary actions
+  - no oversized card-like theatrics
+
+- Mini player:
+  - tactile control feedback
+  - stable layout with subtle state transitions
+
+- Now-playing panel:
+  - slightly richer transitions than the rest of the UI
+  - artwork and metadata can receive more elegant change animations
+
+- YouTube/downloads/settings:
+  - consistent with core app motion
+  - utility-first, with polish but less drama than playback surfaces
+
+R1B motion anti-patterns to avoid:
+
+- floating UI that feels disconnected from layout
+- big hover scales on dense controls
+- stacked glow, blur, and movement on the same interaction
+- delayed playback feedback because animation finishes too late
+- decorative entrance animations on screens the user visits often
+- bounce-heavy motion on everyday actions
+
+R1B success criteria for later implementation:
+
+- Users feel the app is smooth without consciously noticing animation everywhere.
+- Playback controls feel fast and satisfying.
+- Route changes and panel changes are easy to follow.
+- The app feels expensive and composed rather than busy.
+
 ### R1C. Define the component polish system
 Scope:
 - Define the target quality bar for buttons, inputs, sliders, player controls, rows, cards, side panels, dialogs, and badges.
