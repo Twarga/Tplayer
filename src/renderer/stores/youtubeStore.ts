@@ -9,13 +9,13 @@ import type {
   DownloadProgressPayload,
   DownloadStartedPayload,
 } from '../../shared/ipc/contracts'
-import type { YtSearchResult } from '../../shared/types/domain'
+import type { Download as PersistedDownload, DownloadStatus, YtSearchResult } from '../../shared/types/domain'
 
 interface DownloadItem {
   id: string
   videoId: string
   title: string
-  status: 'pending' | 'downloading' | 'done' | 'failed'
+  status: DownloadStatus
   progress: number
   speed?: string
   eta?: string
@@ -39,6 +39,16 @@ interface YouTubeStore {
   init: () => () => void
 }
 
+function mapPersistedDownload(download: PersistedDownload): DownloadItem {
+  return {
+    id: String(download.id),
+    videoId: download.video_id,
+    title: download.title,
+    status: download.status,
+    progress: download.progress,
+  }
+}
+
 export const useYouTubeStore = create<YouTubeStore>((set, get) => ({
   searchResults: [],
   isSearching: false,
@@ -48,6 +58,19 @@ export const useYouTubeStore = create<YouTubeStore>((set, get) => ({
   downloads: [],
 
   init() {
+    void api.youtube.getHistory()
+      .then((history) => {
+        set((s) => ({
+          downloads: history.map(mapPersistedDownload).map((download) => {
+            const existing = s.downloads.find((item) => item.id === download.id)
+            return existing ? { ...download, ...existing } : download
+          }),
+        }))
+      })
+      .catch((err) => {
+        console.error('[youtubeStore] failed to load history:', err)
+      })
+
     const cleanups = [
       api.youtube.onDownloadStarted(({ id, videoId, folder, title }) => {
         set((s) => ({
@@ -70,7 +93,7 @@ export const useYouTubeStore = create<YouTubeStore>((set, get) => ({
       api.youtube.onDownloadDone(({ id, title, path }: DownloadDonePayload) => {
         set((s) => ({
           downloads: s.downloads.map((d) =>
-            d.id === id ? { ...d, status: 'done' as const, progress: 100, title: title || d.title, path } : d
+            d.id === id ? { ...d, status: 'done' as const, progress: 100, title: title || d.title, path, error: undefined } : d
           ),
         }))
         getToastStore().add(`Download complete: ${title || 'Track'}`, 'success')
@@ -80,7 +103,7 @@ export const useYouTubeStore = create<YouTubeStore>((set, get) => ({
       api.youtube.onDownloadError(({ id, error }: DownloadErrorPayload) => {
         set((s) => ({
           downloads: s.downloads.map((d) =>
-            d.id === id ? { ...d, status: 'failed' as const, error } : d
+            d.id === id ? { ...d, status: 'failed' as const, error, speed: undefined, eta: undefined } : d
           ),
         }))
         getToastStore().add(`Download failed: ${error}`, 'error')
@@ -89,7 +112,9 @@ export const useYouTubeStore = create<YouTubeStore>((set, get) => ({
       api.youtube.onDownloadCancelled(({ id, videoId, error }: DownloadCancelledPayload) => {
         set((s) => ({
           downloads: s.downloads.map((d) =>
-            d.videoId === videoId || (id && d.id === id) ? { ...d, status: 'failed' as const, error } : d
+            d.videoId === videoId || (id && d.id === id)
+              ? { ...d, status: 'cancelled' as const, error, speed: undefined, eta: undefined }
+              : d
           ),
         }))
       }),
@@ -144,7 +169,7 @@ export const useYouTubeStore = create<YouTubeStore>((set, get) => ({
             progress: 0,
             folder: started.folder,
           },
-          ...s.downloads.filter((d) => d.id !== started.id),
+          ...s.downloads.filter((d) => d.id !== started.id && d.videoId !== started.videoId),
         ],
       }))
     } catch (err) {

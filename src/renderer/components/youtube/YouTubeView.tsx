@@ -214,6 +214,8 @@ export function YouTubeView() {
                               ? 'bg-green-500/15 text-green-300'
                               : isActive
                                 ? 'bg-accent/15 text-accent'
+                                : downloadItem.status === 'cancelled'
+                                  ? 'bg-yellow-500/15 text-yellow-300'
                                 : downloadItem.status === 'failed'
                                   ? 'bg-red-500/15 text-red-300'
                                   : 'bg-surface-3 text-secondary'
@@ -293,6 +295,8 @@ export function YouTubeView() {
                           'text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider',
                           item.status === 'done'
                             ? 'bg-green-500/20 text-green-400'
+                            : item.status === 'cancelled'
+                              ? 'bg-yellow-500/20 text-yellow-300'
                             : item.status === 'failed'
                               ? 'bg-red-500/20 text-red-400'
                               : 'bg-accent/20 text-accent'
@@ -361,7 +365,7 @@ export function YouTubeView() {
                   <p className="text-[10px] text-accent mt-2 truncate">{item.path}</p>
                 )}
 
-                {item.status === 'failed' && item.error && (
+                {(item.status === 'failed' || item.status === 'cancelled') && item.error && (
                   <p className="text-[10px] text-red-400 mt-2">{item.error}</p>
                 )}
               </div>

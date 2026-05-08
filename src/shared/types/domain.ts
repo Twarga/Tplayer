@@ -50,7 +50,7 @@ export interface Cover {
   mime_type: string
 }
 
-export type DownloadStatus = 'pending' | 'downloading' | 'done' | 'failed'
+export type DownloadStatus = 'pending' | 'downloading' | 'done' | 'failed' | 'cancelled'
 
 export interface Download {
   id: number

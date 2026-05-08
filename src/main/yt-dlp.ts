@@ -24,7 +24,7 @@ export interface YtSearchResult {
 
 let _ytDlpPath: string | null = null
 let _ytDlpPathSource: ToolAvailabilityPayload['source'] = 'fallback'
-const _activeDownloads = new Map<string, ReturnType<typeof spawn>>()
+const _activeDownloads = new Map<string, { proc: ReturnType<typeof spawn>; id: string; cancelled: boolean }>()
 
 export function getYtDlpPath(): string {
   if (_ytDlpPath) return _ytDlpPath
@@ -170,7 +170,6 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
     throw new Error(availability.error || `yt-dlp is not available at ${availability.path}`)
   }
 
-  const downloadId = Date.now().toString()
   const musicFoldersRaw = getSetting('music_folders')
   let musicDir = path.join(app.getPath('userData'), 'downloads')
 
@@ -184,6 +183,11 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
   fs.mkdirSync(musicDir, { recursive: true })
 
   const outputTemplate = path.join(musicDir, '%(title)s [%(id)s].%(ext)s')
+  const insertResult = getDb().prepare(`
+    INSERT INTO downloads (url, video_id, title, status, progress)
+    VALUES (?, ?, ?, 'downloading', 0)
+  `).run(url, videoId, requestedTitle || 'Downloading...')
+  const downloadId = String(insertResult.lastInsertRowid)
   const startedPayload: DownloadStartedPayload = {
     id: downloadId,
     videoId,
@@ -191,11 +195,6 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
     folder: musicDir,
     status: 'downloading',
   }
-
-  getDb().prepare(`
-    INSERT INTO downloads (url, video_id, title, status, progress)
-    VALUES (?, ?, ?, 'downloading', 0)
-  `).run(url, videoId, requestedTitle || 'Downloading...')
 
   send('youtube:download-started', startedPayload)
 
@@ -214,7 +213,8 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
   console.log('[yt-dlp] spawn:', getYtDlpPath(), args.join(' '))
 
   const proc = spawn(getYtDlpPath(), args)
-  _activeDownloads.set(videoId, proc)
+  const activeDownload = { proc, id: downloadId, cancelled: false }
+  _activeDownloads.set(videoId, activeDownload)
 
   let title = requestedTitle || 'Unknown'
   let downloadedFile = ''
@@ -236,7 +236,7 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
             eta: prog.eta,
             size: prog.size,
           }
-          getDb().prepare(`UPDATE downloads SET progress = ? WHERE video_id = ?`).run(prog.percent, videoId)
+          getDb().prepare(`UPDATE downloads SET progress = ?, status = 'downloading' WHERE id = ?`).run(prog.percent, downloadId)
           send('youtube:download-progress', progressPayload)
         }
       }
@@ -271,7 +271,7 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
             eta: prog.eta,
             size: prog.size,
           }
-          getDb().prepare(`UPDATE downloads SET progress = ? WHERE video_id = ?`).run(prog.percent, videoId)
+          getDb().prepare(`UPDATE downloads SET progress = ?, status = 'downloading' WHERE id = ?`).run(prog.percent, downloadId)
           send('youtube:download-progress', progressPayload)
         }
       }
@@ -283,18 +283,23 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
     const msg = err.message || 'Download failed'
     console.error('[yt-dlp] spawn error:', msg)
     const errorPayload: DownloadErrorPayload = { id: downloadId, videoId, error: msg }
-    getDb().prepare(`UPDATE downloads SET status = 'failed', title = ? WHERE video_id = ?`).run(title, videoId)
+    getDb().prepare(`UPDATE downloads SET status = 'failed', title = ? WHERE id = ?`).run(title, downloadId)
     send('youtube:download-error', errorPayload)
   })
 
   proc.on('close', async (code) => {
+    const active = _activeDownloads.get(videoId)
     _activeDownloads.delete(videoId)
+
+    if (active?.cancelled) {
+      return
+    }
 
     if (code !== 0) {
       const errorDetail = stderrBuffer || `yt-dlp exited with code ${code}`
       console.error('[yt-dlp] process failed:', errorDetail)
       const errorPayload: DownloadErrorPayload = { id: downloadId, videoId, error: errorDetail }
-      getDb().prepare(`UPDATE downloads SET status = 'failed', title = ? WHERE video_id = ?`).run(errorDetail.substring(0, 200), videoId)
+      getDb().prepare(`UPDATE downloads SET status = 'failed', title = ? WHERE id = ?`).run(errorDetail.substring(0, 200), downloadId)
       send('youtube:download-error', errorPayload)
       return
     }
@@ -310,17 +315,17 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
       if (downloadedFile && fs.existsSync(downloadedFile)) {
         const track = await scanFile(downloadedFile)
         if (track) {
-          getDb().prepare(`UPDATE downloads SET status = 'done', title = ?, track_id = ? WHERE video_id = ?`)
-            .run(track.title, track.id, videoId)
+          getDb().prepare(`UPDATE downloads SET status = 'done', progress = 100, title = ?, track_id = ? WHERE id = ?`)
+            .run(track.title, track.id, downloadId)
           donePayload = { id: downloadId, videoId, trackId: track.id, path: downloadedFile, title: track.title }
         } else {
           const fallbackTitle = path.basename(downloadedFile)
-          getDb().prepare(`UPDATE downloads SET status = 'done', title = ? WHERE video_id = ?`).run(fallbackTitle, videoId)
+          getDb().prepare(`UPDATE downloads SET status = 'done', progress = 100, title = ? WHERE id = ?`).run(fallbackTitle, downloadId)
           donePayload = { id: downloadId, videoId, trackId: null, path: downloadedFile, title: fallbackTitle }
         }
       }
       else {
-        getDb().prepare(`UPDATE downloads SET status = 'done' WHERE video_id = ?`).run(videoId)
+        getDb().prepare(`UPDATE downloads SET status = 'done', progress = 100 WHERE id = ?`).run(downloadId)
         donePayload = { id: downloadId, videoId, trackId: null }
       }
 
@@ -329,7 +334,7 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
       const msg = err instanceof Error ? err.message : 'Post-download failed'
       console.error('[yt-dlp] post-download error:', msg)
       const errorPayload: DownloadErrorPayload = { id: downloadId, videoId, error: msg }
-      getDb().prepare(`UPDATE downloads SET status = 'failed' WHERE video_id = ?`).run(videoId)
+      getDb().prepare(`UPDATE downloads SET status = 'failed' WHERE id = ?`).run(downloadId)
       send('youtube:download-error', errorPayload)
     }
   })
@@ -338,18 +343,21 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
 }
 
 export function cancelDownload(videoId: string): DownloadCancelledPayload {
-  const proc = _activeDownloads.get(videoId)
-  const idRow = getDb().prepare('SELECT id FROM downloads WHERE video_id = ? ORDER BY created_at DESC LIMIT 1').get(videoId) as { id?: number } | undefined
+  const active = _activeDownloads.get(videoId)
   const payload: DownloadCancelledPayload = {
-    id: idRow?.id ? String(idRow.id) : null,
+    id: active?.id ?? null,
     videoId,
     error: 'Cancelled',
   }
-  if (proc) {
-    proc.kill('SIGTERM')
-    _activeDownloads.delete(videoId)
+  if (active) {
+    active.cancelled = true
+    active.proc.kill('SIGTERM')
   }
-  getDb().prepare(`UPDATE downloads SET status = 'failed' WHERE video_id = ?`).run(videoId)
+  if (active?.id) {
+    getDb().prepare(`UPDATE downloads SET status = 'cancelled' WHERE id = ?`).run(active.id)
+  } else {
+    getDb().prepare(`UPDATE downloads SET status = 'cancelled' WHERE video_id = ?`).run(videoId)
+  }
   send('youtube:download-cancelled', payload)
   return payload
 }
