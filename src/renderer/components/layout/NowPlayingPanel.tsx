@@ -36,13 +36,13 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
         animate={collapsed ? 'closed' : 'open'}
         variants={panelMotion}
         className={cn(
-          'h-full bg-surface-1 border-l border-border-subtle flex flex-col shrink-0 overflow-hidden surface-panel',
+          'h-full rounded-[28px] bg-surface-1 border border-border-subtle flex flex-col shrink-0 overflow-hidden surface-panel shadow-card',
           collapsed ? 'w-0 pointer-events-none' : 'w-[320px]'
         )}
       >
-        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border-subtle">
           <div className="flex gap-6">
-            <span className="text-sm font-medium pb-2 text-primary">
+            <span className="text-sm font-medium text-primary">
               Now Playing
             </span>
           </div>
@@ -60,9 +60,9 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
             variants={staggerParent}
             initial="hidden"
             animate="show"
-            className="flex-1 overflow-y-auto px-5 pb-5 flex flex-col"
+            className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gradient-now-playing"
           >
-            <motion.div variants={staggerItem} className="w-full aspect-square rounded-xl overflow-hidden shadow-2xl mb-5 bg-surface-2 flex items-center justify-center relative">
+            <motion.div variants={staggerItem} className="w-full aspect-square rounded-[1.4rem] overflow-hidden shadow-2xl mb-5 bg-surface-2 flex items-center justify-center relative border border-white/5">
               {currentTrack?.cover_path && (
                 <div 
                   className="absolute inset-0 bg-cover bg-center blur-xl opacity-40 transform scale-110" 
@@ -73,10 +73,10 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
                 <img 
                   src={`tplayer-img://media/${encodeURIComponent(currentTrack.cover_path)}`} 
                   alt="Album Art" 
-                  className="w-full h-full object-cover relative z-10 rounded-xl"
+                  className="w-full h-full object-cover relative z-10 rounded-[1.4rem]"
                 />
               ) : currentTrack ? (
-                <div className="w-full h-full bg-gradient-to-br from-accent/20 to-surface-2 flex items-center justify-center text-accent text-6xl font-bold relative z-10 rounded-xl">
+                <div className="w-full h-full bg-gradient-to-br from-accent/20 to-surface-2 flex items-center justify-center text-accent text-6xl font-bold relative z-10 rounded-[1.4rem]">
                   {currentTrack.title?.[0] || '♪'}
                 </div>
               ) : (
@@ -86,10 +86,10 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
 
             <motion.div variants={staggerItem} className="flex items-start justify-between mb-4">
               <div className="flex-1 min-w-0 mr-3">
-                <h3 className="text-base font-semibold text-primary truncate">
+                <h3 className="font-display text-[1.1rem] font-bold text-primary truncate">
                   {currentTrack?.title || 'Not Playing'}
                 </h3>
-                <p className="text-sm text-secondary truncate">
+                <p className="text-sm text-secondary truncate mt-1">
                   {currentTrack?.artist || 'Select a track'}
                 </p>
               </div>
@@ -101,7 +101,7 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
               </button>
             </motion.div>
 
-            <motion.div variants={staggerItem} className="mb-2">
+            <motion.div variants={staggerItem} className="mb-3">
               <div
                 className="w-full h-1 bg-progress-bg rounded-full cursor-pointer group relative"
                 onClick={(e) => {
@@ -155,7 +155,7 @@ export function NowPlayingPanel({ collapsed, onToggle }: NowPlayingPanelProps) {
             </motion.div>
 
             {currentTrack && (
-              <motion.div variants={staggerItem} className="flex justify-center mb-6">
+              <motion.div variants={staggerItem} className="flex justify-center mb-6 pt-2">
                 <QualityBadges
                   format={currentTrack.file_format || undefined}
                   bitrate={currentTrack.bitrate}

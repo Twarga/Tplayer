@@ -162,19 +162,19 @@ function AppShell() {
   return (
     <TooltipProvider delayDuration={300}>
       <div className="h-screen w-screen bg-background text-primary overflow-hidden flex flex-col">
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden p-3 gap-3">
           <ErrorBoundary>
             <Sidebar activeView={activeView} onViewChange={setActiveView} />
           </ErrorBoundary>
 
-          <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          <div className="flex-1 flex flex-col overflow-hidden min-w-0 rounded-[28px] border border-border-subtle bg-surface-panel shadow-card">
             <TopBar
               activeView={activeView}
               title={viewMeta.title}
               subtitle={viewMeta.subtitle}
               onViewChange={setActiveView}
             />
-            <main className="flex-1 overflow-hidden relative">
+            <main className="flex-1 overflow-hidden relative px-2 pb-2">
               <ErrorBoundary>
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -184,7 +184,7 @@ function AppShell() {
                     animate="animate"
                     exit="exit"
                     transition={routeTransition}
-                    className="absolute inset-0"
+                    className="absolute inset-0 overflow-hidden rounded-[24px]"
                   >
                     {renderView()}
                   </motion.div>

@@ -60,7 +60,7 @@ export function MiniPlayerBar({ onQueueClick }: { onQueueClick?: () => void }) {
       variants={staggerParent}
       initial="hidden"
       animate="show"
-      className="h-16 w-full bg-player-bar-bg border-t border-border-subtle px-4 flex items-center shrink-0 z-20 backdrop-player-bar"
+      className="mx-3 mb-3 h-[72px] rounded-[24px] w-auto bg-player-bar-bg border border-border-subtle px-5 flex items-center shrink-0 z-20 backdrop-player-bar shadow-card"
     >
       <div className="w-[30%] flex items-center gap-3 min-w-0">
         {currentTrack ? (
@@ -70,16 +70,16 @@ export function MiniPlayerBar({ onQueueClick }: { onQueueClick?: () => void }) {
                 <img 
                   src={`tplayer-img://media/${encodeURIComponent(currentTrack.cover_path)}`} 
                   alt="Album Art" 
-                  className="w-12 h-12 rounded object-cover shrink-0"
+                  className="w-12 h-12 rounded-xl object-cover shrink-0 shadow-card"
                 />
               ) : (
-                <div className="w-12 h-12 rounded bg-surface-2 flex items-center justify-center text-accent font-bold text-lg shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-surface-2 flex items-center justify-center text-accent font-bold text-lg shrink-0">
                   {currentTrack.title?.[0] || '♪'}
                 </div>
               )}
             </motion.div>
             <motion.div variants={staggerItem} className="flex-1 min-w-0">
-              <p className="text-[13px] font-medium text-primary truncate">{currentTrack.title}</p>
+              <p className="text-[13px] font-semibold text-primary truncate">{currentTrack.title}</p>
               <p className="text-[12px] text-secondary truncate">{currentTrack.artist}</p>
             </motion.div>
             <motion.div variants={staggerItem}>
@@ -100,7 +100,7 @@ export function MiniPlayerBar({ onQueueClick }: { onQueueClick?: () => void }) {
         )}
       </div>
 
-      <motion.div variants={staggerItem} className="flex-1 flex flex-col items-center gap-1">
+      <motion.div variants={staggerItem} className="flex-1 flex flex-col items-center gap-1.5 px-4">
         <div className="flex items-center gap-4">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -134,7 +134,7 @@ export function MiniPlayerBar({ onQueueClick }: { onQueueClick?: () => void }) {
             <TooltipTrigger asChild>
               <button
                 onClick={togglePlay}
-                className={cn("w-10 h-10 rounded-full bg-accent text-background flex items-center justify-center shadow-accent-glow", animations.controlButton)}
+                className={cn("w-11 h-11 rounded-full bg-accent text-background flex items-center justify-center shadow-accent-glow", animations.controlButton)}
               >
                 {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
               </button>
