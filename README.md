@@ -1,63 +1,81 @@
 # Tplayer
 
-A polished local-first desktop music player with YouTube import.
+<p align="center">
+  <img src="./assets/logo.png" alt="Tplayer logo" width="180" />
+</p>
 
-Tplayer turns a local music folder into a refined daily player: fast playback, clean queue control, imported tracks beside your albums, Last.fm scrobbling, Linux media-key support, and a warm dark interface built around the music instead of filler dashboards.
+<p align="center">
+  A polished local-first desktop music player with YouTube import. Fast playback, clean queue control, imported tracks beside your albums, Last.fm scrobbling, Linux media-key support, and a warm dark interface.
+</p>
 
-[Brand guide](docs/brand.md) · [Releases](https://github.com/Twarga/Tplayer/releases) · [Roadmap](remake.md)
+<p align="center">
+  <img src="https://img.shields.io/badge/Electron-Desktop-1f1f1f?style=flat-square&logo=electron&logoColor=white" alt="Electron" />
+  <img src="https://img.shields.io/badge/React-Frontend-1f1f1f?style=flat-square&logo=react&logoColor=61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/Vite-Build-1f1f1f?style=flat-square&logo=vite&logoColor=646CFF" alt="Vite" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-UI-1f1f1f?style=flat-square&logo=tailwindcss&logoColor=38BDF8" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/TypeScript-Logic-1f1f1f?style=flat-square&logo=typescript&logoColor=3178C6" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/SQLite-Database-1f1f1f?style=flat-square&logo=sqlite&logoColor=003B57" alt="SQLite" />
+  <img src="https://img.shields.io/badge/yt--dlp-Import-1f1f1f?style=flat-square" alt="yt-dlp" />
+  <img src="https://img.shields.io/badge/FFmpeg-Media-1f1f1f?style=flat-square&logo=ffmpeg&logoColor=5CB85C" alt="FFmpeg" />
+  <img src="https://img.shields.io/badge/Linux-First-1f1f1f?style=flat-square&logo=linux&logoColor=white" alt="Linux" />
+</p>
 
-## Status
+## What it is
 
-Tplayer is in active MVP hardening. The app can be developed locally now; packaged public builds are the next release-track milestone.
+Tplayer turns a local music folder into a refined daily player. It focuses on the music instead of filler dashboards, offering a seamless experience for playback, discovery of local files, and integration with YouTube for expanding your personal library.
 
-Planned release targets:
+## Core workflow
 
-- Linux AppImage
-- Windows installer or portable executable
-- GitHub Releases with versioned artifacts
-- GitHub Pages landing page
+1. Scan your local music library
+2. Import new tracks directly from YouTube
+3. Build and manage your playback queue
+4. Scrobble listening history to Last.fm
+5. Control playback using global keyboard shortcuts and MPRIS
 
 ## Features
 
-- Local-first library scanning for music folders.
-- Playback with queue, seek, shuffle, repeat, and volume control.
-- YouTube search and audio import for building a personal library.
-- Persistent download history.
-- Playlists, albums, artists, folders, and library browsing.
-- Last.fm now-playing and scrobbling support.
-- MPRIS integration for Linux media controls.
-- Equalizer support with presets and persistence.
-- Keyboard shortcuts for fast control.
-- Dark editorial interface with warm amber/gold accents.
+- Local-first library scanning for music folders
+- Playback with queue, seek, shuffle, repeat, and volume control
+- YouTube search and audio import for building a personal library
+- Persistent download history
+- Playlists, albums, artists, folders, and library browsing
+- Last.fm now-playing and scrobbling support
+- MPRIS integration for Linux media controls
+- Equalizer support with presets and persistence
+- Dark editorial interface with warm amber/gold accents
 
-## Screenshots
+## Tech stack
 
-Public screenshots are being prepared for the release and landing page pass. They should follow the visual rules in [docs/brand.md](docs/brand.md): real app screens, strong album-art focus, warm dark palette, and no generic nested-card marketing mockups.
+- Electron 33 (with electron-vite)
+- React 19
+- Vite
+- Tailwind CSS
+- TypeScript
+- Zustand
+- better-sqlite3
+- yt-dlp
+- FFmpeg
+- dbus-next (MPRIS)
 
-Recommended screenshot set:
+## Status
 
-- Home with active playback.
-- Library with real local tracks.
-- YouTube Import with search and import states.
-- Downloads with completed and active imports.
+Tplayer is in active MVP hardening. Core features including local playback, YouTube import, Last.fm scrobbling, EQ, and MPRIS integration are complete. Packaged public builds are the next release-track milestone.
 
-## Downloads
+## Product docs
 
-Packaged downloads will be published on the [GitHub Releases page](https://github.com/Twarga/Tplayer/releases).
-
-Until the first packaged release is available, run Tplayer from source using the development steps below.
-
-## Requirements
-
-- Node.js 18 or newer.
-- npm.
-- FFmpeg available on your system path.
-- `yt-dlp` available on your system path for YouTube import.
-- Linux is the primary supported desktop during development.
-
-Windows packaging is planned, but daily development and MPRIS support are Linux-first.
+- [`docs/brand.md`](docs/brand.md) - public identity, voice, colors, screenshot direction
+- [`docs/planning/remake.md`](docs/planning/remake.md) - completed MVP work and post-MVP release plan
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) - local setup, commit scope, and contribution rules
+- [`docs/release-checklist.md`](docs/release-checklist.md) - release requirements and manual testing steps
 
 ## Development
+
+Prerequisites:
+
+- Node.js 18 or newer
+- npm
+- FFmpeg available on your system path
+- `yt-dlp` available on your system path for YouTube import
 
 Install dependencies:
 
@@ -83,60 +101,9 @@ Compile the Electron/Vite app:
 npm run build
 ```
 
-`npm run build` outputs compiled files to `out/`. Installable desktop packages will be added in the packaging phase.
+## Packaging
 
-## Keyboard Shortcuts
-
-| Shortcut | Action |
-| --- | --- |
-| `Space` | Play or pause |
-| `Left` / `Right` | Seek backward or forward |
-| `Ctrl+Left` / `Ctrl+Right` | Previous or next track |
-| `Ctrl+K` | Focus search |
-| `Ctrl+\` | Toggle the now-playing panel |
-
-## Tech Stack
-
-- Electron 33 with electron-vite.
-- React 19 and TypeScript.
-- Tailwind CSS.
-- Zustand for client state.
-- better-sqlite3 for the local library database.
-- music-metadata for audio metadata.
-- fluent-ffmpeg for audio decoding support.
-- chokidar for library file watching.
-- dbus-next for MPRIS integration.
-
-## Project Structure
-
-```text
-src/
-├── main/       Electron main process, database, playback, integrations
-├── preload/    Safe renderer bridge
-├── renderer/   React interface, stores, views, player UI
-└── shared/     Shared types and utilities
-```
-
-Key docs:
-
-- [Brand guide](docs/brand.md): public identity, voice, colors, screenshot direction.
-- [Remake plan](remake.md): completed MVP work and post-MVP release plan.
-- [Contributing](CONTRIBUTING.md): local setup, commit scope, and contribution rules.
-- [Repository hygiene](docs/repository-hygiene.md): what should and should not be committed.
-
-## Release Plan
-
-The release track is split into small tasks:
-
-- `B1`: brand direction.
-- `B2`: README remake.
-- `B3`: repo hygiene.
-- `B4`: metadata and icons.
-- `B5`: Linux and Windows packaging.
-- `B6`: GitHub release workflow.
-- `B7`: manual release checklist.
-- `B8` to `B10`: GitHub Pages landing page.
-- `B11`: public launch pass.
+Linux AppImage and Windows executable packaging are planned as part of the release milestone. Until then, `npm run build` outputs compiled files to `out/` which can be used to run the application manually from source.
 
 ## License
 
