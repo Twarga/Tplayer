@@ -10,6 +10,7 @@ interface SettingsStore {
   addFolder: () => Promise<string | null>
   removeFolder: (path: string) => Promise<void>
   scanFolders: () => Promise<{ added: number; updated: number; total: number }>
+  getBoolean: (key: string, fallback?: boolean) => boolean
 }
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
@@ -62,5 +63,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const folders = get().musicFolders
     if (folders.length === 0) return { added: 0, updated: 0, total: 0 }
     return api.library.scan(folders)
+  },
+
+  getBoolean: (key, fallback = false) => {
+    const value = get().settings[key]
+    if (value == null) return fallback
+    return value === 'true'
   },
 }))

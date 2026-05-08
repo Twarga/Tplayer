@@ -3,6 +3,8 @@ import { FolderOpen, Plus, Trash2, RefreshCw } from 'lucide-react'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useLibraryStore } from '@/stores/libraryStore'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
+import { Input } from '@/components/ui/input'
 import { useTheme } from '@/components/ThemeProvider'
 import { cn } from '@/lib/utils'
 
@@ -16,7 +18,7 @@ const ACCENT_COLORS = [
 ]
 
 export function SettingsView() {
-  const { musicFolders, load, addFolder, removeFolder } = useSettingsStore()
+  const { musicFolders, settings, load, set, addFolder, removeFolder, getBoolean } = useSettingsStore()
   const { loadTracks, scanProgress } = useLibraryStore()
   const { theme, accent, setTheme, setAccent } = useTheme()
 
@@ -86,6 +88,21 @@ export function SettingsView() {
       </section>
 
       <section className="mb-8">
+        <h2 className="text-lg font-semibold text-primary mb-4">Library Behavior</h2>
+
+        <div className="flex items-center justify-between bg-surface-1 rounded-md px-4 py-3 border border-border-subtle">
+          <div>
+            <p className="text-sm font-medium text-primary">Scan on startup</p>
+            <p className="text-xs text-tertiary mt-1">Automatically scan configured music folders when the app launches.</p>
+          </div>
+          <Switch
+            checked={getBoolean('scan_on_startup', true)}
+            onCheckedChange={(checked) => set('scan_on_startup', checked ? 'true' : 'false')}
+          />
+        </div>
+      </section>
+
+      <section className="mb-8">
         <h2 className="text-lg font-semibold text-primary mb-4">Appearance</h2>
 
         <div className="mb-4">
@@ -122,6 +139,19 @@ export function SettingsView() {
               />
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="text-lg font-semibold text-primary mb-4">Tools</h2>
+        <div>
+          <p className="text-sm text-secondary mb-3">`yt-dlp` Path</p>
+          <Input
+            value={settings.yt_dlp_path || ''}
+            onChange={(e) => set('yt_dlp_path', e.target.value)}
+            placeholder="Leave empty to use system path detection"
+          />
+          <p className="text-xs text-tertiary mt-2">Use this if `yt-dlp` is installed in a custom location.</p>
         </div>
       </section>
 

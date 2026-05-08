@@ -1,12 +1,13 @@
-import { app, BrowserWindow, nativeTheme } from 'electron'
+import { app, BrowserWindow, nativeTheme, protocol, net } from 'electron'
 import { fileURLToPath } from 'url'
 import path from 'path'
-import { initDatabase, closeDatabase } from './database'
+import { initDatabase, closeDatabase, getMusicFolders } from './database'
 import { registerAllHandlers, setMainWindow } from './ipc-registry'
 import { startWatcher, stopWatcher } from './file-watcher'
 import { initAudioEngine } from './audio-engine'
 import { initMpris, shutdownMpris } from './mpris'
 import { getSetting } from './database'
+import { scanFolders } from './library-scanner'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -35,7 +36,7 @@ function createWindow(): BrowserWindow {
       preload: getPreloadPath(),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
     },
   })
 
@@ -47,7 +48,48 @@ function createWindow(): BrowserWindow {
   return win
 }
 
+// Register custom protocol for serving local audio files to the renderer
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'tplayer-audio',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+      bypassCSP: true,
+      corsEnabled: true,
+    },
+  },
+  {
+    scheme: 'tplayer-img',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      bypassCSP: true,
+      corsEnabled: true,
+    },
+  },
+])
+
 app.whenReady().then(async () => {
+  protocol.handle('tplayer-audio', (request) => {
+    const urlStr = request.url
+    const encodedPath = urlStr.replace(/^tplayer-audio:\/\/media\//, '')
+    const filePath = decodeURIComponent(encodedPath)
+    console.log('[protocol] Serving audio file:', filePath)
+    return net.fetch('file://' + filePath)
+  })
+  
+  protocol.handle('tplayer-img', (request) => {
+    const urlStr = request.url
+    const encodedPath = urlStr.replace(/^tplayer-img:\/\/media\//, '')
+    const filePath = decodeURIComponent(encodedPath)
+    return net.fetch('file://' + filePath)
+  })
+  console.log('[Tplayer] Audio and Image protocols registered')
+
   try {
     // Initialize database
     initDatabase()
@@ -74,8 +116,17 @@ app.whenReady().then(async () => {
     // Start file watcher
     startWatcher()
 
+    if (getSetting('scan_on_startup') === 'true') {
+      const folders = getMusicFolders()
+      if (folders.length > 0) {
+        scanFolders(folders).catch((err) => {
+          console.error('[Tplayer] Startup scan failed:', err)
+        })
+      }
+    }
+
     // Initialize MPRIS
-    initMpris()
+    initMpris(mainWindow)
 
     // Handle resize for always-on-top
     mainWindow.on('resize', () => {

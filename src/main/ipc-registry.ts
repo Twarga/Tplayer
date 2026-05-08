@@ -27,6 +27,7 @@ import { scanFolders } from './library-scanner'
 import { playTrack, pause, resume, togglePlay, nextTrack, prevTrack, seek, setVolume, toggleShuffle, cycleRepeat, addToQueue, addNext, removeFromQueue, clearQueue, reorderQueue, getQueue, onTrackEnded, setQueue } from './audio-engine'
 import { isFFmpegAvailable } from './audio-decoder'
 import { clearDownloadHistory } from './yt-dlp'
+import { updateWatchedFolders } from './file-watcher'
 import { IPC_CHANNELS } from '../shared/ipc/channels'
 
 let _mainWindow: BrowserWindow | null = null
@@ -238,10 +239,12 @@ function registerSettingsHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.settings.addFolder, async (_, folderPath: string) => {
     addMusicFolder(folderPath)
+    updateWatchedFolders()
   })
 
   ipcMain.handle(IPC_CHANNELS.settings.removeFolder, async (_, folderPath: string) => {
     removeMusicFolder(folderPath)
+    updateWatchedFolders()
   })
 
   ipcMain.handle(IPC_CHANNELS.settings.openFolderDialog, async () => {
