@@ -26,6 +26,11 @@ interface PlayerState {
   playbackState: PlaybackState
 }
 
+interface QueueItem {
+  id: number
+  trackId: number
+}
+
 let _state: PlayerState = {
   currentTrackId: null,
   isPlaying: false,
@@ -37,12 +42,45 @@ let _state: PlayerState = {
   playbackState: 'idle',
 }
 
-let _queue: number[] = []
-let _unshuffledQueue: number[] = []
-let _history: number[] = []
+let _queue: QueueItem[] = []
+let _unshuffledQueue: QueueItem[] = []
+let _history: QueueItem[] = []
+let _currentQueueItem: QueueItem | null = null
+let _queueItemId = 1
 const MAX_HISTORY = 50
 
+function createQueueItem(trackId: number): QueueItem {
+  const item: QueueItem = {
+    id: _queueItemId++,
+    trackId,
+  }
+  return item
+}
 
+function cloneQueueItems(items: QueueItem[]): QueueItem[] {
+  return items.map((item) => createQueueItem(item.trackId))
+}
+
+function shuffleQueue(items: QueueItem[]): QueueItem[] {
+  const shuffled = [...items]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
+function moveItem<T>(items: T[], from: number, to: number): T[] {
+  const next = [...items]
+  const [item] = next.splice(from, 1)
+  next.splice(to, 0, item)
+  return next
+}
+
+function getRepeatSeed(): QueueItem[] {
+  const upcoming = _state.isShuffled ? _unshuffledQueue : _queue
+  return [..._history, ...upcoming]
+}
 
 function getTrack(id: number): Track | undefined {
   return getDb().prepare('SELECT * FROM tracks WHERE id = ?').get(id) as Track | undefined
@@ -51,8 +89,8 @@ function getTrack(id: number): Track | undefined {
 function emitQueueUpdated(): void {
   const db = getDb()
   const list: QueueEntry[] = []
-  for (const id of _queue) {
-    const t = db.prepare('SELECT id, title, artist, album, duration FROM tracks WHERE id = ?').get(id) as QueueEntry | undefined
+  for (const item of _queue) {
+    const t = db.prepare('SELECT id, title, artist, album, duration FROM tracks WHERE id = ?').get(item.trackId) as QueueEntry | undefined
     if (t) list.push(t)
   }
   send(IPC_CHANNELS.queue.updated, list)
@@ -80,10 +118,15 @@ function emitTimeUpdate(): void {
 }
 
 export async function playTrack(trackId: number): Promise<void> {
+  const queueItem = createQueueItem(trackId)
+  return playQueueItem(queueItem)
+}
+
+async function playQueueItem(queueItem: QueueItem): Promise<void> {
   _state.playbackState = 'loading'
   emitPlaybackState()
 
-  const track = getTrack(trackId)
+  const track = getTrack(queueItem.trackId)
   if (!track) {
     _state.playbackState = 'error'
     emitPlaybackState()
@@ -91,20 +134,21 @@ export async function playTrack(trackId: number): Promise<void> {
   }
 
   try {
-    _state.currentTrackId = trackId
+    _currentQueueItem = queueItem
+    _state.currentTrackId = queueItem.trackId
     _state.duration = track.duration
     _state.currentTime = 0
     _state.isPlaying = true
     _state.playbackState = 'playing'
 
-    if (_history[_history.length - 1] !== trackId) {
-      _history.push(trackId)
+    if (_history[_history.length - 1]?.id !== queueItem.id) {
+      _history.push(queueItem)
       if (_history.length > MAX_HISTORY) _history.shift()
     }
 
     const payload: TrackLoadPayload = {
-      id: trackId,
-      trackId,
+      id: queueItem.trackId,
+      trackId: queueItem.trackId,
       title: track.title,
       artist: track.artist,
       album: track.album,
@@ -186,14 +230,19 @@ export function syncPlaybackProgress(payload: PlaybackProgressPayload): void {
 
 export function nextTrack(): void {
   if (_queue.length === 0) {
-    if (_state.repeatMode === 'all' && _history.length > 0) {
-      _queue = [..._history]
+    const repeatSeed = getRepeatSeed()
+    if (_state.repeatMode === 'all' && repeatSeed.length > 0) {
+      _history = []
+      if (_currentQueueItem) {
+        _history.push(_currentQueueItem)
+      }
+      const cycleQueue = cloneQueueItems(repeatSeed)
       if (_state.isShuffled) {
-        _unshuffledQueue = [..._queue]
-        for (let i = _queue.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1))
-          ;[_queue[i], _queue[j]] = [_queue[j], _queue[i]]
-        }
+        _unshuffledQueue = cycleQueue
+        _queue = shuffleQueue(cycleQueue)
+      } else {
+        _queue = cycleQueue
+        _unshuffledQueue = []
       }
       emitQueueUpdated()
     } else {
@@ -201,12 +250,15 @@ export function nextTrack(): void {
     }
   }
 
-  const next = _queue.shift()!
+  const next = _queue.shift()
+  if (!next) return
+
   if (_state.isShuffled) {
-    _unshuffledQueue = _unshuffledQueue.filter(id => id !== next)
+    const unIndex = _unshuffledQueue.findIndex((item) => item.id === next.id)
+    if (unIndex !== -1) _unshuffledQueue.splice(unIndex, 1)
   }
   emitQueueUpdated()
-  playTrack(next)
+  void playQueueItem(next)
 }
 
 export function prevTrack(): void {
@@ -220,27 +272,31 @@ export function prevTrack(): void {
     return
   }
 
-  // Pop current track
-  const current = _history.pop()!
+  const current = _history.pop()
+  if (!current) {
+    seek(0)
+    return
+  }
+
   _queue.unshift(current)
   if (_state.isShuffled) {
     _unshuffledQueue.unshift(current)
   }
 
-  // Pop and play previous track
-  const prev = _history.pop()!
+  const prev = _history.pop()
+  if (!prev) {
+    seek(0)
+    return
+  }
   emitQueueUpdated()
-  playTrack(prev)
+  void playQueueItem(prev)
 }
 
 export function toggleShuffle(): void {
   _state.isShuffled = !_state.isShuffled
   if (_state.isShuffled) {
     _unshuffledQueue = [..._queue]
-    for (let i = _queue.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[_queue[i], _queue[j]] = [_queue[j], _queue[i]]
-    }
+    _queue = shuffleQueue(_queue)
   } else {
     _queue = [..._unshuffledQueue]
     _unshuffledQueue = []
@@ -257,25 +313,28 @@ export function cycleRepeat(): void {
 }
 
 export function addToQueue(trackId: number): void {
-  _queue.push(trackId)
+  const queueItem = createQueueItem(trackId)
+  _queue.push(queueItem)
   if (_state.isShuffled) {
-    _unshuffledQueue.push(trackId)
+    _unshuffledQueue.push(queueItem)
   }
   emitQueueUpdated()
 }
 
 export function addNext(trackId: number): void {
-  _queue.unshift(trackId)
+  const queueItem = createQueueItem(trackId)
+  _queue.unshift(queueItem)
   if (_state.isShuffled) {
-    _unshuffledQueue.unshift(trackId)
+    _unshuffledQueue.unshift(queueItem)
   }
   emitQueueUpdated()
 }
 
 export function removeFromQueue(index: number): void {
+  if (index < 0 || index >= _queue.length) return
   const [removed] = _queue.splice(index, 1)
   if (_state.isShuffled) {
-    const unIndex = _unshuffledQueue.indexOf(removed)
+    const unIndex = _unshuffledQueue.findIndex((item) => item.id === removed.id)
     if (unIndex !== -1) _unshuffledQueue.splice(unIndex, 1)
   }
   emitQueueUpdated()
@@ -288,34 +347,31 @@ export function clearQueue(): void {
 }
 
 export function setQueue(trackIds: number[]): void {
-  _queue = [...trackIds]
+  const queueItems = trackIds.map((trackId) => createQueueItem(trackId))
   if (_state.isShuffled) {
-    _unshuffledQueue = [...trackIds]
-    for (let i = _queue.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[_queue[i], _queue[j]] = [_queue[j], _queue[i]]
-    }
+    _unshuffledQueue = queueItems
+    _queue = shuffleQueue(queueItems)
+  } else {
+    _queue = queueItems
+    _unshuffledQueue = []
   }
   emitQueueUpdated()
 }
 
 export function reorderQueue(from: number, to: number): void {
-  const [item] = _queue.splice(from, 1)
-  _queue.splice(to, 0, item)
+  if (from < 0 || from >= _queue.length || to < 0 || to >= _queue.length || from === to) {
+    return
+  }
+
+  _queue = moveItem(_queue, from, to)
   if (_state.isShuffled) {
-    // reordering while shuffled only affects shuffled queue,
-    // we can leave unshuffled alone or move it there too?
-    // Usually, dragging in a shuffled queue means you want it to play next in the current order.
-    // unshuffled queue doesn't need to be reordered.
-  } else {
-    // Wait, if we are NOT shuffled, reorderQueue changes _queue, which is the unshuffled queue.
-    // That's fine.
+    _unshuffledQueue = [..._queue]
   }
   emitQueueUpdated()
 }
 
 export function getQueue(): number[] {
-  return [..._queue]
+  return _queue.map((item) => item.trackId)
 }
 
 export function getState(): PlayerState {
@@ -331,8 +387,10 @@ export function onTrackEnded(): void {
   }
 
   if (_state.repeatMode === 'one') {
-    if (_state.currentTrackId !== null) {
-      playTrack(_state.currentTrackId)
+    if (_currentQueueItem) {
+      void playQueueItem(createQueueItem(_currentQueueItem.trackId))
+    } else if (_state.currentTrackId !== null) {
+      void playTrack(_state.currentTrackId)
     }
     return
   }
