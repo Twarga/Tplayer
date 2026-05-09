@@ -171,6 +171,7 @@ export function initDatabase(): BetterSqlite3.Database {
     eq_bands: '[0,0,0,0,0,0,0,0,0,0]',
     volume: '0.8',
     yt_dlp_path: '',
+    youtube_download_settings: '',
     lastfm_api_key: '',
     lastfm_secret: '',
     lastfm_session_key: '',

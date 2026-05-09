@@ -1,22 +1,29 @@
 import { useMemo } from 'react'
 import { Disc, Play } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useLibraryStore } from '@/stores/libraryStore'
 import { usePlayerStore } from '@/stores/playerStore'
-import { api } from '@/lib/ipc'
+import { useQueueStore } from '@/stores/queueStore'
+import { staggerParent, staggerItem } from '@/lib/animations'
 
 export function AlbumView() {
   const { tracks } = useLibraryStore()
   const { play } = usePlayerStore()
 
   const albums = useMemo(() => {
-    const map = new Map<string, { title: string; artist: string; trackIds: number[]; count: number }>()
+    const map = new Map<string, { title: string; artist: string; trackIds: number[]; count: number; coverPath: string | null }>()
     for (const track of tracks) {
-      const key = track.album
+      const key = track.album || 'Unknown Album'
       if (!map.has(key)) {
-        map.set(key, { title: track.album, artist: track.artist, trackIds: [], count: 0 })
+        map.set(key, { title: key, artist: track.artist, trackIds: [], count: 0, coverPath: track.cover_path ?? null })
       }
-      map.get(key)!.trackIds.push(track.id)
-      map.get(key)!.count++
+      const entry = map.get(key)!
+      entry.trackIds.push(track.id)
+      entry.count++
+      // keep the first found cover
+      if (!entry.coverPath && track.cover_path) {
+        entry.coverPath = track.cover_path
+      }
     }
     return Array.from(map.values()).sort((a, b) => a.title.localeCompare(b.title))
   }, [tracks])
@@ -24,10 +31,7 @@ export function AlbumView() {
   const handlePlayAlbum = async (e: React.MouseEvent, trackIds: number[]) => {
     e.stopPropagation()
     if (trackIds.length === 0) return
-    await api.queue.clear()
-    for (const id of trackIds) {
-      await api.queue.add(id)
-    }
+    await useQueueStore.getState().set(trackIds)
     play(trackIds[0])
   }
 
@@ -41,15 +45,30 @@ export function AlbumView() {
       {albums.length === 0 ? (
         <div className="border-y border-white/[0.06] text-center py-16 text-secondary">No albums found</div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-5">
+        <motion.div
+          variants={staggerParent}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5"
+        >
           {albums.map((album) => (
-            <div
+            <motion.div
               key={album.title}
+              variants={staggerItem}
               className="group cursor-pointer border-b border-white/[0.06] pb-4 transition-colors hover:border-accent/35"
               onClick={(e) => handlePlayAlbum(e, album.trackIds)}
             >
-              <div className="aspect-square bg-[radial-gradient(circle_at_top_left,rgba(255,176,0,0.16),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.03),transparent)] mb-4 flex items-center justify-center relative overflow-hidden">
-                <Disc size={48} className="text-tertiary" />
+              <div className="aspect-square bg-[radial-gradient(circle_at_top_left,rgba(255,176,0,0.16),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.03),transparent)] mb-4 flex items-center justify-center relative overflow-hidden rounded-sm">
+                {album.coverPath ? (
+                  <img
+                    src={`tplayer-img://media/${encodeURIComponent(album.coverPath)}`}
+                    alt={album.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <Disc size={48} className="text-tertiary" />
+                )}
                 <button
                   onClick={(e) => handlePlayAlbum(e, album.trackIds)}
                   className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-accent text-background flex items-center justify-center opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-spring shadow-play-button hover:scale-105"
@@ -64,9 +83,9 @@ export function AlbumView() {
               <p className="text-xs text-secondary truncate" title={album.artist}>
                 {album.artist} • {album.count} tracks
               </p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   )

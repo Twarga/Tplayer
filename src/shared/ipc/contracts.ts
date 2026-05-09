@@ -47,6 +47,44 @@ export interface DownloadStartedPayload {
   status: 'downloading'
 }
 
+export interface PlaylistVideoInfo {
+  videoId: string
+  title: string
+  channel: string
+  duration: string
+  thumbnail: string
+}
+
+export interface DownloadOptions {
+  audioFormat: 'mp3' | 'm4a' | 'flac' | 'wav' | 'opus'
+  audioQuality: number
+  embedThumbnail: boolean
+  addMetadata: boolean
+  outputDir?: string
+}
+
+export interface BatchDownloadProgressPayload {
+  playlistUrl: string
+  completed: number
+  total: number
+  currentVideoId: string
+  currentTitle: string
+  currentProgress: number
+}
+
+export interface BatchDownloadDonePayload {
+  playlistUrl: string
+  completed: number
+  failed: number
+  total: number
+}
+
+export interface BatchDownloadErrorPayload {
+  playlistUrl: string
+  videoId: string
+  error: string
+}
+
 export interface DownloadDonePayload {
   id: string
   videoId: string
@@ -136,7 +174,9 @@ export interface TplayerAPI {
   }
   youtube: {
     search: (query: string) => Promise<YtSearchResult[]>
-    download: (url: string, videoId: string, title?: string) => Promise<DownloadStartedPayload>
+    getPlaylistInfo: (url: string) => Promise<PlaylistVideoInfo[]>
+    download: (url: string, videoId: string, title?: string, options?: DownloadOptions) => Promise<DownloadStartedPayload>
+    downloadBatch: (urls: string[], options: DownloadOptions, playlistUrl?: string) => Promise<void>
     cancelDownload: (videoId: string) => Promise<DownloadCancelledPayload>
     getHistory: () => Promise<Download[]>
     clearHistory: () => Promise<void>
@@ -146,6 +186,9 @@ export interface TplayerAPI {
     onDownloadStarted: (callback: (data: DownloadStartedPayload) => void) => () => void
     onDownloadCancelled: (callback: (data: DownloadCancelledPayload) => void) => () => void
     onHistoryCleared: (callback: () => void) => () => void
+    onBatchProgress: (callback: (data: BatchDownloadProgressPayload) => void) => () => void
+    onBatchDone: (callback: (data: BatchDownloadDonePayload) => void) => () => void
+    onBatchError: (callback: (data: BatchDownloadErrorPayload) => void) => () => void
   }
   settings: {
     get: (key: string) => Promise<string | null>

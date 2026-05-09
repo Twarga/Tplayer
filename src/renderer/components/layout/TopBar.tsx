@@ -1,21 +1,25 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, Bell, SlidersHorizontal, UserRound } from 'lucide-react'
+import { Search, SlidersHorizontal, UserRound, PanelRight } from 'lucide-react'
 import { useLibraryStore } from '@/stores/libraryStore'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useSearchStore } from '@/stores/searchStore'
 import { Input } from '@/components/ui/input'
 
 interface TopBarProps {
   activeView: string
   title: string
   subtitle: string
+  npPanelOpen?: boolean
+  onNpPanelOpen?: () => void
   onViewChange?: (view: string) => void
   onSearch?: (query: string) => void
 }
 
-export function TopBar({ title, subtitle, onViewChange, onSearch }: TopBarProps) {
+export function TopBar({ title, subtitle, onViewChange, onSearch, npPanelOpen, onNpPanelOpen }: TopBarProps) {
   const [searchValue, setSearchValue] = useState('')
   const { search } = useLibraryStore()
   const { settings } = useSettingsStore()
+  const { open: openSearch } = useSearchStore()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const inputRef = useRef<HTMLInputElement>(null)
   const displayName = (settings.display_name || 'Twarga').trim() || 'Twarga'
@@ -36,7 +40,7 @@ export function TopBar({ title, subtitle, onViewChange, onSearch }: TopBarProps)
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault()
-        inputRef.current?.focus()
+        openSearch()
       }
     }
     
@@ -46,7 +50,7 @@ export function TopBar({ title, subtitle, onViewChange, onSearch }: TopBarProps)
       window.removeEventListener('keydown', handleKeyDown)
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }, [])
+  }, [openSearch])
 
   return (
     <div className="px-8 pt-6 pb-4 flex items-start justify-between gap-6">
@@ -57,8 +61,10 @@ export function TopBar({ title, subtitle, onViewChange, onSearch }: TopBarProps)
             ref={inputRef}
             value={searchValue}
             onChange={handleSearch}
+            onFocus={() => openSearch()}
             placeholder="Search songs, artists, albums..."
-            className="pl-10 pr-16 h-10 rounded-full bg-[#151018]/85 border-white/[0.11] shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]"
+            className="pl-10 pr-16 h-10 rounded-full bg-[#151018]/85 border-white/[0.11] shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] cursor-pointer"
+            readOnly
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-muted bg-surface-2 px-2 py-1 rounded-md border border-white/[0.06]">
             Ctrl K
@@ -79,9 +85,15 @@ export function TopBar({ title, subtitle, onViewChange, onSearch }: TopBarProps)
         >
           <SlidersHorizontal size={18} />
         </button>
-        <button className="text-secondary hover:text-accent interactive-soft" title="Notifications">
-          <Bell size={16} />
-        </button>
+        {!npPanelOpen && (
+          <button
+            onClick={onNpPanelOpen}
+            className="text-secondary hover:text-accent interactive-soft"
+            title="Open Now Playing panel"
+          >
+            <PanelRight size={18} />
+          </button>
+        )}
         <button
           onClick={() => onViewChange?.('settings')}
           className="flex items-center gap-2 text-sm text-secondary hover:text-primary interactive-soft"

@@ -52,7 +52,9 @@ export const IPC_CHANNELS = {
   },
   youtube: {
     search: 'youtube:search',
+    getPlaylistInfo: 'youtube:get-playlist-info',
     download: 'youtube:download',
+    downloadBatch: 'youtube:download-batch',
     cancelDownload: 'youtube:cancel-download',
     getHistory: 'youtube:get-history',
     clearHistory: 'youtube:clear-history',
@@ -62,6 +64,9 @@ export const IPC_CHANNELS = {
     downloadStarted: 'youtube:download-started',
     downloadCancelled: 'youtube:download-cancelled',
     historyCleared: 'youtube:history-cleared',
+    batchProgress: 'youtube:batch-progress',
+    batchDone: 'youtube:batch-done',
+    batchError: 'youtube:batch-error',
   },
   settings: {
     get: 'settings:get',

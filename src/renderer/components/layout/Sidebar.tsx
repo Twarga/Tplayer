@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Home, Library, Settings, Plus, Download, Inbox, Music4, Disc3, UserRound } from 'lucide-react'
 import { usePlaylistStore } from '@/stores/playlistStore'
+import { CreatePlaylistDialog } from '@/components/ui/create-playlist-dialog'
 import { cn } from '@/lib/utils'
 
 interface NavItemProps {
@@ -15,19 +16,17 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 w-full h-10 px-2.5 text-sm font-medium interactive-soft relative",
-        active
-          ? 'text-primary'
-          : 'text-secondary hover:text-primary'
+        'flex items-center gap-3 w-full h-10 px-2.5 text-sm font-medium interactive-soft relative',
+        active ? 'text-primary' : 'text-secondary hover:text-primary'
       )}
     >
-      <div 
+      <div
         className={cn(
-          "absolute left-0 top-2.5 bottom-2.5 w-[2px] bg-accent transition-transform duration-slow origin-center",
-          active ? "scale-y-100" : "scale-y-0"
-        )} 
+          'absolute left-0 top-2.5 bottom-2.5 w-[2px] bg-accent transition-transform duration-slow origin-center',
+          active ? 'scale-y-100' : 'scale-y-0'
+        )}
       />
-      <span className={cn("w-5 h-5 flex items-center justify-center", active ? "text-accent" : "")}>{icon}</span>
+      <span className={cn('w-5 h-5 flex items-center justify-center', active ? 'text-accent' : '')}>{icon}</span>
       <span className="flex-1 text-left truncate">{label}</span>
     </button>
   )
@@ -41,16 +40,11 @@ interface SidebarProps {
 export function Sidebar({ activeView, onViewChange }: SidebarProps) {
   const { playlists } = usePlaylistStore()
   const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const [newPlaylistName, setNewPlaylistName] = useState('')
   const { createPlaylist, loadPlaylists } = usePlaylistStore()
 
-  const handleCreatePlaylist = async () => {
-    if (newPlaylistName.trim()) {
-      await createPlaylist(newPlaylistName.trim())
-      setNewPlaylistName('')
-      setShowCreateDialog(false)
-      await loadPlaylists()
-    }
+  const handleCreatePlaylist = async (name: string) => {
+    await createPlaylist(name)
+    await loadPlaylists()
   }
 
   return (
@@ -84,14 +78,14 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
 
         {playlists.length > 0 && (
           <div className="flex items-center justify-between px-2.5 pt-6 pb-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-tertiary">Playlists</p>
-          <button
-            onClick={() => setShowCreateDialog(true)}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-tertiary hover:text-primary interactive-soft"
-            title="Create playlist"
-          >
-            <Plus size={14} />
-          </button>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-tertiary">Playlists</p>
+            <button
+              onClick={() => setShowCreateDialog(true)}
+              className="w-7 h-7 rounded-full flex items-center justify-center text-tertiary hover:text-primary interactive-soft"
+              title="Create playlist"
+            >
+              <Plus size={14} />
+            </button>
           </div>
         )}
 
@@ -110,37 +104,11 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
         <NavItem icon={<Settings size={20} />} label="Settings" active={activeView === 'settings'} onClick={() => onViewChange('settings')} />
       </div>
 
-      {/* Create Playlist Dialog */}
-      {showCreateDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowCreateDialog(false)}>
-          <div className="bg-surface-1 border border-border-default rounded-xl p-6 w-80 shadow-modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-primary mb-4">Create Playlist</h3>
-            <input
-              type="text"
-              value={newPlaylistName}
-              onChange={(e) => setNewPlaylistName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCreatePlaylist()}
-              placeholder="Playlist name"
-              className="w-full h-10 px-3 rounded-md bg-input-bg border border-input-border text-primary placeholder:text-tertiary focus:border-accent focus:outline-none mb-4"
-              autoFocus
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowCreateDialog(false)}
-                className="px-4 py-2 rounded-md text-sm text-secondary hover:text-primary hover:bg-surface-2 transition-all active:scale-95"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreatePlaylist}
-                className="px-4 py-2 rounded-md text-sm bg-accent text-background hover:bg-accent-hover transition-all active:scale-95"
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CreatePlaylistDialog
+        open={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+        onConfirm={handleCreatePlaylist}
+      />
     </aside>
   )
 }

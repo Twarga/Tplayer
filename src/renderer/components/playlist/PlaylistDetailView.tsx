@@ -3,6 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { Play, Pause, Trash2 } from 'lucide-react'
 import { usePlayerStore } from '@/stores/playerStore'
 import { usePlaylistStore } from '@/stores/playlistStore'
+import { TrackContextMenu } from '@/components/ui/track-context-menu'
 import { formatDuration } from '@/lib/utils'
 import { api } from '@/lib/ipc'
 
@@ -67,12 +68,33 @@ export function PlaylistDetailView({ playlistId }: PlaylistDetailViewProps) {
 
   if (!playlist) return null
 
+  // Build mosaic cover cells from loaded tracks
+  const mosaicCovers = tracks
+    .slice(0, 4)
+    .filter((t) => t.cover_path)
+    .map((t) => `tplayer-img://media/${encodeURIComponent(t.cover_path!)}`)
+
   return (
     <div className="p-6 overflow-y-auto h-full animate-fade-in" ref={parentRef}>
       {/* Header */}
       <div className="flex items-end gap-6 mb-8 mt-4">
-        <div className="w-48 h-48 bg-surface-2 rounded-lg shadow-lg flex items-center justify-center shrink-0">
-          <span className="text-6xl text-accent font-bold">{playlist.name[0]}</span>
+        {/* Mosaic / cover — Task 9 */}
+        <div className="w-48 h-48 rounded-lg shadow-lg overflow-hidden shrink-0 bg-surface-2">
+          {mosaicCovers.length > 0 ? (
+            <div className="grid grid-cols-2 grid-rows-2 w-full h-full">
+              {[...mosaicCovers, ...Array(Math.max(0, 4 - mosaicCovers.length)).fill('')].map((url, i) =>
+                url ? (
+                  <img key={i} src={url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                ) : (
+                  <div key={i} className="bg-surface-3" />
+                )
+              )}
+            </div>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <span className="text-6xl text-accent font-bold">{playlist.name[0]}</span>
+            </div>
+          )}
         </div>
         <div className="flex flex-col gap-2 pb-2">
           <span className="text-xs font-bold uppercase tracking-widest text-tertiary">Playlist</span>
@@ -94,7 +116,7 @@ export function PlaylistDetailView({ playlistId }: PlaylistDetailViewProps) {
       {isLoading ? (
         <div className="space-y-2 mt-8">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-14 bg-surface-1 rounded-md animate-pulse" />
+            <div key={i} className="h-14 rounded-md skeleton" />
           ))}
         </div>
       ) : tracks.length === 0 ? (
@@ -128,6 +150,7 @@ export function PlaylistDetailView({ playlistId }: PlaylistDetailViewProps) {
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
+                  <TrackContextMenu trackId={track.id}>
                   <div
                     className="grid grid-cols-[48px_1fr_1fr_80px_48px] gap-3 px-4 h-full rounded-md hover:bg-surface-2 cursor-pointer group transition-colors items-center"
                     onDoubleClick={() => play(track.id)}
@@ -148,7 +171,7 @@ export function PlaylistDetailView({ playlistId }: PlaylistDetailViewProps) {
 
                     <div className="flex items-center gap-3 min-w-0">
                       {track.cover_path ? (
-                        <img src={`tplayer-img://media/${encodeURIComponent(track.cover_path)}`} className="w-10 h-10 rounded object-cover shrink-0" alt="" />
+                        <img src={`tplayer-img://media/${encodeURIComponent(track.cover_path)}`} className="w-10 h-10 rounded object-cover shrink-0" alt="" loading="lazy" />
                       ) : (
                         <div className="w-10 h-10 rounded bg-surface-3 flex items-center justify-center text-tertiary shrink-0">♪</div>
                       )}
@@ -176,6 +199,7 @@ export function PlaylistDetailView({ playlistId }: PlaylistDetailViewProps) {
                       </button>
                     </div>
                   </div>
+                  </TrackContextMenu>
                 </div>
               )
             })}

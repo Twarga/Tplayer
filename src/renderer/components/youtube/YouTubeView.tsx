@@ -2,21 +2,36 @@ import { useState } from 'react'
 import { useYouTubeStore } from '@/stores/youtubeStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Switch } from '@/components/ui/switch'
+import { Slider } from '@/components/ui/slider'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Download,
   FolderOpen,
   HardDrive,
+  ListMusic,
   Loader2,
+  Music,
   Search,
+  Settings2,
+  SquareCheck,
+  Square,
   X,
   Zap,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export function YouTubeView() {
+interface YouTubeViewProps {
+  onViewChange?: (view: string) => void
+}
+
+export function YouTubeView({ onViewChange }: YouTubeViewProps) {
   const {
     searchResults,
     isSearching,
@@ -24,14 +39,36 @@ export function YouTubeView() {
     hasSearched,
     lastQuery,
     downloads,
+    playlistInfo,
+    isFetchingPlaylist,
+    selectedVideoIds,
+    playlistUrl,
+    playlistError,
+    downloadSettings,
+    batchProgress,
+    isBatchDownloading,
     search,
     download,
     cancelDownload,
     clearHistory,
+    fetchPlaylist,
+    toggleVideoSelection,
+    selectAllVideos,
+    deselectAllVideos,
+    downloadPlaylist,
+    updateDownloadSettings,
   } = useYouTubeStore()
 
+  const [activeTab, setActiveTab] = useState('search')
   const [query, setQuery] = useState('')
   const [urlError, setUrlError] = useState<string | null>(null)
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [createPlaylistToggle, setCreatePlaylistToggle] = useState(false)
+  const [playlistNameInput, setPlaylistNameInput] = useState('')
+
+  const downloadByVideoId = new Map(downloads.map((item) => [item.videoId, item]))
+  const firstResult = searchResults[0]
+  const secondaryResults = searchResults.slice(1)
 
   const handleSearch = async () => {
     await search(query)
@@ -55,9 +92,38 @@ export function YouTubeView() {
     setQuery('')
   }
 
-  const downloadByVideoId = new Map(downloads.map((item) => [item.videoId, item]))
-  const firstResult = searchResults[0]
-  const secondaryResults = searchResults.slice(1)
+  const handleFetchPlaylist = async () => {
+    if (!query.trim()) return
+    const target = extractYouTubeTarget(query.trim())
+    if (!target || !target.id.startsWith('playlist:')) {
+      setUrlError('Paste a valid YouTube playlist URL.')
+      return
+    }
+    setUrlError(null)
+    await fetchPlaylist(query.trim())
+  }
+
+  const handleDownloadSelected = async () => {
+    if (!playlistUrl || selectedVideoIds.size === 0) return
+    const selectedIds = Array.from(selectedVideoIds)
+    await downloadPlaylist(
+      playlistUrl,
+      selectedIds,
+      downloadSettings,
+      createPlaylistToggle,
+      playlistNameInput.trim() || 'YouTube Import'
+    )
+    // Navigate to new playlist after a delay if created
+    if (createPlaylistToggle && onViewChange) {
+      setTimeout(() => {
+        // Navigate to playlists view after creation
+        onViewChange('playlists')
+      }, 3000)
+    }
+  }
+
+  const allSelected = playlistInfo !== null && playlistInfo.length > 0 && selectedVideoIds.size === playlistInfo.length
+  const someSelected = selectedVideoIds.size > 0 && !allSelected
 
   return (
     <div className="h-full overflow-y-auto px-8 pb-28 animate-fade-in">
@@ -66,7 +132,7 @@ export function YouTubeView() {
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">YouTube Import</p>
             <p className="mt-1 text-sm text-secondary">
-              Search by title, artist, or paste a YouTube link.
+              Search by title, import a single video, or pull an entire playlist.
             </p>
           </div>
           {downloads.length > 0 && (
@@ -74,85 +140,350 @@ export function YouTubeView() {
           )}
         </div>
 
-        <div className="flex gap-3">
-          <Input
-            placeholder="Search YouTube or paste a URL"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value)
-              if (urlError) setUrlError(null)
-            }}
-            onKeyDown={(e) => e.key === 'Enter' && (extractYouTubeTarget(query.trim()) ? handleDownloadUrl() : handleSearch())}
-            className="flex-1 rounded-full bg-[#151018]/85 border-white/[0.11]"
-          />
-          <Button onClick={handleSearch} disabled={isSearching || !query.trim()} className="min-w-[112px]">
-            {isSearching ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Search size={16} className="mr-2" />}
-            Search
-          </Button>
-          <Button onClick={handleDownloadUrl} variant="outline" disabled={!extractYouTubeTarget(query.trim())}>
-            <Download size={16} className="mr-2" />
-            Import URL
-          </Button>
-        </div>
-        {(searchError || urlError) && (
-          <div className="mt-4 border-l border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-            <div className="flex items-start gap-2">
-              <AlertCircle size={16} className="mt-0.5 shrink-0" />
-              <span>{searchError || urlError}</span>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="bg-[#151018]/85 border border-white/[0.11]">
+            <TabsTrigger value="search" className="text-xs data-[state=active]:bg-accent data-[state=active]:text-black">
+              <Search size={13} className="mr-1.5" />
+              Search
+            </TabsTrigger>
+            <TabsTrigger value="single" className="text-xs data-[state=active]:bg-accent data-[state=active]:text-black">
+              <Music size={13} className="mr-1.5" />
+              Single URL
+            </TabsTrigger>
+            <TabsTrigger value="playlist" className="text-xs data-[state=active]:bg-accent data-[state=active]:text-black">
+              <ListMusic size={13} className="mr-1.5" />
+              Playlist
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="search" className="mt-4">
+            <div className="flex gap-3">
+              <Input
+                placeholder="Search YouTube by title or artist"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value)
+                  if (urlError) setUrlError(null)
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                className="flex-1 rounded-full bg-[#151018]/85 border-white/[0.11]"
+              />
+              <Button onClick={handleSearch} disabled={isSearching || !query.trim()} className="min-w-[112px]">
+                {isSearching ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Search size={16} className="mr-2" />}
+                Search
+              </Button>
             </div>
-          </div>
-        )}
-      </section>
-
-      <section className="mb-8">
-        {isSearching ? (
-          <div className="border-y border-white/[0.06] py-8">
-            <Loader2 size={22} className="animate-spin text-accent mb-3" />
-            <p className="text-sm font-medium text-primary">Searching YouTube</p>
-            <p className="text-xs text-tertiary mt-1">Fetching results from yt-dlp.</p>
-          </div>
-        ) : firstResult ? (
-          <>
-            <div className="mb-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-tertiary">
-                {lastQuery ? `Results for "${lastQuery}"` : 'Search results'}
-              </p>
-            </div>
-
-            <FeaturedResult
-              result={firstResult}
-              downloadItem={downloadByVideoId.get(firstResult.videoId)}
-              onDownload={() => download(`https://youtube.com/watch?v=${firstResult.videoId}`, firstResult.videoId, firstResult.title)}
-            />
-
-            {secondaryResults.length > 0 && (
-              <div className="mt-6 divide-y divide-white/[0.06] border-y border-white/[0.06]">
-                {secondaryResults.map((result) => {
-                  const downloadItem = downloadByVideoId.get(result.videoId)
-                  return (
-                    <ResultRow
-                      key={result.videoId}
-                      result={result}
-                      downloadItem={downloadItem}
-                      onDownload={() => download(`https://youtube.com/watch?v=${result.videoId}`, result.videoId, result.title)}
-                    />
-                  )
-                })}
+            {searchError && (
+              <div className="mt-4 border-l border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                <div className="flex items-start gap-2">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  <span>{searchError}</span>
+                </div>
               </div>
             )}
-          </>
-        ) : (
-          <div className="border-y border-dashed border-white/[0.12] py-10">
-            <p className="text-sm font-semibold text-primary">
-              {hasSearched ? 'No results matched that search.' : 'Ready to import.'}
-            </p>
-            <p className="mt-2 max-w-md text-sm leading-6 text-secondary">
-              {hasSearched
-                ? 'Try a cleaner artist and title, or paste the exact YouTube URL.'
-                : 'Search for music, paste a video URL, or paste a playlist URL to bring it into your local library.'}
-            </p>
-          </div>
-        )}
+
+            <div className="mt-6">
+              {isSearching ? (
+                <div className="border-y border-white/[0.06] py-8">
+                  <Loader2 size={22} className="animate-spin text-accent mb-3" />
+                  <p className="text-sm font-medium text-primary">Searching YouTube</p>
+                  <p className="text-xs text-tertiary mt-1">Fetching results from yt-dlp.</p>
+                </div>
+              ) : firstResult ? (
+                <>
+                  <div className="mb-5">
+                    <p className="text-xs uppercase tracking-[0.18em] text-tertiary">
+                      {lastQuery ? `Results for "${lastQuery}"` : 'Search results'}
+                    </p>
+                  </div>
+
+                  <FeaturedResult
+                    result={firstResult}
+                    downloadItem={downloadByVideoId.get(firstResult.videoId)}
+                    onDownload={() => download(`https://youtube.com/watch?v=${firstResult.videoId}`, firstResult.videoId, firstResult.title)}
+                  />
+
+                  {secondaryResults.length > 0 && (
+                    <div className="mt-6 divide-y divide-white/[0.06] border-y border-white/[0.06]">
+                      {secondaryResults.map((result) => {
+                        const downloadItem = downloadByVideoId.get(result.videoId)
+                        return (
+                          <ResultRow
+                            key={result.videoId}
+                            result={result}
+                            downloadItem={downloadItem}
+                            onDownload={() => download(`https://youtube.com/watch?v=${result.videoId}`, result.videoId, result.title)}
+                          />
+                        )
+                      })}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="border-y border-dashed border-white/[0.12] py-10">
+                  <p className="text-sm font-semibold text-primary">
+                    {hasSearched ? 'No results matched that search.' : 'Ready to import.'}
+                  </p>
+                  <p className="mt-2 max-w-md text-sm leading-6 text-secondary">
+                    {hasSearched
+                      ? 'Try a cleaner artist and title, or paste the exact YouTube URL.'
+                      : 'Search for music, paste a video URL, or paste a playlist URL to bring it into your local library.'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="single" className="mt-4">
+            <div className="flex gap-3">
+              <Input
+                placeholder="Paste a YouTube video URL"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value)
+                  if (urlError) setUrlError(null)
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && handleDownloadUrl()}
+                className="flex-1 rounded-full bg-[#151018]/85 border-white/[0.11]"
+              />
+              <Button onClick={handleDownloadUrl} disabled={!extractYouTubeTarget(query.trim())}>
+                <Download size={16} className="mr-2" />
+                Import URL
+              </Button>
+            </div>
+            {urlError && activeTab === 'single' && (
+              <div className="mt-4 border-l border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                <div className="flex items-start gap-2">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  <span>{urlError}</span>
+                </div>
+              </div>
+            )}
+            <div className="mt-6 border-y border-dashed border-white/[0.12] py-10">
+              <p className="text-sm font-semibold text-primary">Single video import</p>
+              <p className="mt-2 max-w-md text-sm leading-6 text-secondary">
+                Paste any YouTube video, Short, or embed link. The audio will be extracted and added to your library using your current advanced settings.
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="playlist" className="mt-4">
+            <div className="flex gap-3">
+              <Input
+                placeholder="Paste a YouTube playlist URL"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value)
+                  if (urlError) setUrlError(null)
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && handleFetchPlaylist()}
+                className="flex-1 rounded-full bg-[#151018]/85 border-white/[0.11]"
+              />
+              <Button onClick={handleFetchPlaylist} disabled={isFetchingPlaylist || !query.trim()}>
+                {isFetchingPlaylist ? <Loader2 size={16} className="mr-2 animate-spin" /> : <ListMusic size={16} className="mr-2" />}
+                Fetch Playlist
+              </Button>
+            </div>
+            {urlError && activeTab === 'playlist' && (
+              <div className="mt-4 border-l border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                <div className="flex items-start gap-2">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  <span>{urlError}</span>
+                </div>
+              </div>
+            )}
+            {playlistError && (
+              <div className="mt-4 border-l border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                <div className="flex items-start gap-2">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  <span>{playlistError}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Advanced Settings */}
+            <div className="mt-4">
+              <button
+                onClick={() => setShowAdvanced((v) => !v)}
+                className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-tertiary hover:text-primary interactive-soft"
+              >
+                <Settings2 size={14} />
+                Advanced Settings
+                {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+
+              {showAdvanced && (
+                <div className="mt-3 grid gap-4 rounded-lg border border-white/[0.08] bg-[#151018]/60 p-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-tertiary">
+                      Audio Format
+                    </label>
+                    <select
+                      value={downloadSettings.audioFormat}
+                      onChange={(e) => updateDownloadSettings({ audioFormat: e.target.value as any })}
+                      className="w-full rounded-md bg-[#0d0a10] border border-white/[0.11] px-3 py-2 text-sm text-primary outline-none focus:border-accent"
+                    >
+                      <option value="mp3">MP3</option>
+                      <option value="m4a">M4A</option>
+                      <option value="flac">FLAC</option>
+                      <option value="wav">WAV</option>
+                      <option value="opus">Opus</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-tertiary">
+                      Quality (0 = best, 10 = worst)
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <Slider
+                        value={[downloadSettings.audioQuality]}
+                        onValueChange={([v]) => updateDownloadSettings({ audioQuality: v })}
+                        min={0}
+                        max={10}
+                        step={1}
+                        className="flex-1"
+                      />
+                      <span className="w-6 text-right text-xs font-mono text-primary">{downloadSettings.audioQuality}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-tertiary">Embed Thumbnail</label>
+                    <Switch
+                      checked={downloadSettings.embedThumbnail}
+                      onCheckedChange={(v) => updateDownloadSettings({ embedThumbnail: v })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-tertiary">Add Metadata</label>
+                    <Switch
+                      checked={downloadSettings.addMetadata}
+                      onCheckedChange={(v) => updateDownloadSettings({ addMetadata: v })}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Playlist Videos */}
+            {playlistInfo && playlistInfo.length > 0 && (
+              <div className="mt-6">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs uppercase tracking-[0.18em] text-tertiary">
+                    {playlistInfo.length} videos found
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={allSelected ? deselectAllVideos : selectAllVideos}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-primary interactive-soft"
+                    >
+                      {allSelected ? <SquareCheck size={14} /> : someSelected ? <SquareCheck size={14} /> : <Square size={14} />}
+                      {allSelected ? 'Deselect All' : 'Select All'}
+                    </button>
+                  </div>
+                </div>
+
+                <ScrollArea className="h-[360px] rounded-lg border border-white/[0.06]">
+                  <div className="divide-y divide-white/[0.06]">
+                    {playlistInfo.map((video) => {
+                      const isSelected = selectedVideoIds.has(video.videoId)
+                      return (
+                        <div
+                          key={video.videoId}
+                          onClick={() => toggleVideoSelection(video.videoId)}
+                          className={cn(
+                            'flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-colors',
+                            isSelected ? 'bg-accent/10' : 'hover:bg-white/[0.03]'
+                          )}
+                        >
+                          <div className="shrink-0">
+                            {isSelected ? (
+                              <SquareCheck size={16} className="text-accent" />
+                            ) : (
+                              <Square size={16} className="text-tertiary" />
+                            )}
+                          </div>
+                          <div className="aspect-video w-20 shrink-0 overflow-hidden bg-white/[0.04]">
+                            <img src={video.thumbnail} alt="" className="h-full w-full object-cover" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-primary">{video.title}</p>
+                            <p className="mt-0.5 truncate text-xs text-secondary">{video.channel} • {video.duration}</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </ScrollArea>
+
+                {/* Batch progress */}
+                {isBatchDownloading && batchProgress && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-secondary">
+                        {batchProgress.currentTitle}
+                      </span>
+                      <span className="text-xs text-tertiary">
+                        {batchProgress.completed}/{batchProgress.total}
+                      </span>
+                    </div>
+                    <div className="h-[3px] bg-white/16 overflow-hidden">
+                      <div
+                        className="h-full bg-accent transition-all duration-300"
+                        style={{ width: `${batchProgress.total > 0 ? (batchProgress.completed / batchProgress.total) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Create playlist option */}
+                <div className="mt-4 flex items-center gap-3">
+                  <Switch
+                    checked={createPlaylistToggle}
+                    onCheckedChange={setCreatePlaylistToggle}
+                    id="create-playlist"
+                  />
+                  <label htmlFor="create-playlist" className="text-sm text-secondary cursor-pointer">
+                    Create as app playlist
+                  </label>
+                </div>
+                {createPlaylistToggle && (
+                  <div className="mt-2">
+                    <Input
+                      placeholder="Playlist name"
+                      value={playlistNameInput}
+                      onChange={(e) => setPlaylistNameInput(e.target.value)}
+                      className="max-w-sm rounded-full bg-[#151018]/85 border-white/[0.11]"
+                    />
+                  </div>
+                )}
+
+                <div className="mt-4">
+                  <Button
+                    onClick={handleDownloadSelected}
+                    disabled={isBatchDownloading || selectedVideoIds.size === 0}
+                    className="min-w-[160px]"
+                  >
+                    {isBatchDownloading ? (
+                      <Loader2 size={16} className="mr-2 animate-spin" />
+                    ) : (
+                      <Download size={16} className="mr-2" />
+                    )}
+                    Download Selected ({selectedVideoIds.size})
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {playlistInfo && playlistInfo.length === 0 && !isFetchingPlaylist && (
+              <div className="mt-6 border-y border-dashed border-white/[0.12] py-10">
+                <p className="text-sm font-semibold text-primary">No videos found in this playlist.</p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </section>
 
       {downloads.length > 0 && (
@@ -170,7 +501,7 @@ export function YouTubeView() {
                 <div className="flex items-center gap-4 mb-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-primary truncate">{item.title}</p>
-                    <div className="flex items-center gap-3 mt-1">
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
                       <span
                         className={cn(
                           'text-[10px] uppercase font-bold tracking-wider',

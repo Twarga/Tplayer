@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { useTheme } from '@/components/ThemeProvider'
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/ipc'
+// @ts-ignore – JSON import
+import pkg from '../../../../package.json'
 
 const ACCENT_COLORS = [
   { name: 'Amber', value: 'amber', color: '#E8A87C' },
@@ -282,7 +284,7 @@ export function SettingsView() {
 
       <section>
         <h2 className="text-lg font-semibold text-primary mb-4">About</h2>
-        <p className="text-sm text-secondary">Tplayer v0.1.0</p>
+        <p className="text-sm text-secondary">Tplayer v{pkg.version}</p>
         <p className="text-xs text-tertiary mt-1">A local-first desktop music player with YouTube import.</p>
       </section>
       </div>

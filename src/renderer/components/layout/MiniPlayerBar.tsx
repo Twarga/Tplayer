@@ -6,6 +6,7 @@ import { useLibraryStore } from '@/stores/libraryStore'
 import { useToast } from '@/stores/toastStore'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { SeekBar } from '@/components/player/SeekBar'
+import { Slider } from '@/components/ui/slider'
 import { cn } from '@/lib/utils'
 import { animations, staggerParent } from '@/lib/animations'
 
@@ -64,10 +65,10 @@ export function MiniPlayerBar({ onQueueClick }: { onQueueClick?: () => void }) {
                 <img 
                   src={`tplayer-img://media/${encodeURIComponent(currentTrack.cover_path)}`} 
                   alt="Album Art" 
-                  className="w-12 h-12 object-cover shrink-0"
+                  className="w-12 h-12 object-cover shrink-0 rounded-md"
                 />
               ) : (
-                <div className="w-12 h-12 bg-white/[0.04] flex items-center justify-center text-accent font-bold text-lg shrink-0">
+                <div className="w-12 h-12 bg-white/[0.04] flex items-center justify-center text-accent font-bold text-lg shrink-0 rounded-md">
                   {currentTrack.title?.[0] || '♪'}
                 </div>
               )}
@@ -191,14 +192,14 @@ export function MiniPlayerBar({ onQueueClick }: { onQueueClick?: () => void }) {
               <VolumeIcon size={18} />
             </button>
 
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={Math.round(volume * 100)}
-              onChange={(e) => setVolume(Number(e.target.value) / 100)}
-              className="w-24 h-1 bg-white/16 appearance-none cursor-pointer accent-accent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent"
-              title="Volume"
+            <Slider
+              min={0}
+              max={100}
+              step={1}
+              value={[Math.round(volume * 100)]}
+              onValueChange={([v]) => setVolume(v / 100)}
+              className="w-24"
+              aria-label="Volume"
             />
           </div>
         </div>

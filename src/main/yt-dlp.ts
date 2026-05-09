@@ -12,15 +12,14 @@ import type {
   DownloadProgressPayload,
   DownloadStartedPayload,
   ToolAvailabilityPayload,
+  BatchDownloadProgressPayload,
+  BatchDownloadDonePayload,
+  BatchDownloadErrorPayload,
+  DownloadOptions,
 } from '../shared/ipc/contracts'
+import type { YtSearchResult } from '../shared/types/domain'
 
-export interface YtSearchResult {
-  videoId: string
-  title: string
-  channel: string
-  duration: string
-  thumbnail: string
-}
+export type { DownloadOptions }
 
 let _ytDlpPath: string | null = null
 let _ytDlpPathSource: ToolAvailabilityPayload['source'] = 'fallback'
@@ -142,6 +141,31 @@ export async function searchYoutube(query: string): Promise<YtSearchResult[]> {
   }).filter(r => r.videoId)
 }
 
+export async function fetchPlaylistVideos(url: string): Promise<YtSearchResult[]> {
+  const raw = await runYtDlp([
+    '--flat-playlist',
+    '--dump-json',
+    '--no-warnings',
+    url,
+  ])
+
+  const lines = raw.trim().split('\n').filter(Boolean)
+  return lines.map((line) => {
+    try {
+      const obj = JSON.parse(line)
+      return {
+        videoId: obj.id || '',
+        title: obj.title || 'Unknown',
+        channel: obj.uploader || obj.channel || 'Unknown',
+        duration: formatDuration(obj.duration),
+        thumbnail: obj.thumbnail || `https://i.ytimg.com/vi/${obj.id}/mqdefault.jpg`,
+      }
+    } catch {
+      return { videoId: '', title: 'Unknown', channel: 'Unknown', duration: '0:00', thumbnail: '' }
+    }
+  }).filter(r => r.videoId)
+}
+
 function formatDuration(seconds: number): string {
   if (!seconds || isNaN(seconds)) return '0:00'
   const h = Math.floor(seconds / 3600)
@@ -164,12 +188,25 @@ function parseProgress(line: string): { percent: number; speed: string; eta: str
   return null
 }
 
-export async function downloadAudio(url: string, videoId: string, requestedTitle?: string): Promise<DownloadStartedPayload> {
-  const availability = await checkYtDlpAvailability()
-  if (!availability.available) {
-    throw new Error(availability.error || `yt-dlp is not available at ${availability.path}`)
+function extractVideoId(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    const host = parsed.hostname.replace(/^www\./, '')
+    if (!['youtube.com', 'music.youtube.com', 'm.youtube.com', 'youtu.be'].includes(host)) return null
+    if (host === 'youtu.be') {
+      const id = parsed.pathname.split('/').filter(Boolean)[0]
+      return id && /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null
+    }
+    const watchId = parsed.searchParams.get('v')
+    if (watchId && /^[a-zA-Z0-9_-]{11}$/.test(watchId)) return watchId
+    const pathMatch = parsed.pathname.match(/\/(?:embed|shorts)\/([a-zA-Z0-9_-]{11})/)
+    return pathMatch ? pathMatch[1] : null
+  } catch {
+    return null
   }
+}
 
+function getMusicDir(options?: DownloadOptions): string {
   const musicFoldersRaw = getSetting('music_folders')
   let musicDir = path.join(app.getPath('userData'), 'downloads')
 
@@ -180,33 +217,36 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
     } catch {}
   }
 
+  if (options?.outputDir) musicDir = options.outputDir
   fs.mkdirSync(musicDir, { recursive: true })
-  const filesBeforeDownload = new Set(fs.readdirSync(musicDir))
-  const isPlaylistDownload = videoId.startsWith('playlist:')
+  return musicDir
+}
 
-  const outputTemplate = path.join(musicDir, '%(title)s [%(id)s].%(ext)s')
+function createDownloadRecord(url: string, videoId: string, title: string): string {
   const insertResult = getDb().prepare(`
     INSERT INTO downloads (url, video_id, title, status, progress)
     VALUES (?, ?, ?, 'downloading', 0)
-  `).run(url, videoId, requestedTitle || 'Downloading...')
-  const downloadId = String(insertResult.lastInsertRowid)
-  const startedPayload: DownloadStartedPayload = {
-    id: downloadId,
-    videoId,
-    title: requestedTitle || 'Downloading...',
-    folder: musicDir,
-    status: 'downloading',
-  }
+  `).run(url, videoId, title)
+  return String(insertResult.lastInsertRowid)
+}
 
-  send('youtube:download-started', startedPayload)
-
+function spawnDownload(
+  url: string,
+  videoId: string,
+  requestedTitle: string,
+  options: DownloadOptions | undefined,
+  downloadId: string,
+  musicDir: string,
+  filesBeforeDownload: Set<string>,
+  isPlaylistDownload: boolean
+): Promise<{ title: string; downloadedFiles: string[] }> {
   const args = [
     '-x',
-    '--audio-format', 'mp3',
-    '--audio-quality', '0',
-    '--add-metadata',
-    '--embed-thumbnail',
-    '-o', outputTemplate,
+    '--audio-format', options?.audioFormat ?? 'mp3',
+    '--audio-quality', String(options?.audioQuality ?? 0),
+    ...(options?.addMetadata ?? true ? ['--add-metadata'] : []),
+    ...(options?.embedThumbnail ?? true ? ['--embed-thumbnail'] : []),
+    '-o', path.join(musicDir, '%(title)s [%(id)s].%(ext)s'),
     '--newline',
     '--progress',
     '--no-warnings',
@@ -215,156 +255,261 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
   ]
   console.log('[yt-dlp] spawn:', getYtDlpPath(), args.join(' '))
 
-  const proc = spawn(getYtDlpPath(), args)
-  const activeDownload = { proc, id: downloadId, cancelled: false }
-  _activeDownloads.set(videoId, activeDownload)
+  return new Promise((resolve, reject) => {
+    const proc = spawn(getYtDlpPath(), args)
+    const activeDownload = { proc, id: downloadId, cancelled: false }
+    _activeDownloads.set(videoId, activeDownload)
 
-  let title = requestedTitle || 'Unknown'
-  let downloadedFile = ''
-  let stderrBuffer = ''
+    let title = requestedTitle || 'Unknown'
+    let downloadedFile = ''
+    let stderrBuffer = ''
 
-  proc.stdout.on('data', (data: Buffer) => {
-    const lines = data.toString().split('\n')
-    for (const line of lines) {
-      if (!line.trim()) continue
-      console.log('[yt-dlp stdout]', line)
-      if (line.includes('[download]') && line.includes('%')) {
-        const prog = parseProgress(line)
-        if (prog) {
-          const progressPayload: DownloadProgressPayload = {
-            id: downloadId,
-            videoId,
-            progress: prog.percent,
-            speed: prog.speed,
-            eta: prog.eta,
-            size: prog.size,
+    proc.stdout.on('data', (data: Buffer) => {
+      const lines = data.toString().split('\n')
+      for (const line of lines) {
+        if (!line.trim()) continue
+        console.log('[yt-dlp stdout]', line)
+        if (line.includes('[download]') && line.includes('%')) {
+          const prog = parseProgress(line)
+          if (prog) {
+            const progressPayload: DownloadProgressPayload = {
+              id: downloadId,
+              videoId,
+              progress: prog.percent,
+              speed: prog.speed,
+              eta: prog.eta,
+              size: prog.size,
+            }
+            getDb().prepare(`UPDATE downloads SET progress = ?, status = 'downloading' WHERE id = ?`).run(prog.percent, downloadId)
+            send('youtube:download-progress', progressPayload)
           }
-          getDb().prepare(`UPDATE downloads SET progress = ?, status = 'downloading' WHERE id = ?`).run(prog.percent, downloadId)
-          send('youtube:download-progress', progressPayload)
         }
-      }
-      if (line.includes('[download]') && line.includes('Destination:')) {
-        const titleMatch = line.match(/Destination:\s+(.+)/)
-        if (titleMatch) {
-          title = path.basename(titleMatch[1].trim())
-        }
-      }
-      if (line.includes('[ExtractAudio]')) {
-        const m = line.match(/Destination:\s+(.+)/)
-        if (m) downloadedFile = m[1].trim()
-      }
-    }
-  })
-
-  proc.stderr.on('data', (data: Buffer) => {
-    const chunk = data.toString()
-    stderrBuffer += chunk
-    const lines = chunk.split('\n')
-    for (const line of lines) {
-      if (!line.trim()) continue
-      console.error('[yt-dlp stderr]', line)
-      if (line.includes('[download]') && line.includes('%')) {
-        const prog = parseProgress(line)
-        if (prog) {
-          const progressPayload: DownloadProgressPayload = {
-            id: downloadId,
-            videoId,
-            progress: prog.percent,
-            speed: prog.speed,
-            eta: prog.eta,
-            size: prog.size,
+        if (line.includes('[download]') && line.includes('Destination:')) {
+          const titleMatch = line.match(/Destination:\s+(.+)/)
+          if (titleMatch) {
+            title = path.basename(titleMatch[1].trim())
           }
-          getDb().prepare(`UPDATE downloads SET progress = ?, status = 'downloading' WHERE id = ?`).run(prog.percent, downloadId)
-          send('youtube:download-progress', progressPayload)
+        }
+        if (line.includes('[ExtractAudio]')) {
+          const m = line.match(/Destination:\s+(.+)/)
+          if (m) downloadedFile = m[1].trim()
         }
       }
-    }
-  })
+    })
 
-  proc.on('error', (err) => {
-    _activeDownloads.delete(videoId)
-    const msg = err.message || 'Download failed'
-    console.error('[yt-dlp] spawn error:', msg)
-    const errorPayload: DownloadErrorPayload = { id: downloadId, videoId, error: msg }
-    getDb().prepare(`UPDATE downloads SET status = 'failed', title = ? WHERE id = ?`).run(title, downloadId)
-    send('youtube:download-error', errorPayload)
-  })
-
-  proc.on('close', async (code) => {
-    const active = _activeDownloads.get(videoId)
-    _activeDownloads.delete(videoId)
-
-    if (active?.cancelled) {
-      return
-    }
-
-    if (code !== 0) {
-      const errorDetail = stderrBuffer || `yt-dlp exited with code ${code}`
-      console.error('[yt-dlp] process failed:', errorDetail)
-      const errorPayload: DownloadErrorPayload = { id: downloadId, videoId, error: errorDetail }
-      getDb().prepare(`UPDATE downloads SET status = 'failed', title = ? WHERE id = ?`).run(errorDetail.substring(0, 200), downloadId)
-      send('youtube:download-error', errorPayload)
-      return
-    }
-
-    try {
-      if (!downloadedFile) {
-        const files = fs.readdirSync(musicDir)
-        const match = files.find(f => f.includes(videoId) && f.endsWith('.mp3'))
-        if (match) downloadedFile = path.join(musicDir, match)
-      }
-
-      let donePayload: DownloadDonePayload
-      const downloadedFiles = isPlaylistDownload
-        ? fs.readdirSync(musicDir)
-            .filter((file) => file.endsWith('.mp3') && !filesBeforeDownload.has(file))
-            .map((file) => path.join(musicDir, file))
-        : downloadedFile && fs.existsSync(downloadedFile)
-          ? [downloadedFile]
-          : []
-
-      if (downloadedFiles.length > 0) {
-        const scannedTracks = []
-        for (const file of downloadedFiles) {
-          const scanned = await scanFile(file)
-          if (scanned) scannedTracks.push(scanned)
-        }
-
-        const track = scannedTracks[0]
-        if (track) {
-          getDb().prepare(`UPDATE downloads SET status = 'done', progress = 100, title = ?, track_id = ? WHERE id = ?`)
-            .run(isPlaylistDownload ? `Playlist import (${scannedTracks.length} tracks)` : track.title, track.id, downloadId)
-          donePayload = {
-            id: downloadId,
-            videoId,
-            trackId: track.id,
-            path: downloadedFiles[0],
-            title: isPlaylistDownload ? `Playlist import (${scannedTracks.length} tracks)` : track.title,
+    proc.stderr.on('data', (data: Buffer) => {
+      const chunk = data.toString()
+      stderrBuffer += chunk
+      const lines = chunk.split('\n')
+      for (const line of lines) {
+        if (!line.trim()) continue
+        console.error('[yt-dlp stderr]', line)
+        if (line.includes('[download]') && line.includes('%')) {
+          const prog = parseProgress(line)
+          if (prog) {
+            const progressPayload: DownloadProgressPayload = {
+              id: downloadId,
+              videoId,
+              progress: prog.percent,
+              speed: prog.speed,
+              eta: prog.eta,
+              size: prog.size,
+            }
+            getDb().prepare(`UPDATE downloads SET progress = ?, status = 'downloading' WHERE id = ?`).run(prog.percent, downloadId)
+            send('youtube:download-progress', progressPayload)
           }
-        } else {
-          const fallbackTitle = isPlaylistDownload
-            ? `Playlist import (${downloadedFiles.length} files)`
-            : path.basename(downloadedFiles[0])
-          getDb().prepare(`UPDATE downloads SET status = 'done', progress = 100, title = ? WHERE id = ?`).run(fallbackTitle, downloadId)
-          donePayload = { id: downloadId, videoId, trackId: null, path: downloadedFiles[0], title: fallbackTitle }
         }
       }
-      else {
-        getDb().prepare(`UPDATE downloads SET status = 'done', progress = 100 WHERE id = ?`).run(downloadId)
-        donePayload = { id: downloadId, videoId, trackId: null }
-      }
+    })
 
-      send('youtube:download-done', donePayload)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Post-download failed'
-      console.error('[yt-dlp] post-download error:', msg)
+    proc.on('error', (err) => {
+      _activeDownloads.delete(videoId)
+      const msg = err.message || 'Download failed'
+      console.error('[yt-dlp] spawn error:', msg)
       const errorPayload: DownloadErrorPayload = { id: downloadId, videoId, error: msg }
-      getDb().prepare(`UPDATE downloads SET status = 'failed' WHERE id = ?`).run(downloadId)
+      getDb().prepare(`UPDATE downloads SET status = 'failed', title = ? WHERE id = ?`).run(title, downloadId)
       send('youtube:download-error', errorPayload)
-    }
+      reject(err)
+    })
+
+    proc.on('close', async (code) => {
+      const active = _activeDownloads.get(videoId)
+      _activeDownloads.delete(videoId)
+
+      if (active?.cancelled) {
+        reject(new Error('Cancelled'))
+        return
+      }
+
+      if (code !== 0) {
+        const errorDetail = stderrBuffer || `yt-dlp exited with code ${code}`
+        console.error('[yt-dlp] process failed:', errorDetail)
+        const errorPayload: DownloadErrorPayload = { id: downloadId, videoId, error: errorDetail }
+        getDb().prepare(`UPDATE downloads SET status = 'failed', title = ? WHERE id = ?`).run(errorDetail.substring(0, 200), downloadId)
+        send('youtube:download-error', errorPayload)
+        reject(new Error(errorDetail))
+        return
+      }
+
+      try {
+        const ext = `.${options?.audioFormat ?? 'mp3'}`
+        if (!downloadedFile) {
+          const files = fs.readdirSync(musicDir)
+          const match = files.find(f => f.includes(videoId) && f.endsWith(ext))
+          if (match) downloadedFile = path.join(musicDir, match)
+        }
+
+        let donePayload: DownloadDonePayload
+        const downloadedFiles = isPlaylistDownload
+          ? fs.readdirSync(musicDir)
+              .filter((file) => file.endsWith(ext) && !filesBeforeDownload.has(file))
+              .map((file) => path.join(musicDir, file))
+          : downloadedFile && fs.existsSync(downloadedFile)
+            ? [downloadedFile]
+            : []
+
+        if (downloadedFiles.length > 0) {
+          const scannedTracks = []
+          for (const file of downloadedFiles) {
+            const scanned = await scanFile(file)
+            if (scanned) scannedTracks.push(scanned)
+          }
+
+          const track = scannedTracks[0]
+          if (track) {
+            getDb().prepare(`UPDATE downloads SET status = 'done', progress = 100, title = ?, track_id = ? WHERE id = ?`)
+              .run(isPlaylistDownload ? `Playlist import (${scannedTracks.length} tracks)` : track.title, track.id, downloadId)
+            donePayload = {
+              id: downloadId,
+              videoId,
+              trackId: track.id,
+              path: downloadedFiles[0],
+              title: isPlaylistDownload ? `Playlist import (${scannedTracks.length} tracks)` : track.title,
+            }
+          } else {
+            const fallbackTitle = isPlaylistDownload
+              ? `Playlist import (${downloadedFiles.length} files)`
+              : path.basename(downloadedFiles[0])
+            getDb().prepare(`UPDATE downloads SET status = 'done', progress = 100, title = ? WHERE id = ?`).run(fallbackTitle, downloadId)
+            donePayload = { id: downloadId, videoId, trackId: null, path: downloadedFiles[0], title: fallbackTitle }
+          }
+        }
+        else {
+          getDb().prepare(`UPDATE downloads SET status = 'done', progress = 100 WHERE id = ?`).run(downloadId)
+          donePayload = { id: downloadId, videoId, trackId: null }
+        }
+
+        send('youtube:download-done', donePayload)
+        resolve({ title: donePayload.title || title, downloadedFiles })
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Post-download failed'
+        console.error('[yt-dlp] post-download error:', msg)
+        const errorPayload: DownloadErrorPayload = { id: downloadId, videoId, error: msg }
+        getDb().prepare(`UPDATE downloads SET status = 'failed' WHERE id = ?`).run(downloadId)
+        send('youtube:download-error', errorPayload)
+        reject(err)
+      }
+    })
   })
+}
+
+export async function downloadAudio(url: string, videoId: string, requestedTitle?: string, options?: DownloadOptions): Promise<DownloadStartedPayload> {
+  const availability = await checkYtDlpAvailability()
+  if (!availability.available) {
+    throw new Error(availability.error || `yt-dlp is not available at ${availability.path}`)
+  }
+
+  const musicDir = getMusicDir(options)
+  const filesBeforeDownload = new Set(fs.readdirSync(musicDir))
+  const isPlaylistDownload = videoId.startsWith('playlist:')
+
+  const title = requestedTitle || 'Downloading...'
+  const downloadId = createDownloadRecord(url, videoId, title)
+
+  const startedPayload: DownloadStartedPayload = {
+    id: downloadId,
+    videoId,
+    title,
+    folder: musicDir,
+    status: 'downloading',
+  }
+
+  send('youtube:download-started', startedPayload)
+
+  spawnDownload(url, videoId, title, options, downloadId, musicDir, filesBeforeDownload, isPlaylistDownload)
+    .catch(() => {})
 
   return startedPayload
+}
+
+export async function downloadBatch(urls: string[], options: DownloadOptions, playlistUrl?: string): Promise<{ completed: number; failed: number }> {
+  let completed = 0
+  let failed = 0
+
+  for (let i = 0; i < urls.length; i++) {
+    const url = urls[i]
+    const videoId = extractVideoId(url) || `batch-${i}-${Date.now()}`
+
+    send('youtube:batch-progress', {
+      playlistUrl: playlistUrl || '',
+      completed: i,
+      total: urls.length,
+      currentVideoId: videoId,
+      currentTitle: `Downloading ${i + 1} of ${urls.length}`,
+      currentProgress: 0,
+    } as BatchDownloadProgressPayload)
+
+    try {
+      const availability = await checkYtDlpAvailability()
+      if (!availability.available) {
+        throw new Error(availability.error || 'yt-dlp unavailable')
+      }
+
+      const musicDir = getMusicDir(options)
+      const filesBeforeDownload = new Set(fs.readdirSync(musicDir))
+      const itemTitle = `Batch item ${i + 1}/${urls.length}`
+      const downloadId = createDownloadRecord(url, videoId, itemTitle)
+
+      const startedPayload: DownloadStartedPayload = {
+        id: downloadId,
+        videoId,
+        title: itemTitle,
+        folder: musicDir,
+        status: 'downloading',
+      }
+      send('youtube:download-started', startedPayload)
+
+      await spawnDownload(url, videoId, itemTitle, options, downloadId, musicDir, filesBeforeDownload, false)
+      completed++
+
+      send('youtube:batch-progress', {
+        playlistUrl: playlistUrl || '',
+        completed: i + 1,
+        total: urls.length,
+        currentVideoId: videoId,
+        currentTitle: `Downloaded ${i + 1} of ${urls.length}`,
+        currentProgress: 100,
+      } as BatchDownloadProgressPayload)
+    } catch (err) {
+      failed++
+      const errorMsg = err instanceof Error ? err.message : 'Download failed'
+      console.error('[yt-dlp] batch item failed:', errorMsg)
+      send('youtube:batch-error', {
+        playlistUrl: playlistUrl || '',
+        videoId,
+        error: errorMsg,
+      } as BatchDownloadErrorPayload)
+    }
+  }
+
+  send('youtube:batch-done', {
+    playlistUrl: playlistUrl || '',
+    completed,
+    failed,
+    total: urls.length,
+  } as BatchDownloadDonePayload)
+
+  return { completed, failed }
 }
 
 export function cancelDownload(videoId: string): DownloadCancelledPayload {

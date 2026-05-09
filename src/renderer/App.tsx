@@ -27,6 +27,7 @@ import { ToastProvider } from '@/stores/toastStore'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { EdgeCaseHandler } from '@/components/EdgeCaseHandler'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { SearchOverlay } from '@/components/ui/SearchOverlay'
 import { motion, AnimatePresence } from 'framer-motion'
 import { pageMotion, routeTransition } from '@/lib/animations'
 
@@ -42,9 +43,16 @@ type ShellView =
   | 'settings'
   | `playlist-${number}`
 
+function getGreeting(): string {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
 const VIEW_META: Record<Exclude<ShellView, `playlist-${number}`>, { title: string; subtitle: string }> = {
   home: {
-    title: 'Good evening',
+    title: getGreeting(),
     subtitle: 'Enjoy your music.',
   },
   library: {
@@ -160,7 +168,7 @@ function AppShell() {
       case 'playlists':
         return <PlaylistListView />
       case 'youtube':
-        return <YouTubeView />
+        return <YouTubeView onViewChange={handleViewChange} />
       case 'downloads':
         return <DownloadsView />
       case 'queue':
@@ -182,6 +190,7 @@ function AppShell() {
 
   return (
     <TooltipProvider delayDuration={300}>
+      <SearchOverlay onViewChange={handleViewChange} />
       <div className="h-screen w-screen bg-[#100c13] text-primary overflow-hidden">
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_44%_18%,rgba(255,176,0,0.12),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.025),transparent_42%)]" />
         <div className="relative h-full w-full overflow-hidden bg-[#100c13]">
@@ -195,6 +204,8 @@ function AppShell() {
                 activeView={activeView}
                 title={viewMeta.title}
                 subtitle={viewMeta.subtitle}
+                npPanelOpen={npPanelOpen}
+                onNpPanelOpen={() => setNpPanelOpen(true)}
                 onViewChange={handleViewChange}
               />
               <main className="relative flex-1 overflow-hidden">

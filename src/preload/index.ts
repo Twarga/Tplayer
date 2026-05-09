@@ -82,7 +82,9 @@ const tplayerAPI: TplayerAPI = {
 
   youtube: {
     search: (query: string) => ipcRenderer.invoke(IPC_CHANNELS.youtube.search, query),
-    download: (url: string, videoId: string, title?: string) => ipcRenderer.invoke(IPC_CHANNELS.youtube.download, url, videoId, title),
+    getPlaylistInfo: (url: string) => ipcRenderer.invoke(IPC_CHANNELS.youtube.getPlaylistInfo, url),
+    download: (url: string, videoId: string, title?: string, options?: any) => ipcRenderer.invoke(IPC_CHANNELS.youtube.download, url, videoId, title, options),
+    downloadBatch: (urls: string[], options: any, playlistUrl?: string) => ipcRenderer.invoke(IPC_CHANNELS.youtube.downloadBatch, urls, options, playlistUrl),
     cancelDownload: (videoId: string) => ipcRenderer.invoke(IPC_CHANNELS.youtube.cancelDownload, videoId),
     getHistory: () => ipcRenderer.invoke(IPC_CHANNELS.youtube.getHistory),
     clearHistory: () => ipcRenderer.invoke(IPC_CHANNELS.youtube.clearHistory),
@@ -92,6 +94,9 @@ const tplayerAPI: TplayerAPI = {
     onDownloadStarted: createListener(IPC_CHANNELS.youtube.downloadStarted),
     onDownloadCancelled: createListener(IPC_CHANNELS.youtube.downloadCancelled),
     onHistoryCleared: createVoidListener(IPC_CHANNELS.youtube.historyCleared),
+    onBatchProgress: createListener(IPC_CHANNELS.youtube.batchProgress),
+    onBatchDone: createListener(IPC_CHANNELS.youtube.batchDone),
+    onBatchError: createListener(IPC_CHANNELS.youtube.batchError),
   },
 
   settings: {

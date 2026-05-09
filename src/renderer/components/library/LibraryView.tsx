@@ -7,6 +7,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useToast } from '@/stores/toastStore'
 import { Button } from '@/components/ui/button'
 import { PlayingBars } from '@/components/ui/PlayingBars'
+import { TrackContextMenu } from '@/components/ui/track-context-menu'
 import { formatDuration, cn } from '@/lib/utils'
 
 interface LibraryViewProps {
@@ -30,7 +31,7 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
   const { add: addToast } = useToast()
 
   useEffect(() => {
-    loadTracks()
+    if (tracks.length === 0 && !isLoading) loadTracks()
   }, [])
 
   const parentRef = useRef<HTMLDivElement>(null)
@@ -112,7 +113,7 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="h-[4.25rem] border-y border-white/[0.04] animate-pulse" />
+            <div key={i} className="h-[4.25rem] rounded-md skeleton" />
           ))}
         </div>
       ) : error ? (
@@ -158,6 +159,7 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
+                  <TrackContextMenu trackId={track.id}>
                   <div
                     className={cn(
                       'grid grid-cols-[58px_minmax(0,1.4fr)_minmax(0,1fr)_90px_54px] gap-3 px-4 h-full cursor-pointer group transition-all items-center border-y border-transparent',
@@ -188,7 +190,7 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
 
                     <div className="flex items-center gap-3 min-w-0">
                       {track.cover_path ? (
-                        <img src={`tplayer-img://media/${encodeURIComponent(track.cover_path)}`} className="w-11 h-11 object-cover shrink-0" alt="" />
+                        <img src={`tplayer-img://media/${encodeURIComponent(track.cover_path)}`} className="w-11 h-11 object-cover shrink-0" alt="" loading="lazy" />
                       ) : (
                         <div className="w-11 h-11 bg-white/[0.04] flex items-center justify-center text-tertiary shrink-0">♪</div>
                       )}
@@ -223,6 +225,7 @@ export function LibraryView({ onViewChange }: LibraryViewProps) {
                       <Heart size={16} fill={isFavorite(track.id) ? 'currentColor' : 'none'} />
                     </button>
                   </div>
+                  </TrackContextMenu>
                 </div>
               )
             })}

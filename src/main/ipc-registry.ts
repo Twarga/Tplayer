@@ -204,9 +204,19 @@ function registerYouTubeHandlers(): void {
     return searchYoutube(query)
   })
 
-  ipcMain.handle(IPC_CHANNELS.youtube.download, async (_, url: string, videoId: string, title?: string) => {
+  ipcMain.handle(IPC_CHANNELS.youtube.getPlaylistInfo, async (_, url: string) => {
+    const { fetchPlaylistVideos } = await import('./yt-dlp')
+    return fetchPlaylistVideos(url)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.youtube.download, async (_, url: string, videoId: string, title?: string, options?: any) => {
     const { downloadAudio } = await import('./yt-dlp')
-    return downloadAudio(url, videoId, title)
+    return downloadAudio(url, videoId, title, options)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.youtube.downloadBatch, async (_, urls: string[], options: any, playlistUrl?: string) => {
+    const { downloadBatch } = await import('./yt-dlp')
+    return downloadBatch(urls, options, playlistUrl)
   })
 
   ipcMain.handle(IPC_CHANNELS.youtube.cancelDownload, async (_, videoId: string) => {

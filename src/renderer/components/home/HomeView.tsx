@@ -1,7 +1,7 @@
-import { useEffect, useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { usePlayerStore } from '@/stores/playerStore'
 import { useLibraryStore } from '@/stores/libraryStore'
-import { Play, Pause, ChevronRight, MoreVertical } from 'lucide-react'
+import { Play, Pause, ChevronRight } from 'lucide-react'
 import { PlayingBars } from '@/components/ui/PlayingBars'
 import { formatDuration } from '@/lib/utils'
 
@@ -10,18 +10,17 @@ interface HomeViewProps {
 }
 
 export function HomeView({ onViewChange }: HomeViewProps) {
-  const { tracks, loadTracks } = useLibraryStore()
+  const { tracks } = useLibraryStore()
+  const { isFavorite } = useLibraryStore()
   const { play, isPlaying, currentTrack } = usePlayerStore()
 
-  useEffect(() => {
-    if (tracks.length === 0) {
-      loadTracks()
-    }
-  }, [])
+  // Task 15: useMemo for derived slices — no recompute on unrelated re-renders
+  const recentTracks = useMemo(() => tracks.slice(0, 6), [tracks])
+  const highlightTracks = useMemo(() => tracks.slice(0, 4), [tracks])
+  const favTracks = useMemo(() => tracks.filter(t => isFavorite(t.id)).slice(0, 6), [tracks, isFavorite])
+  // Task 15: only show YouTube-sourced tracks in the import section
+  const ytTracks = useMemo(() => tracks.filter(t => (t as any).source === 'youtube').slice(0, 5), [tracks])
 
-  const recentTracks = tracks.slice(0, 6)
-  const highlightTracks = tracks.slice(0, 4)
-  const importRows = tracks.slice(0, 3)
   const nowPlayingTrack = currentTrack
     ? tracks.find((track) => track.id === currentTrack.id) ?? tracks[0]
     : tracks[0]
@@ -37,13 +36,14 @@ export function HomeView({ onViewChange }: HomeViewProps) {
 
   return (
     <div className="h-full overflow-y-auto px-8 pb-28 animate-fade-in">
+      {/* Now playing hero */}
       {nowPlayingTrack && (
         <section className="mb-8 border-y border-white/[0.06] py-5">
           <button
             onClick={() => handlePlay(nowPlayingTrack.id)}
             className="grid w-full grid-cols-[96px_minmax(0,1fr)_auto] items-center gap-5 text-left"
           >
-            <div className="h-24 w-24 overflow-hidden bg-white/[0.04]">
+            <div className="h-24 w-24 overflow-hidden bg-white/[0.04] rounded-md">
               {artwork(nowPlayingTrack) ? (
                 <img src={artwork(nowPlayingTrack)} alt="" className="h-full w-full object-cover" />
               ) : (
@@ -70,6 +70,7 @@ export function HomeView({ onViewChange }: HomeViewProps) {
         </section>
       )}
 
+      {/* Continue listening */}
       {highlightTracks.length > 0 && (
         <section className="mb-9">
           <div className="flex items-center justify-between mb-3">
@@ -91,7 +92,7 @@ export function HomeView({ onViewChange }: HomeViewProps) {
               >
                 <div className="relative aspect-[4/3] overflow-hidden bg-white/[0.04]">
                   {artwork(track) ? (
-                    <img src={artwork(track)} alt="" className="h-full w-full object-cover" />
+                    <img src={artwork(track)} alt="" className="h-full w-full object-cover" loading="lazy" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(210,166,86,0.22),rgba(255,255,255,0.025))] text-4xl font-bold text-accent">
                       {track.title?.[0] || 'T'}
@@ -121,6 +122,37 @@ export function HomeView({ onViewChange }: HomeViewProps) {
         </section>
       )}
 
+      {/* Favorites section — Task 15 */}
+      {favTracks.length > 0 && (
+        <section className="mb-9">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[1.05rem] font-semibold text-primary">Favorites</h2>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            {favTracks.map((track) => (
+              <button
+                key={track.id}
+                onClick={() => handlePlay(track.id)}
+                className="group w-[min(165px,calc(50%-0.5rem))] min-w-[130px] text-left"
+              >
+                <div className="aspect-[4/3] overflow-hidden bg-white/[0.04]">
+                  {artwork(track) ? (
+                    <img src={artwork(track)} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" loading="lazy" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-white/[0.04] text-xl font-bold text-accent">
+                      {track.title?.[0] || 'T'}
+                    </div>
+                  )}
+                </div>
+                <p className="mt-2 truncate text-sm font-medium text-primary">{track.title}</p>
+                <p className="mt-0.5 truncate text-xs text-secondary">{track.artist}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Recently added */}
       {recentTracks.length > 0 && (
         <section className="mb-9">
           <div className="flex items-center justify-between mb-4">
@@ -142,7 +174,7 @@ export function HomeView({ onViewChange }: HomeViewProps) {
               >
                 <div className="aspect-[4/3] overflow-hidden bg-white/[0.04]">
                   {artwork(track) ? (
-                    <img src={artwork(track)} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+                    <img src={artwork(track)} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" loading="lazy" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-white/[0.04] text-xl font-bold text-accent">
                       {track.title?.[0] || 'T'}
@@ -157,19 +189,20 @@ export function HomeView({ onViewChange }: HomeViewProps) {
         </section>
       )}
 
-      {importRows.length > 0 && (
+      {/* YouTube imports — Task 15: filtered to yt-sourced only */}
+      {ytTracks.length > 0 && (
         <section>
           <h2 className="mb-3 text-[1.05rem] font-semibold text-primary">YouTube imports</h2>
           <div className="divide-y divide-white/[0.06] border-y border-white/[0.06]">
-            {importRows.map((track) => (
+            {ytTracks.map((track) => (
               <button
                 key={track.id}
                 onClick={() => handlePlay(track.id)}
-                className="grid w-full grid-cols-[48px_minmax(0,1fr)_64px_84px_84px_24px] items-center gap-3 py-2.5 text-left transition-colors hover:bg-white/[0.025]"
+                className="grid w-full grid-cols-[48px_minmax(0,1fr)_64px_84px] items-center gap-3 py-2.5 text-left transition-colors hover:bg-white/[0.025]"
               >
                 <div className="h-10 w-10 overflow-hidden bg-white/[0.05]">
                   {artwork(track) ? (
-                    <img src={artwork(track)} alt="" className="h-full w-full object-cover" />
+                    <img src={artwork(track)} alt="" className="h-full w-full object-cover" loading="lazy" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-xs font-bold text-accent">
                       {track.title?.[0] || 'T'}
@@ -179,14 +212,13 @@ export function HomeView({ onViewChange }: HomeViewProps) {
                 <p className="truncate text-sm font-medium text-primary">{track.title}</p>
                 <p className="text-right text-xs text-secondary">{formatDuration(track.duration)}</p>
                 <span className="justify-self-end border-b border-accent/40 px-1 py-1 text-[11px] font-semibold text-accent">MP3</span>
-                <span className="text-right text-xs text-tertiary">local</span>
-                <MoreVertical size={16} className="text-tertiary" />
               </button>
             ))}
           </div>
         </section>
       )}
 
+      {/* Empty state */}
       {tracks.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
           <div className="w-20 h-20 rounded-full bg-white/[0.035] flex items-center justify-center mb-6">

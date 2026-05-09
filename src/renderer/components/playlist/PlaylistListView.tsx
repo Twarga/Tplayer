@@ -1,24 +1,69 @@
 import { useEffect, useState } from 'react'
 import { Play, Plus, Trash2, Edit3 } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { usePlaylistStore } from '@/stores/playlistStore'
+import { CreatePlaylistDialog } from '@/components/ui/create-playlist-dialog'
+import { api } from '@/lib/ipc'
+import { staggerParent, staggerItem } from '@/lib/animations'
+
+/** 2×2 mosaic of cover images, falls back to first-letter initial */
+function CoverMosaic({ name, covers }: { name: string; covers: string[] }) {
+  if (covers.length === 0) {
+    return (
+      <span className="text-4xl text-accent font-bold">{name[0]}</span>
+    )
+  }
+  const cells = [...covers.slice(0, 4)]
+  while (cells.length < 4) cells.push('')
+  return (
+    <div className="grid grid-cols-2 grid-rows-2 w-full h-full">
+      {cells.map((url, i) =>
+        url ? (
+          <img key={i} src={url} alt="" className="w-full h-full object-cover" loading="lazy" />
+        ) : (
+          <div key={i} className="bg-[var(--surface-3)]" />
+        )
+      )}
+    </div>
+  )
+}
 
 export function PlaylistListView() {
   const { playlists, loadPlaylists, createPlaylist, deletePlaylist, isLoading } = usePlaylistStore()
   const [showCreate, setShowCreate] = useState(false)
-  const [newName, setNewName] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editName, setEditName] = useState('')
+  const [covers, setCovers] = useState<Record<number, string[]>>({})
 
   useEffect(() => {
     loadPlaylists()
   }, [])
 
-  const handleCreate = async () => {
-    if (newName.trim()) {
-      await createPlaylist(newName.trim())
-      setNewName('')
-      setShowCreate(false)
+  // Fetch up to 4 cover URLs per playlist for mosaics
+  useEffect(() => {
+    if (playlists.length === 0) return
+    const fetchCovers = async () => {
+      const result: Record<number, string[]> = {}
+      await Promise.all(
+        playlists.map(async (p) => {
+          try {
+            const tracks = await api.playlist.getTracks(p.id)
+            result[p.id] = tracks
+              .slice(0, 4)
+              .filter((t) => t.cover_path)
+              .map((t) => `tplayer-img://media/${encodeURIComponent(t.cover_path!)}`)
+          } catch {
+            result[p.id] = []
+          }
+        })
+      )
+      setCovers(result)
     }
+    void fetchCovers()
+  }, [playlists])
+
+  const handleCreate = async (name: string) => {
+    await createPlaylist(name)
   }
 
   const handleRename = async (id: number) => {
@@ -43,9 +88,9 @@ export function PlaylistListView() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-16 bg-surface-1 rounded-lg skeleton" />
+            <div key={i} className="aspect-square rounded-lg skeleton" />
           ))}
         </div>
       ) : playlists.length === 0 ? (
@@ -60,16 +105,23 @@ export function PlaylistListView() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+        <motion.div
+          variants={staggerParent}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4"
+        >
           {playlists.map((playlist) => (
-            <div
+            <motion.div
               key={playlist.id}
+              variants={staggerItem}
               className="bg-surface-1 rounded-lg p-4 group hover:bg-surface-2 transition-colors cursor-pointer card-lift"
             >
+              {/* Mosaic cover — Task 9 */}
               <div className="aspect-square rounded-md bg-surface-2 mb-3 flex items-center justify-center relative overflow-hidden">
-                <span className="text-4xl text-accent font-bold">{playlist.name[0]}</span>
+                <CoverMosaic name={playlist.name} covers={covers[playlist.id] ?? []} />
                 <button
-                  onClick={(e) => { e.stopPropagation(); }}
+                  onClick={(e) => { e.stopPropagation() }}
                   className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-accent text-background flex items-center justify-center opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-spring shadow-play-button hover:scale-105"
                 >
                   <Play size={16} fill="currentColor" className="ml-0.5" />
@@ -89,7 +141,7 @@ export function PlaylistListView() {
               ) : (
                 <h3
                   className="text-sm font-semibold text-primary truncate mb-0.5"
-                  onDoubleClick={() => { setEditingId(playlist.id); setEditName(playlist.name); }}
+                  onDoubleClick={() => { setEditingId(playlist.id); setEditName(playlist.name) }}
                 >
                   {playlist.name}
                 </h3>
@@ -99,56 +151,30 @@ export function PlaylistListView() {
 
               <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                  onClick={() => { setEditingId(playlist.id); setEditName(playlist.name); }}
+                  onClick={() => { setEditingId(playlist.id); setEditName(playlist.name) }}
                   className="p-1.5 rounded text-tertiary hover:text-primary hover:bg-surface-3 transition-colors"
                   title="Rename"
                 >
                   <Edit3 size={14} />
                 </button>
                 <button
-                  onClick={() => { if (confirm('Delete this playlist?')) deletePlaylist(playlist.id); }}
+                  onClick={() => { if (confirm('Delete this playlist?')) deletePlaylist(playlist.id) }}
                   className="p-1.5 rounded text-tertiary hover:text-red-400 hover:bg-surface-3 transition-colors"
                   title="Delete"
                 >
                   <Trash2 size={14} />
                 </button>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
-      {/* Create Dialog */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fade-in" onClick={() => setShowCreate(false)}>
-          <div className="bg-surface-1 border border-border-default rounded-xl p-6 w-80 shadow-modal animate-scale-in" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-primary mb-4">Create Playlist</h3>
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-              placeholder="Playlist name"
-              className="w-full h-10 px-3 rounded-md bg-input-bg border border-input-border text-primary placeholder:text-tertiary focus:border-accent focus:outline-none mb-4"
-              autoFocus
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowCreate(false)}
-                className="px-4 py-2 rounded-md text-sm text-secondary hover:text-primary hover:bg-surface-2 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreate}
-                className="px-4 py-2 rounded-md text-sm bg-accent text-background hover:bg-accent-hover transition-colors btn-press"
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CreatePlaylistDialog
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        onConfirm={handleCreate}
+      />
     </div>
   )
 }

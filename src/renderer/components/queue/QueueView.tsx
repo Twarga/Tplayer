@@ -68,7 +68,9 @@ export function QueueView() {
                 onDragEnd={() => setDraggedIndex(null)}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-md group interactive-soft",
-                  currentTrack?.id === track.id ? "bg-surface-3" : "hover:bg-surface-2",
+                  currentTrack?.id === track.id
+                    ? "bg-accent/[0.08] border border-accent/20"
+                    : "hover:bg-surface-2 border border-transparent",
                   draggedIndex === index ? "opacity-50" : ""
                 )}
               >
@@ -89,7 +91,7 @@ export function QueueView() {
 
                 <div className="flex-1 min-w-0">
                   <p className={cn(
-                    "text-sm font-medium truncate flex items-center gap-2",
+                    "text-sm font-semibold truncate flex items-center gap-2",
                     currentTrack?.id === track.id ? "text-accent" : "text-primary"
                   )}>
                     {track.title}
