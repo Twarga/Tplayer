@@ -61,9 +61,10 @@ img {
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
-  padding: 1rem clamp(1rem, 4vw, 4rem);
+  min-height: 4.75rem;
+  padding: 1rem clamp(1.25rem, 4vw, 4.5rem);
   border-bottom: 1px solid var(--line);
-  background: rgba(7, 6, 6, 0.78);
+  background: rgba(7, 6, 6, 0.9);
   backdrop-filter: blur(18px);
 }
 
@@ -77,20 +78,23 @@ footer {
 
 .brand {
   gap: 0.75rem;
+  color: var(--bone);
+  font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.03em;
 }
 
 .brand img {
-  width: 2.1rem;
-  height: 2.1rem;
+  width: 2.45rem;
+  height: 2.45rem;
   object-fit: contain;
 }
 
 nav {
-  gap: clamp(0.8rem, 2vw, 1.7rem);
-  color: var(--muted);
-  font-size: 0.92rem;
+  gap: clamp(1rem, 2.4vw, 2rem);
+  color: rgba(244, 239, 230, 0.68);
+  font-size: 0.96rem;
+  font-weight: 700;
 }
 
 nav a:hover,
@@ -99,17 +103,17 @@ footer a:hover {
 }
 
 main {
-  width: min(1280px, calc(100% - 2rem));
+  width: min(1500px, calc(100% - 2rem));
   margin: 0 auto;
 }
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(360px, 0.82fr) minmax(480px, 1.18fr);
-  gap: clamp(2.5rem, 6vw, 7rem);
+  grid-template-columns: minmax(0, 0.68fr) minmax(0, 1.32fr);
+  gap: clamp(2rem, 4vw, 4rem);
   align-items: center;
-  min-height: calc(92vh - 5rem);
-  padding: clamp(3.5rem, 7vw, 6rem) 0 clamp(3rem, 6vw, 5rem);
+  min-height: calc(86vh - 4.75rem);
+  padding: clamp(2.25rem, 5vw, 4.5rem) 0 clamp(2.25rem, 5vw, 4rem);
 }
 
 .eyebrow {
@@ -124,15 +128,15 @@ main {
 h1,
 h2 {
   margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
   font-weight: 900;
-  letter-spacing: -0.055em;
-  line-height: 0.98;
+  letter-spacing: -0.06em;
+  line-height: 1;
 }
 
 h1 {
-  max-width: 12.5ch;
-  font-size: clamp(3.4rem, 6.3vw, 6.6rem);
+  max-width: 15ch;
+  font-size: clamp(3rem, 4.35vw, 4.9rem);
 }
 
 h2 {
@@ -150,9 +154,11 @@ h2 {
 }
 
 .lede {
-  max-width: 35rem;
-  margin: 1.45rem 0 0;
-  font-size: clamp(1.04rem, 1.6vw, 1.22rem);
+  max-width: 36rem;
+  margin: 1.35rem 0 0;
+  color: rgba(244, 239, 230, 0.72);
+  font-size: clamp(1.04rem, 1.28vw, 1.2rem);
+  line-height: 1.72;
 }
 
 .hero-actions {
@@ -224,17 +230,16 @@ h2 {
   justify-items: start;
 }
 
-.hero-shot {
+.hero-preview {
   position: relative;
   align-self: center;
-  padding: 0.72rem;
+  overflow: hidden;
   border: 1px solid var(--line);
-  background: linear-gradient(145deg, rgba(242, 207, 122, 0.16), rgba(255, 255, 255, 0.035));
-  box-shadow: 0 2.5rem 7rem var(--shadow);
-  transform: translateY(1rem);
+  background: linear-gradient(145deg, rgba(242, 207, 122, 0.14), rgba(255, 255, 255, 0.035));
+  box-shadow: 0 2.5rem 8rem var(--shadow), 0 0 0 1px rgba(255, 255, 255, 0.035) inset;
 }
 
-.hero-shot::after {
+.hero-preview::after {
   content: "";
   position: absolute;
   inset: auto 8% -1.2rem 8%;
@@ -244,15 +249,20 @@ h2 {
   z-index: -1;
 }
 
-.hero-shot img,
+.hero-preview img,
 .showcase img {
   width: 100%;
-  aspect-ratio: 16 / 10;
   object-fit: cover;
 }
 
-.hero-shot img {
-  min-height: 24rem;
+.hero-preview img {
+  aspect-ratio: 3 / 2;
+  min-height: clamp(28rem, 42vw, 40rem);
+  object-position: center;
+}
+
+.showcase img {
+  aspect-ratio: 16 / 10;
 }
 
 .statement {
@@ -381,11 +391,7 @@ footer {
     font-size: clamp(3rem, 14vw, 4.8rem);
   }
 
-  .hero-shot {
-    transform: none;
-  }
-
-  .hero-shot img {
+  .hero-preview img {
     min-height: 0;
   }
 
