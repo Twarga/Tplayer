@@ -64,7 +64,7 @@ Tplayer turns a local music folder into a refined daily player. It focuses on th
 
 ## Status
 
-Tplayer is in active MVP hardening. Core features including local playback, YouTube import, Last.fm scrobbling, EQ, and MPRIS integration are complete. Packaged public builds are the next release-track milestone.
+Tplayer is in production-prep hardening. Core features including local playback, YouTube import, Last.fm scrobbling, EQ, and MPRIS integration are complete, and the repo now includes packaging plus GitHub release and Pages deployment workflows.
 
 ## Product docs
 
@@ -72,6 +72,7 @@ Tplayer is in active MVP hardening. Core features including local playback, YouT
 - [`docs/planning/remake.md`](docs/planning/remake.md) - completed MVP work and post-MVP release plan
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) - local setup, commit scope, and contribution rules
 - [`docs/release-checklist.md`](docs/release-checklist.md) - release requirements and manual testing steps
+- [`docs/production-readiness.md`](docs/production-readiness.md) - B1-B10 production preparation summary
 
 ## Development
 

@@ -3,7 +3,8 @@
   "productName": "Tplayer",
   "appId": "com.twarga.tplayer",
   "version": "0.1.0",
-  "description": "Beautiful local music player for Linux with YouTube download integration",
+  "description": "A polished local-first desktop music player with YouTube import.",
+  "homepage": "https://twarga.github.io/Tplayer/",
   "main": "./out/main/index.js",
   "author": {
     "name": "twarga"
@@ -35,10 +36,12 @@
     }
   },
   "scripts": {
+    "postinstall": "electron-builder install-app-deps",
     "dev": "env -u ELECTRON_RUN_AS_NODE electron-vite dev",
     "build": "electron-vite build",
-    "package:linux": "npm run build && electron-builder --linux",
-    "package:win": "npm run build && electron-builder --win",
+    "package:linux": "npm run build && electron-builder --linux --publish never",
+    "package:win": "npm run build && electron-builder --win --publish never",
+    "package:dir": "npm run build && electron-builder --dir --publish never",
     "preview": "env -u ELECTRON_RUN_AS_NODE electron-vite preview",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"

@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Prepare Site Assets
         run: |
-          rm site/assets
+          rm -rf site/assets
           cp -r assets site/assets
       - name: Setup Pages
         uses: actions/configure-pages@v4

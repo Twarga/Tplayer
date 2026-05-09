@@ -1,204 +1,118 @@
-<!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tplayer - The Polished Desktop Music Player</title>
-    <meta name="description" content="A polished local-first desktop music player with YouTube import, EQ, Last.fm, and Linux media support.">
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Outfit', 'sans-serif'],
-                    },
-                    colors: {
-                        tplayer: {
-                            50: '#fffbf0',
-                            100: '#fef1c7',
-                            200: '#fde08b',
-                            300: '#fbca47',
-                            400: '#f5aa13',
-                            500: '#ef8f0b',
-                            600: '#d96c06',
-                            700: '#b44b08',
-                            800: '#923a0e',
-                            900: '#78310f',
-                            950: '#451703',
-                        },
-                        app: {
-                            bg: '#0a0a0a',
-                            surface: '#121212',
-                            panel: '#1a1a1a',
-                            border: '#262626'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <style>
-        body {
-            background-color: theme('colors.app.bg');
-            color: #e5e5e5;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        
-        .hero-glow {
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, theme('colors.tplayer.900') 0%, transparent 70%);
-            top: -200px;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0.5;
-            z-index: -1;
-            filter: blur(80px);
-            pointer-events: none;
-        }
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tplayer - Local-first desktop music player</title>
+    <meta
+      name="description"
+      content="Tplayer is a polished local-first desktop music player with YouTube import, Last.fm scrobbling, EQ, and Linux media-key support."
+    />
+    <meta property="og:title" content="Tplayer" />
+    <meta property="og:description" content="A polished local-first desktop music player with YouTube import." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="./assets/home_screenshot.png" />
+    <meta name="theme-color" content="#070606" />
+    <link rel="icon" href="./assets/logo.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Tplayer home">
+        <img src="./assets/logo.png" alt="" />
+        <span>Tplayer</span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a href="#interface">Interface</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#download">Download</a>
+        <a href="https://github.com/Twarga/Tplayer">GitHub</a>
+      </nav>
+    </header>
 
-        .surface-glass {
-            background: rgba(26, 26, 26, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid theme('colors.app.border');
-        }
-
-        .btn-primary {
-            background: linear-gradient(to bottom, theme('colors.tplayer.500'), theme('colors.tplayer.600'));
-            color: white;
-            box-shadow: 0 4px 14px rgba(239, 143, 11, 0.4);
-            transition: all 0.2s ease;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(239, 143, 11, 0.6);
-            background: linear-gradient(to bottom, theme('colors.tplayer.400'), theme('colors.tplayer.500'));
-        }
-
-        .feature-gradient {
-            background: linear-gradient(to right, theme('colors.tplayer.400'), theme('colors.tplayer.600'));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-    </style>
-</head>
-<body class="relative min-h-screen overflow-x-hidden selection:bg-tplayer-500 selection:text-white">
-
-    <div class="hero-glow"></div>
-
-    <!-- Navigation -->
-    <nav class="fixed top-0 left-0 right-0 z-50 surface-glass border-b border-app-border/50">
-        <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <img src="./assets/logo.png" alt="Tplayer Logo" class="w-8 h-8 object-contain rounded">
-                <span class="font-display font-bold text-xl tracking-wide text-white">Tplayer</span>
-            </div>
-            <div class="flex items-center space-x-6 text-sm font-medium">
-                <a href="#features" class="text-neutral-400 hover:text-white transition-colors">Features</a>
-                <a href="#download" class="text-neutral-400 hover:text-white transition-colors">Download</a>
-                <a href="https://github.com/Twarga/Tplayer" target="_blank" class="text-neutral-400 hover:text-white transition-colors">GitHub</a>
-            </div>
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Local-first desktop music player</p>
+          <h1>Your library, imported tracks, and queue in one focused player.</h1>
+          <p class="lede">
+            Tplayer turns local folders into a refined daily music player with fast playback,
+            YouTube import, Last.fm scrobbling, MPRIS controls, EQ, and a warm dark interface.
+          </p>
+          <div class="hero-actions" id="download">
+            <a class="button primary" href="https://github.com/Twarga/Tplayer/releases/latest">Download latest</a>
+            <a class="button secondary" href="https://github.com/Twarga/Tplayer">View source</a>
+          </div>
+          <p class="release-note">Linux AppImage first. Windows builds are produced by the release workflow.</p>
         </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <main class="pt-40 pb-20 px-6">
-        <div class="max-w-4xl mx-auto text-center">
-            <img src="./assets/logo.png" alt="Tplayer Logo Large" class="w-32 h-32 mx-auto mb-8 object-contain rounded-2xl shadow-2xl shadow-tplayer-900/50">
-            
-            <h1 class="text-5xl md:text-7xl font-display font-bold text-white mb-6 leading-tight tracking-tight">
-                Your music, <br />
-                <span class="feature-gradient">beautifully grounded.</span>
-            </h1>
-            
-            <p class="text-xl md:text-2xl text-neutral-400 mb-12 max-w-2xl mx-auto leading-relaxed">
-                A polished local-first desktop music player. Fast playback, clean queue control, imported tracks beside your albums, and a warm dark interface.
-            </p>
-            
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4" id="download">
-                <a href="https://github.com/Twarga/Tplayer/releases/latest" class="btn-primary px-8 py-4 rounded-full font-semibold text-lg w-full sm:w-auto flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    Download for Linux
-                </a>
-                <a href="https://github.com/Twarga/Tplayer" class="surface-glass hover:bg-white/10 px-8 py-4 rounded-full font-semibold text-lg text-white transition-all w-full sm:w-auto flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path></svg>
-                    View Source
-                </a>
-            </div>
-            
-            <p class="mt-6 text-sm text-neutral-500">Also available for Windows. Built with Electron and React.</p>
+        <div class="hero-shot" aria-label="Tplayer app preview">
+          <img src="./assets/home_screenshot.png" alt="Tplayer home interface with active playback" />
         </div>
+      </section>
+
+      <section class="statement">
+        <p>
+          Built for people who want their own music collection to feel immediate, elegant, and alive.
+          No streaming clone framing. No filler dashboard. Just library, import, queue, and playback.
+        </p>
+      </section>
+
+      <section class="feature-band" id="interface">
+        <div>
+          <p class="eyebrow">Interface</p>
+          <h2>Dark, editorial, and built around album art.</h2>
+        </div>
+        <p>
+          Tplayer uses a warm ink-and-gold palette, large artwork, thin dividers, and direct controls.
+          The UI is designed to feel like a music product instead of a generic Electron panel stack.
+        </p>
+      </section>
+
+      <section class="showcase">
+        <figure>
+          <img src="./assets/player_detail_screenshot.png" alt="Tplayer detailed now-playing view" />
+          <figcaption>Playback remains visible and controllable while browsing.</figcaption>
+        </figure>
+        <figure>
+          <img src="./assets/youtube_screenshot.png" alt="Tplayer YouTube import view" />
+          <figcaption>Search YouTube and import audio directly into your local library.</figcaption>
+        </figure>
+      </section>
+
+      <section class="workflow" id="workflow">
+        <div class="workflow-copy">
+          <p class="eyebrow">Workflow</p>
+          <h2>From folder to daily player.</h2>
+          <p>
+            Add local folders, import missing tracks, build a queue, tune the EQ, and keep listening
+            history synced through Last.fm. Linux desktop controls work through MPRIS.
+          </p>
+        </div>
+        <ol class="steps">
+          <li><span>01</span> Scan local music folders</li>
+          <li><span>02</span> Import audio from YouTube</li>
+          <li><span>03</span> Queue, seek, shuffle, and repeat</li>
+          <li><span>04</span> Scrobble and control from the desktop</li>
+        </ol>
+      </section>
+
+      <section class="download-panel">
+        <div>
+          <p class="eyebrow">Release</p>
+          <h2>Installable builds live on GitHub Releases.</h2>
+          <p>
+            The release workflow produces a Linux AppImage and a Windows executable when a version
+            tag is pushed.
+          </p>
+        </div>
+        <a class="button primary" href="https://github.com/Twarga/Tplayer/releases/latest">Open downloads</a>
+      </section>
     </main>
 
-    <!-- Feature Story Section -->
-    <section id="features" class="py-24 border-t border-app-border/30 bg-app-panel/30">
-        <div class="max-w-5xl mx-auto px-6">
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center mb-32">
-                <div>
-                    <h2 class="text-3xl font-display font-semibold text-white mb-4">Your library, not a dashboard</h2>
-                    <p class="text-lg text-neutral-400 leading-relaxed mb-6">
-                        Tplayer drops the aggressive algorithmic recommendations and filler home pages. It treats your local music folders as first-class citizens with a fast, deeply searchable library view and a layout focused on albums and playback.
-                    </p>
-                </div>
-                <div class="surface-glass p-2 rounded-2xl flex items-center justify-center border border-white/5 shadow-xl">
-                    <img src="./assets/home_screenshot.png" alt="Library View" class="rounded-xl w-full">
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center mb-32 md:flex-row-reverse">
-                <div class="order-2 md:order-1 surface-glass p-2 rounded-2xl flex items-center justify-center border border-white/5 shadow-xl">
-                    <img src="./assets/youtube_screenshot.png" alt="YouTube Import" class="rounded-xl w-full">
-                </div>
-                <div class="order-1 md:order-2">
-                    <h2 class="text-3xl font-display font-semibold text-white mb-4">Expand directly from YouTube</h2>
-                    <p class="text-lg text-neutral-400 leading-relaxed mb-6">
-                        Can't find a track locally? Search YouTube directly from inside Tplayer, download the audio via embedded <code>yt-dlp</code>, and watch it seamlessly join your library alongside your offline files.
-                    </p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-                <div>
-                    <h2 class="text-3xl font-display font-semibold text-white mb-4">Integrated deeply</h2>
-                    <p class="text-lg text-neutral-400 leading-relaxed mb-6">
-                        Built for heavy daily listening with global media keys, full MPRIS support on Linux desktop environments, a 10-band equalizer with presets, and reliable Last.fm scrobbling.
-                    </p>
-                </div>
-                <div class="surface-glass p-2 rounded-2xl flex items-center justify-center border border-white/5 shadow-xl">
-                    <img src="./assets/player_detail_screenshot.png" alt="Player Detail" class="rounded-xl w-full">
-                </div>
-            </div>
-
-        </div>
-    </section>
-
-    <!-- Footer / Developer Section -->
-    <footer class="border-t border-app-border/50 bg-app-bg py-12">
-        <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between">
-            <div class="flex items-center space-x-3 mb-6 md:mb-0">
-                <img src="./assets/logo.png" alt="Tplayer Logo" class="w-6 h-6 grayscale opacity-50">
-                <span class="font-display font-semibold text-neutral-500">Tplayer</span>
-            </div>
-            <div class="text-sm text-neutral-500">
-                Open source under the MIT License. Designed for desktop.
-            </div>
-        </div>
+    <footer>
+      <span>Tplayer</span>
+      <span>MIT License</span>
+      <a href="https://github.com/Twarga/Tplayer">GitHub</a>
     </footer>
-
-</body>
+  </body>
 </html>
