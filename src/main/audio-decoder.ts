@@ -1,4 +1,6 @@
 import ffmpeg from 'fluent-ffmpeg'
+import { Readable } from 'stream'
+import fs from 'fs'
 
 export interface DecodedAudio {
   pcmData: Float32Array
@@ -15,43 +17,52 @@ export function clearDecodeCache(): void {
 
 export function decodeAudioFile(filePath: string): Promise<DecodedAudio> {
   return new Promise((resolve, reject) => {
+    const stat = fs.statSync(filePath)
+    const cacheKey = `${filePath}:${stat.mtimeMs}`
+    const cached = _cache.get(cacheKey)
+    if (cached) {
+      resolve({ pcmData: cached.data, sampleRate: 44100, channels: 2, duration: cached.data.length / 44100 / 2 })
+      return
+    }
+
     const chunks: Buffer[] = []
 
-    const cmd = ffmpeg(filePath)
+    const stream: Readable = ffmpeg(filePath)
+      .audioCodec('pcm_f32le')
       .format('f32le')
       .audioChannels(2)
       .audioFrequency(44100)
       .noVideo()
-
-    cmd.on('error', (err: Error) => {
-      reject(new Error(`FFmpeg error: ${err.message}`))
-    })
-
-    cmd.on('end', () => {
-      if (chunks.length === 0) {
-        reject(new Error('No audio data'))
-        return
-      }
-
-      const buf = Buffer.concat(chunks)
-      const sampleCount = Math.floor(buf.length / 4)
-      const pcmData = new Float32Array(sampleCount)
-
-      for (let i = 0; i < sampleCount; i++) {
-        pcmData[i] = buf.readFloatLE(i * 4)
-      }
-
-      resolve({
-        pcmData,
-        sampleRate: 44100,
-        channels: 2,
-        duration: sampleCount / 44100 / 2,
+      .on('error', (err: Error) => {
+        reject(new Error(`FFmpeg error: ${err.message}`))
       })
-    })
+      .on('end', () => {
+        if (chunks.length === 0) {
+          reject(new Error('No audio data decoded'))
+          return
+        }
 
-    cmd.on('data', (chunk: Buffer) => chunks.push(chunk))
+        const buf = Buffer.concat(chunks)
+        const sampleCount = Math.floor(buf.length / 4)
+        const pcmData = new Float32Array(sampleCount)
 
-    cmd.run()
+        for (let i = 0; i < sampleCount; i++) {
+          pcmData[i] = buf.readFloatLE(i * 4)
+        }
+
+        _cache.set(cacheKey, { data: pcmData, mtime: stat.mtimeMs })
+
+        resolve({
+          pcmData,
+          sampleRate: 44100,
+          channels: 2,
+          duration: sampleCount / 44100 / 2,
+        })
+      })
+      .pipe() as Readable
+
+    stream.on('data', (chunk: Buffer) => chunks.push(chunk))
+    stream.on('error', (err: Error) => reject(new Error(`Stream error: ${err.message}`)))
   })
 }
 

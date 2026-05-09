@@ -7,6 +7,7 @@ interface Playlist {
   description: string
   created_at: string
   updated_at: string
+  track_count?: number
 }
 
 interface PlaylistStore {
@@ -66,7 +67,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     set({ activePlaylistId: id })
     try {
       const tracks = await api.playlist.getTracks(id)
-      set({ playlistTracks: tracks as PlaylistStore['playlistTracks'] })
+      set({ playlistTracks: tracks as unknown as PlaylistStore['playlistTracks'] })
     } catch (err) {
       console.error('[playlistStore] select failed:', err)
     }
