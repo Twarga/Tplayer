@@ -99,17 +99,17 @@ footer a:hover {
 }
 
 main {
-  width: min(1180px, calc(100% - 2rem));
+  width: min(1280px, calc(100% - 2rem));
   margin: 0 auto;
 }
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
-  gap: clamp(2rem, 5vw, 5rem);
+  grid-template-columns: minmax(360px, 0.82fr) minmax(480px, 1.18fr);
+  gap: clamp(2.5rem, 6vw, 7rem);
   align-items: center;
-  min-height: calc(100vh - 5rem);
-  padding: 5rem 0 4rem;
+  min-height: calc(92vh - 5rem);
+  padding: clamp(3.5rem, 7vw, 6rem) 0 clamp(3rem, 6vw, 5rem);
 }
 
 .eyebrow {
@@ -124,18 +124,19 @@ main {
 h1,
 h2 {
   margin: 0;
-  max-width: 11ch;
   font-family: Georgia, "Times New Roman", serif;
   font-weight: 900;
-  letter-spacing: -0.08em;
-  line-height: 0.92;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
 }
 
 h1 {
-  font-size: clamp(4rem, 10vw, 8.7rem);
+  max-width: 12.5ch;
+  font-size: clamp(3.4rem, 6.3vw, 6.6rem);
 }
 
 h2 {
+  max-width: 11ch;
   font-size: clamp(2.6rem, 6vw, 5rem);
 }
 
@@ -149,9 +150,9 @@ h2 {
 }
 
 .lede {
-  max-width: 39rem;
-  margin: 1.8rem 0 0;
-  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  max-width: 35rem;
+  margin: 1.45rem 0 0;
+  font-size: clamp(1.04rem, 1.6vw, 1.22rem);
 }
 
 .hero-actions {
@@ -165,9 +166,10 @@ h2 {
   align-items: center;
   justify-content: center;
   min-height: 3.2rem;
-  padding: 0 1.25rem;
+  padding: 0 1.18rem;
   border: 1px solid var(--line);
   font-weight: 800;
+  white-space: nowrap;
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
 }
 
@@ -195,10 +197,12 @@ h2 {
 
 .hero-shot {
   position: relative;
-  padding: 0.7rem;
+  align-self: center;
+  padding: 0.72rem;
   border: 1px solid var(--line);
   background: linear-gradient(145deg, rgba(242, 207, 122, 0.16), rgba(255, 255, 255, 0.035));
-  box-shadow: 0 2rem 6rem var(--shadow);
+  box-shadow: 0 2.5rem 7rem var(--shadow);
+  transform: translateY(1rem);
 }
 
 .hero-shot::after {
@@ -216,6 +220,10 @@ h2 {
   width: 100%;
   aspect-ratio: 16 / 10;
   object-fit: cover;
+}
+
+.hero-shot img {
+  min-height: 24rem;
 }
 
 .statement {
@@ -337,6 +345,19 @@ footer {
   .hero {
     min-height: auto;
     padding-top: 3rem;
+  }
+
+  h1 {
+    max-width: 13ch;
+    font-size: clamp(3rem, 14vw, 4.8rem);
+  }
+
+  .hero-shot {
+    transform: none;
+  }
+
+  .hero-shot img {
+    min-height: 0;
   }
 
   .showcase {
