@@ -32,6 +32,7 @@ jobs:
         run: |
           rm -rf site/assets
           cp -r assets site/assets
+          cp install.sh site/install.sh
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact

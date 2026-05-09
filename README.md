@@ -109,6 +109,12 @@ npm run build
 
 ## Packaging
 
+Install the latest Linux AppImage with one command:
+
+```bash
+curl -fsSL https://twarga.github.io/Tplayer/install.sh | bash
+```
+
 To package the application for distribution, you can use the built-in packaging scripts:
 
 ```bash

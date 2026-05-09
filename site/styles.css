@@ -158,7 +158,7 @@ h2 {
 .hero-actions {
   flex-wrap: wrap;
   gap: 0.9rem;
-  margin-top: 2rem;
+  margin-top: 1rem;
 }
 
 .button {
@@ -193,6 +193,35 @@ h2 {
   margin: 1rem 0 0;
   color: rgba(169, 160, 152, 0.82);
   font-size: 0.92rem;
+}
+
+.install-command {
+  width: min(100%, 42rem);
+  margin-top: 1.5rem;
+  border: 1px solid rgba(242, 207, 122, 0.22);
+  background: rgba(0, 0, 0, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow-x: auto;
+}
+
+.install-command code {
+  display: block;
+  padding: 1rem 1.1rem;
+  color: var(--gold);
+  font-family: "SFMono-Regular", "Cascadia Code", "Liberation Mono", monospace;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.install-command.compact {
+  width: min(100%, 34rem);
+  margin-top: 0;
+}
+
+.download-actions {
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
 }
 
 .hero-shot {
