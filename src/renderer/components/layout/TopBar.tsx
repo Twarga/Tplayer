@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Search, Bell, SlidersHorizontal, UserRound } from 'lucide-react'
 import { useLibraryStore } from '@/stores/libraryStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { Input } from '@/components/ui/input'
 
 interface TopBarProps {
@@ -14,8 +15,10 @@ interface TopBarProps {
 export function TopBar({ title, subtitle, onViewChange, onSearch }: TopBarProps) {
   const [searchValue, setSearchValue] = useState('')
   const { search } = useLibraryStore()
+  const { settings } = useSettingsStore()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const inputRef = useRef<HTMLInputElement>(null)
+  const displayName = (settings.display_name || 'Twarga').trim() || 'Twarga'
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -86,7 +89,7 @@ export function TopBar({ title, subtitle, onViewChange, onSearch }: TopBarProps)
           <span className="grid h-7 w-7 place-items-center rounded-full bg-accent/14 text-accent">
             <UserRound size={15} />
           </span>
-          <span>Younes</span>
+          <span>{displayName}</span>
         </button>
       </div>
     </div>

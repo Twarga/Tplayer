@@ -266,19 +266,60 @@ h2 {
 }
 
 .statement {
-  padding: 4rem 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22rem;
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: end;
+  padding: 5rem 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }
 
-.statement p {
-  max-width: 940px;
+.philosophy-copy blockquote {
+  max-width: 900px;
   margin: 0;
   color: var(--bone);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2rem, 5vw, 4.5rem);
+  font-size: clamp(2.8rem, 7vw, 7rem);
   letter-spacing: -0.06em;
-  line-height: 1.02;
+  line-height: 0.94;
+}
+
+.philosophy-copy blockquote span {
+  color: var(--gold);
+}
+
+.philosophy-copy p {
+  max-width: 46rem;
+  margin: 1.5rem 0 0;
+  color: rgba(244, 239, 230, 0.72);
+  font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+  line-height: 1.75;
+}
+
+.philosophy-copy cite {
+  display: block;
+  margin-top: 1rem;
+  color: rgba(242, 207, 122, 0.72);
+  font-size: 0.9rem;
+}
+
+.nietzsche-card {
+  border-left: 1px solid var(--line);
+  padding-left: 1.5rem;
+}
+
+.nietzsche-card img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.06) sepia(0.2);
+}
+
+.nietzsche-card figcaption {
+  color: rgba(169, 160, 152, 0.76);
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 
 .feature-band,
@@ -374,6 +415,7 @@ footer {
   }
 
   .hero,
+  .statement,
   .feature-band,
   .workflow,
   .download-panel,
@@ -397,5 +439,10 @@ footer {
 
   .showcase {
     margin-inline: 0;
+  }
+
+  .nietzsche-card {
+    border-left: 0;
+    padding-left: 0;
   }
 }

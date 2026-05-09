@@ -44,14 +44,14 @@ export function YouTubeView() {
     }
 
     const url = query.trim()
-    const videoId = extractVideoId(url)
-    if (!videoId) {
-      setUrlError('Paste a valid YouTube watch, short, or embed URL.')
+    const target = extractYouTubeTarget(url)
+    if (!target) {
+      setUrlError('Paste a valid YouTube video, short, embed, or playlist URL.')
       return
     }
 
     setUrlError(null)
-    await download(url, videoId)
+    await download(url, target.id, target.title)
     setQuery('')
   }
 
@@ -82,14 +82,14 @@ export function YouTubeView() {
               setQuery(e.target.value)
               if (urlError) setUrlError(null)
             }}
-            onKeyDown={(e) => e.key === 'Enter' && (extractVideoId(query.trim()) ? handleDownloadUrl() : handleSearch())}
+            onKeyDown={(e) => e.key === 'Enter' && (extractYouTubeTarget(query.trim()) ? handleDownloadUrl() : handleSearch())}
             className="flex-1 rounded-full bg-[#151018]/85 border-white/[0.11]"
           />
           <Button onClick={handleSearch} disabled={isSearching || !query.trim()} className="min-w-[112px]">
             {isSearching ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Search size={16} className="mr-2" />}
             Search
           </Button>
-          <Button onClick={handleDownloadUrl} variant="outline" disabled={!extractVideoId(query.trim())}>
+          <Button onClick={handleDownloadUrl} variant="outline" disabled={!extractYouTubeTarget(query.trim())}>
             <Download size={16} className="mr-2" />
             Import URL
           </Button>
@@ -149,7 +149,7 @@ export function YouTubeView() {
             <p className="mt-2 max-w-md text-sm leading-6 text-secondary">
               {hasSearched
                 ? 'Try a cleaner artist and title, or paste the exact YouTube URL.'
-                : 'Search for music or paste a direct URL to bring it into your local library.'}
+                : 'Search for music, paste a video URL, or paste a playlist URL to bring it into your local library.'}
             </p>
           </div>
         )}
@@ -358,7 +358,30 @@ function ResultRow({
   )
 }
 
-function extractVideoId(url: string): string | null {
-  const match = url.match(/(?:v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/)
-  return match ? match[1] : null
+function extractYouTubeTarget(input: string): { id: string; title?: string } | null {
+  if (!input) return null
+
+  try {
+    const parsed = new URL(input)
+    const host = parsed.hostname.replace(/^www\./, '')
+    if (!['youtube.com', 'music.youtube.com', 'm.youtube.com', 'youtu.be'].includes(host)) return null
+
+    const playlistId = parsed.searchParams.get('list')
+    if (playlistId) {
+      return { id: `playlist:${playlistId}`, title: 'YouTube playlist import' }
+    }
+
+    if (host === 'youtu.be') {
+      const id = parsed.pathname.split('/').filter(Boolean)[0]
+      return id && /^[a-zA-Z0-9_-]{11}$/.test(id) ? { id } : null
+    }
+
+    const watchId = parsed.searchParams.get('v')
+    if (watchId && /^[a-zA-Z0-9_-]{11}$/.test(watchId)) return { id: watchId }
+
+    const pathMatch = parsed.pathname.match(/\/(?:embed|shorts)\/([a-zA-Z0-9_-]{11})/)
+    return pathMatch ? { id: pathMatch[1] } : null
+  } catch {
+    return null
+  }
 }

@@ -181,6 +181,8 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
   }
 
   fs.mkdirSync(musicDir, { recursive: true })
+  const filesBeforeDownload = new Set(fs.readdirSync(musicDir))
+  const isPlaylistDownload = videoId.startsWith('playlist:')
 
   const outputTemplate = path.join(musicDir, '%(title)s [%(id)s].%(ext)s')
   const insertResult = getDb().prepare(`
@@ -208,6 +210,7 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
     '--newline',
     '--progress',
     '--no-warnings',
+    isPlaylistDownload ? '--yes-playlist' : '--no-playlist',
     url,
   ]
   console.log('[yt-dlp] spawn:', getYtDlpPath(), args.join(' '))
@@ -312,16 +315,38 @@ export async function downloadAudio(url: string, videoId: string, requestedTitle
       }
 
       let donePayload: DownloadDonePayload
-      if (downloadedFile && fs.existsSync(downloadedFile)) {
-        const track = await scanFile(downloadedFile)
+      const downloadedFiles = isPlaylistDownload
+        ? fs.readdirSync(musicDir)
+            .filter((file) => file.endsWith('.mp3') && !filesBeforeDownload.has(file))
+            .map((file) => path.join(musicDir, file))
+        : downloadedFile && fs.existsSync(downloadedFile)
+          ? [downloadedFile]
+          : []
+
+      if (downloadedFiles.length > 0) {
+        const scannedTracks = []
+        for (const file of downloadedFiles) {
+          const scanned = await scanFile(file)
+          if (scanned) scannedTracks.push(scanned)
+        }
+
+        const track = scannedTracks[0]
         if (track) {
           getDb().prepare(`UPDATE downloads SET status = 'done', progress = 100, title = ?, track_id = ? WHERE id = ?`)
-            .run(track.title, track.id, downloadId)
-          donePayload = { id: downloadId, videoId, trackId: track.id, path: downloadedFile, title: track.title }
+            .run(isPlaylistDownload ? `Playlist import (${scannedTracks.length} tracks)` : track.title, track.id, downloadId)
+          donePayload = {
+            id: downloadId,
+            videoId,
+            trackId: track.id,
+            path: downloadedFiles[0],
+            title: isPlaylistDownload ? `Playlist import (${scannedTracks.length} tracks)` : track.title,
+          }
         } else {
-          const fallbackTitle = path.basename(downloadedFile)
+          const fallbackTitle = isPlaylistDownload
+            ? `Playlist import (${downloadedFiles.length} files)`
+            : path.basename(downloadedFiles[0])
           getDb().prepare(`UPDATE downloads SET status = 'done', progress = 100, title = ? WHERE id = ?`).run(fallbackTitle, downloadId)
-          donePayload = { id: downloadId, videoId, trackId: null, path: downloadedFile, title: fallbackTitle }
+          donePayload = { id: downloadId, videoId, trackId: null, path: downloadedFiles[0], title: fallbackTitle }
         }
       }
       else {

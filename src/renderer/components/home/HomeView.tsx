@@ -82,14 +82,14 @@ export function HomeView({ onViewChange }: HomeViewProps) {
               <ChevronRight size={16} />
             </button>
           </div>
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-5">
+          <div className="flex flex-wrap gap-5">
             {highlightTracks.map((track) => (
               <button
                 key={track.id}
-                className="group border-b border-white/[0.06] pb-3 text-left transition-colors hover:border-accent/35"
+                className="group w-[min(220px,calc(50%-0.75rem))] min-w-[170px] border-b border-white/[0.06] pb-3 text-left transition-colors hover:border-accent/35"
                 onClick={() => handlePlay(track.id)}
               >
-                <div className="relative aspect-square overflow-hidden bg-white/[0.04]">
+                <div className="relative aspect-[4/3] overflow-hidden bg-white/[0.04]">
                   {artwork(track) ? (
                     <img src={artwork(track)} alt="" className="h-full w-full object-cover" />
                   ) : (
@@ -133,14 +133,14 @@ export function HomeView({ onViewChange }: HomeViewProps) {
               <ChevronRight size={16} />
             </button>
           </div>
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-4">
+          <div className="flex flex-wrap gap-4">
             {recentTracks.map((track) => (
               <button
                 key={track.id}
                 onClick={() => handlePlay(track.id)}
-                className="group text-left"
+                className="group w-[min(165px,calc(50%-0.5rem))] min-w-[130px] text-left"
               >
-                <div className="aspect-square overflow-hidden bg-white/[0.04]">
+                <div className="aspect-[4/3] overflow-hidden bg-white/[0.04]">
                   {artwork(track) ? (
                     <img src={artwork(track)} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
                   ) : (

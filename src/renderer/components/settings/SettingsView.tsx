@@ -86,8 +86,25 @@ export function SettingsView() {
   }
 
   return (
-    <div className="p-6 overflow-y-auto h-full max-w-2xl">
-      <h1 className="text-2xl font-bold text-primary mb-8">Settings</h1>
+    <div className="h-full overflow-y-auto px-8 pb-28 animate-fade-in">
+      <div className="max-w-5xl">
+        <h1 className="mb-2 text-3xl font-bold text-primary">Settings</h1>
+        <p className="mb-8 max-w-2xl text-sm leading-6 text-secondary">
+          Control your profile, folders, tools, accounts, and playback behavior.
+        </p>
+
+      <section className="mb-8 border-y border-white/[0.06] py-5">
+        <h2 className="text-lg font-semibold text-primary mb-4">Profile</h2>
+        <div className="max-w-xl">
+          <p className="text-sm text-secondary mb-2">Display name</p>
+          <Input
+            value={settings.display_name || 'Twarga'}
+            onChange={(e) => set('display_name', e.target.value)}
+            placeholder="Your name"
+          />
+          <p className="text-xs text-tertiary mt-2">Shown in the top bar. Default is Twarga.</p>
+        </div>
+      </section>
 
       <section className="mb-8">
         <h2 className="text-lg font-semibold text-primary mb-4">Music Folders</h2>
@@ -266,8 +283,9 @@ export function SettingsView() {
       <section>
         <h2 className="text-lg font-semibold text-primary mb-4">About</h2>
         <p className="text-sm text-secondary">Tplayer v0.1.0</p>
-        <p className="text-xs text-tertiary mt-1">A beautiful Spotify-like music player for Linux</p>
+        <p className="text-xs text-tertiary mt-1">A local-first desktop music player with YouTube import.</p>
       </section>
+      </div>
     </div>
   )
 }
