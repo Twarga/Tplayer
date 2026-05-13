@@ -2,6 +2,8 @@
 
 Tplayer is currently moving from MVP remake to public release readiness. Keep contributions focused, small, and easy to verify.
 
+By participating in this project, you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Development Setup
 
 ```bash
@@ -45,3 +47,10 @@ Avoid generic nested-card layouts, random purple-first styling, and dashboard fi
 Linux is the primary development target right now. Windows packaging is planned in the release track.
 
 MPRIS is Linux-specific. Any cross-platform release notes should make that clear.
+
+## Reporting Issues
+
+- **Bugs** — open a [bug report](.github/ISSUE_TEMPLATE/bug_report.md).
+- **Feature requests** — open a [feature request](.github/ISSUE_TEMPLATE/feature_request.md).
+- **Security vulnerabilities** — do not file a public issue. Follow the private-disclosure flow in [`SECURITY.md`](SECURITY.md).
+

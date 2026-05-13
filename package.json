@@ -3,16 +3,42 @@
   "productName": "Tplayer",
   "appId": "com.twarga.tplayer",
   "version": "0.3.0",
-  "description": "A polished local-first desktop music player with YouTube import.",
+  "description": "A polished local-first desktop music player with YouTube import, Last.fm scrobbling, equalizer, and Linux media-key (MPRIS) support.",
   "homepage": "https://twarga.github.io/Tplayer/",
   "main": "./out/main/index.js",
   "author": {
-    "name": "twarga"
+    "name": "Twarga",
+    "url": "https://github.com/Twarga"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/Twarga/Tplayer.git"
   },
+  "bugs": {
+    "url": "https://github.com/Twarga/Tplayer/issues"
+  },
+  "keywords": [
+    "music-player",
+    "desktop-music-player",
+    "audio-player",
+    "local-first",
+    "local-music",
+    "music-library",
+    "electron",
+    "react",
+    "typescript",
+    "vite",
+    "tailwindcss",
+    "better-sqlite3",
+    "youtube-import",
+    "yt-dlp",
+    "ffmpeg",
+    "lastfm",
+    "scrobbler",
+    "mpris",
+    "equalizer",
+    "linux"
+  ],
   "license": "MIT",
   "private": true,
   "build": {

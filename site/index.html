@@ -3,18 +3,62 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Tplayer - Local-first desktop music player</title>
+    <title>Tplayer — Local-first desktop music player with YouTube import</title>
+
+    <!-- Primary meta -->
     <meta
       name="description"
-      content="Tplayer is a polished local-first desktop music player with YouTube import, Last.fm scrobbling, EQ, and Linux media-key support."
+      content="Tplayer is a polished local-first desktop music player with YouTube import, Last.fm scrobbling, equalizer, and Linux media-key (MPRIS) support. Warm dark interface. Built with Electron + React."
     />
-    <meta property="og:title" content="Tplayer" />
-    <meta property="og:description" content="A polished local-first desktop music player with YouTube import." />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="./assets/hero_app_screenshot.png" />
+    <meta name="author" content="Twarga" />
+    <meta name="keywords" content="music player, desktop music player, local music, YouTube import, yt-dlp, Last.fm scrobbling, MPRIS, Linux music player, Electron, React, equalizer, offline music" />
     <meta name="theme-color" content="#070606" />
+    <link rel="canonical" href="https://twarga.github.io/Tplayer/" />
     <link rel="icon" href="./assets/logo.png" />
+    <link rel="apple-touch-icon" href="./assets/logo.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:site_name" content="Tplayer" />
+    <meta property="og:title" content="Tplayer — Local-first desktop music player" />
+    <meta property="og:description" content="Play local folders, import audio from YouTube, queue/EQ/scrobble to Last.fm — inside one focused warm-dark music app." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://twarga.github.io/Tplayer/" />
+    <meta property="og:image" content="https://twarga.github.io/Tplayer/assets/hero_app_screenshot.png" />
+    <meta property="og:image:alt" content="Tplayer desktop app now-playing screenshot" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Tplayer — Local-first desktop music player" />
+    <meta name="twitter:description" content="Local music + YouTube import + Last.fm scrobbling + MPRIS. One focused warm-dark music app." />
+    <meta name="twitter:image" content="https://twarga.github.io/Tplayer/assets/hero_app_screenshot.png" />
+
     <link rel="stylesheet" href="./styles.css" />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Tplayer",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Linux, Windows",
+        "description": "A polished local-first desktop music player with YouTube import, Last.fm scrobbling, equalizer, and Linux media-key (MPRIS) support.",
+        "url": "https://twarga.github.io/Tplayer/",
+        "downloadUrl": "https://github.com/Twarga/Tplayer/releases/latest",
+        "softwareVersion": "0.3.0",
+        "license": "https://opensource.org/licenses/MIT",
+        "author": {
+          "@type": "Person",
+          "name": "Twarga",
+          "url": "https://github.com/Twarga"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
   </head>
   <body>
     <header class="site-header">
@@ -23,8 +67,10 @@
         <span>Tplayer</span>
       </a>
       <nav aria-label="Main navigation">
+        <a href="#features">Features</a>
         <a href="#interface">Interface</a>
         <a href="#workflow">Workflow</a>
+        <a href="#shortcuts">Shortcuts</a>
         <a href="#download">Download</a>
         <a class="nav-pill" href="https://github.com/Twarga/Tplayer" target="_blank" rel="noopener">
           <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -38,15 +84,19 @@
     <main id="top">
       <section class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">Tplayer for Linux and Windows</p>
+          <p class="eyebrow">
+            <span class="dot" aria-hidden="true"></span>
+            Tplayer for Linux and Windows · v0.3.0
+          </p>
           <h1>Your music library, rebuilt as a real desktop player.</h1>
           <p class="lede">
             Play local folders, import audio from YouTube, control the queue, scrobble to Last.fm,
-            tune EQ, and keep everything inside one focused warm-dark music app.
+            tune the EQ, and keep everything inside one focused warm-dark music app.
           </p>
 
           <div class="hero-cta-row" id="download">
             <div class="install-command" aria-label="Linux install command">
+              <span class="prompt" aria-hidden="true">$</span>
               <code>curl -fsSL https://twarga.github.io/Tplayer/install.sh | bash</code>
             </div>
             <div class="download-dropdown">
@@ -79,18 +129,46 @@
             </div>
           </div>
 
-          <p class="release-note">Linux AppImage and Windows setup builds are available from GitHub Releases.</p>
+          <p class="release-note">Free &amp; open source · MIT licensed · No account, no telemetry, no lock-in.</p>
+
+          <ul class="hero-stats" aria-label="Project stats">
+            <li><strong>Local-first</strong><span>your files, your library</span></li>
+            <li><strong>YouTube import</strong><span>powered by yt-dlp</span></li>
+            <li><strong>Last.fm</strong><span>now-playing &amp; scrobble</span></li>
+            <li><strong>MPRIS</strong><span>Linux media keys</span></li>
+          </ul>
         </div>
+
         <div class="hero-preview" aria-label="Tplayer app preview">
-          <img src="./assets/hero_app_screenshot.png" alt="Real Tplayer desktop app screenshot" />
+          <img src="./assets/hero_app_screenshot.png" alt="Tplayer desktop app, warm dark interface with large album art and queue" loading="eager" />
+          <div class="hero-chip" aria-hidden="true">
+            <span class="hero-chip-dot"></span>
+            Now playing
+          </div>
         </div>
       </section>
 
-      <section class="statement">
+      <section class="techstrip" aria-label="Built with">
+        <span class="techstrip-label">Built with</span>
+        <ul>
+          <li>Electron</li>
+          <li>React 19</li>
+          <li>Vite</li>
+          <li>TypeScript</li>
+          <li>Tailwind CSS</li>
+          <li>Zustand</li>
+          <li>better-sqlite3</li>
+          <li>yt-dlp</li>
+          <li>FFmpeg</li>
+          <li>dbus-next · MPRIS</li>
+        </ul>
+      </section>
+
+      <section class="statement" id="manifesto">
         <div class="philosophy-copy">
           <p class="eyebrow">A music player with a point of view</p>
           <blockquote>
-            <span>"</span>Without music, life would be a mistake.<span>"</span>
+            <span>&ldquo;</span>Without music, life would be a mistake.<span>&rdquo;</span>
           </blockquote>
           <p>
             Nietzsche understood music as more than decoration. Tplayer is designed around that same
@@ -99,11 +177,87 @@
           <cite>Friedrich Nietzsche, commonly translated from <em>Twilight of the Idols</em></cite>
         </div>
         <figure class="nietzsche-card">
-          <img src="./assets/nietzsche.jpg" alt="Portrait of Friedrich Nietzsche" />
+          <img src="./assets/nietzsche.jpg" alt="Portrait of Friedrich Nietzsche" loading="lazy" />
           <figcaption>
             Friedrich Nietzsche, 1882. Public-domain portrait via Wikimedia Commons.
           </figcaption>
         </figure>
+      </section>
+
+      <section class="features" id="features">
+        <header class="section-head">
+          <p class="eyebrow">Features</p>
+          <h2>Everything a daily player needs. Nothing it doesn&rsquo;t.</h2>
+          <p class="section-sub">
+            Tplayer focuses on playback, library, and import. No social feed, no store, no dashboard filler.
+          </p>
+        </header>
+
+        <ul class="feature-grid">
+          <li class="feature-card">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M10 3H4a1 1 0 0 0-1 1v6h7V3zm11 0h-7v7h8V4a1 1 0 0 0-1-1zM3 14v6a1 1 0 0 0 1 1h6v-7H3zm11 0v7h7a1 1 0 0 0 1-1v-6h-8z"/></svg>
+            </span>
+            <h3>Local-first library</h3>
+            <p>Scan any folder. Albums, artists, folders, and playlists — indexed on your machine with better-sqlite3.</p>
+          </li>
+          <li class="feature-card">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M23 12s-4-7-11-7S1 12 1 12s4 7 11 7 11-7 11-7zm-11 4.5A4.5 4.5 0 1 1 12 7.5a4.5 4.5 0 0 1 0 9zM10 9.5l5 2.5-5 2.5v-5z"/></svg>
+            </span>
+            <h3>YouTube import</h3>
+            <p>Search YouTube, pick a video or full playlist, choose format and quality, and download directly into your library via yt-dlp.</p>
+          </li>
+          <li class="feature-card">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M3 17h2v-7H3v7zm4 4h2V6H7v15zm4-8h2V3h-2v10zm4 4h2V9h-2v8zm4 4h2V12h-2v9z"/></svg>
+            </span>
+            <h3>Equalizer with presets</h3>
+            <p>10-band EQ, bundled presets (Flat, Bass, Treble, Vocal, Rock and more), persisted between sessions.</p>
+          </li>
+          <li class="feature-card">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+            </span>
+            <h3>Queue &amp; playlists</h3>
+            <p>Batch queue, shuffle, repeat, right-click context menu, mass selection, and real mosaic playlist covers.</p>
+          </li>
+          <li class="feature-card">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 7 7h-2a5 5 0 1 1-5-5V4zm2 0v2.06A5 5 0 0 1 17.94 11H20A7 7 0 0 0 13 4z"/></svg>
+            </span>
+            <h3>Last.fm scrobbling</h3>
+            <p>Authenticated Last.fm session with now-playing updates and background scrobble queue. Offline-tolerant.</p>
+          </li>
+          <li class="feature-card">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 1 5 5v6a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5zm-7 9a7 7 0 0 0 14 0h-2a5 5 0 0 1-10 0H5zm6 8h2v3h-2z"/></svg>
+            </span>
+            <h3>Linux media keys (MPRIS)</h3>
+            <p>Play, pause, next, previous, seek — from your desktop, keyboard, or lock screen. dbus-next powered.</p>
+          </li>
+          <li class="feature-card">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
+            </span>
+            <h3>Global search (Ctrl + K)</h3>
+            <p>Open a command-palette style overlay from anywhere. Jump to tracks, albums, artists, or playlists.</p>
+          </li>
+          <li class="feature-card">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </span>
+            <h3>Favorites &amp; Home</h3>
+            <p>One-click favorites, a time-aware greeting, and recently imported YouTube tracks surfaced on Home.</p>
+          </li>
+          <li class="feature-card">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M21 7h-4V3H7v4H3v14h18V7zM9 5h6v2H9V5zm10 14H5V9h14v10z"/></svg>
+            </span>
+            <h3>Fast, offline, private</h3>
+            <p>No account, no telemetry, no cloud sync. Virtualized grids keep 200+ album libraries snappy.</p>
+          </li>
+        </ul>
       </section>
 
       <section class="feature-band" id="interface">
@@ -119,11 +273,11 @@
 
       <section class="showcase">
         <figure>
-          <img src="./assets/player_detail_screenshot.png" alt="Tplayer detailed now-playing view" />
+          <img src="./assets/player_detail_screenshot.png" alt="Tplayer detailed now-playing view with album art, queue, and EQ" loading="lazy" />
           <figcaption>Playback remains visible and controllable while browsing.</figcaption>
         </figure>
         <figure>
-          <img src="./assets/youtube_screenshot.png" alt="Tplayer YouTube import view" />
+          <img src="./assets/youtube_screenshot.png" alt="Tplayer YouTube import view showing search results and download options" loading="lazy" />
           <figcaption>Search YouTube and import audio directly into your local library.</figcaption>
         </figure>
       </section>
@@ -145,7 +299,62 @@
         </ol>
       </section>
 
-      <section class="download-panel">
+      <section class="shortcuts" id="shortcuts">
+        <header class="section-head">
+          <p class="eyebrow">Keyboard</p>
+          <h2>Designed for hands-on-keyboard listening.</h2>
+          <p class="section-sub">
+            The most-used actions are one keystroke away. Media keys work globally on Linux via MPRIS.
+          </p>
+        </header>
+        <ul class="shortcut-grid">
+          <li><kbd>Space</kbd><span>Play / pause</span></li>
+          <li><kbd>Ctrl</kbd><kbd>K</kbd><span>Global search</span></li>
+          <li><kbd>&larr;</kbd><kbd>&rarr;</kbd><span>Seek &minus;5s / &plus;5s</span></li>
+          <li><kbd>&uarr;</kbd><kbd>&darr;</kbd><span>Volume up / down</span></li>
+          <li><kbd>N</kbd><span>Next track</span></li>
+          <li><kbd>P</kbd><span>Previous track</span></li>
+          <li><kbd>S</kbd><span>Toggle shuffle</span></li>
+          <li><kbd>R</kbd><span>Toggle repeat</span></li>
+          <li><kbd>F</kbd><span>Toggle favorite</span></li>
+          <li><kbd>Esc</kbd><span>Close dialog / overlay</span></li>
+        </ul>
+      </section>
+
+      <section class="faq" id="faq">
+        <header class="section-head">
+          <p class="eyebrow">Questions</p>
+          <h2>Frequently asked.</h2>
+        </header>
+        <div class="faq-grid">
+          <details>
+            <summary>Is Tplayer free?</summary>
+            <p>Yes. Tplayer is free and open source under the MIT license. There are no accounts, paid tiers, or telemetry.</p>
+          </details>
+          <details>
+            <summary>Does it work offline?</summary>
+            <p>Yes. Local playback, library browsing, queue, and EQ all work fully offline. Only YouTube import and Last.fm scrobbling require a network connection.</p>
+          </details>
+          <details>
+            <summary>What audio formats are supported?</summary>
+            <p>MP3, FLAC, M4A/AAC, OGG, and WAV are supported. YouTube imports default to high-quality M4A via yt-dlp and FFmpeg.</p>
+          </details>
+          <details>
+            <summary>Which operating systems are supported?</summary>
+            <p>Linux is the primary target and ships as an AppImage. A Windows installer is also published. macOS packaging is planned.</p>
+          </details>
+          <details>
+            <summary>Does Tplayer upload or collect my music?</summary>
+            <p>No. Tplayer is fully local-first. Your files and listening history never leave your machine unless you enable Last.fm scrobbling.</p>
+          </details>
+          <details>
+            <summary>Where do imported YouTube tracks go?</summary>
+            <p>Into the same library you already browse, tagged <code>source = youtube</code>. A dedicated Home section surfaces recent imports.</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="download-panel" id="install">
         <div>
           <p class="eyebrow">Release</p>
           <h2>Installable builds live on GitHub Releases.</h2>
@@ -156,6 +365,7 @@
         </div>
         <div class="download-actions">
           <div class="install-command compact">
+            <span class="prompt" aria-hidden="true">$</span>
             <code>curl -fsSL https://twarga.github.io/Tplayer/install.sh | bash</code>
           </div>
           <div class="download-dropdown">
@@ -191,14 +401,60 @@
     </main>
 
     <footer>
-      <span>Tplayer</span>
-      <span>MIT License</span>
-      <a class="footer-link" href="https://github.com/Twarga/Tplayer" target="_blank" rel="noopener">
-        <svg class="footer-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-        </svg>
-        GitHub
-      </a>
+      <div class="foot-brand">
+        <img src="./assets/logo.png" alt="" />
+        <span>Tplayer</span>
+      </div>
+      <span class="foot-meta">MIT License · Crafted by <a href="https://github.com/Twarga" target="_blank" rel="noopener">Twarga</a></span>
+      <div class="foot-links">
+        <a href="https://github.com/Twarga/Tplayer" target="_blank" rel="noopener" aria-label="GitHub repository">
+          <svg class="footer-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+        </a>
+        <a href="https://github.com/Twarga/Tplayer/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/Twarga/Tplayer/issues" target="_blank" rel="noopener">Issues</a>
+      </div>
     </footer>
+
+    <script>
+      // Scroll-reveal animation (respects reduced motion)
+      (function () {
+        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduced || !('IntersectionObserver' in window)) return;
+
+        var selectors = [
+          'section.hero',
+          'section.statement',
+          'section.features',
+          'section.feature-band',
+          'section.showcase',
+          'section.workflow',
+          'section.shortcuts',
+          'section.faq',
+          'section.download-panel',
+          '.feature-card',
+          '.shortcut-grid li',
+          '.faq-grid details',
+          '.steps li'
+        ];
+
+        var els = document.querySelectorAll(selectors.join(','));
+        els.forEach(function (el) { el.classList.add('reveal'); });
+
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('reveal-in');
+              io.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+
+        els.forEach(function (el) { io.observe(el); });
+      })();
+
+      // Keep footer year fresh if ever needed (no-op placeholder)
+    </script>
   </body>
 </html>
